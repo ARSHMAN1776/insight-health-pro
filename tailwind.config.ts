@@ -26,7 +26,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					hover: 'hsl(var(--primary-hover))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -61,6 +62,32 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Healthcare-specific colors
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
+				},
+				medical: {
+					blue: 'hsl(var(--medical-blue))',
+					'blue-light': 'hsl(var(--medical-blue-light))',
+					'blue-dark': 'hsl(var(--medical-blue-dark))',
+					green: 'hsl(var(--medical-green))',
+					'green-light': 'hsl(var(--medical-green-light))',
+					red: 'hsl(var(--medical-red))',
+					'red-light': 'hsl(var(--medical-red-light))',
+					orange: 'hsl(var(--medical-orange))',
+					'orange-light': 'hsl(var(--medical-orange-light))',
+					purple: 'hsl(var(--medical-purple))',
+					'purple-light': 'hsl(var(--medical-purple-light))'
 				}
 			},
 			borderRadius: {
