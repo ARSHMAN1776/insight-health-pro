@@ -56,11 +56,18 @@ const NurseRegistrationForm: React.FC<NurseRegistrationFormProps> = ({ onClose }
 
   const onSubmit = async (data: NurseFormData) => {
     try {
-      console.log('Nurse registration data:', data);
+      // Import dataManager
+      const { dataManager } = await import('../../lib/dataManager');
+      
+      // Create new nurse
+      const newNurse = dataManager.createNurse({
+        ...data,
+        createdBy: 'current_user',
+      });
       
       toast({
         title: 'Success',
-        description: 'Nurse registered successfully',
+        description: `Nurse registered successfully with ID: ${newNurse.nurseId}`,
       });
       
       form.reset();

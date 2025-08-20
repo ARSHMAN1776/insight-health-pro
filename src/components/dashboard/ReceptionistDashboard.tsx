@@ -142,27 +142,43 @@ const ReceptionistDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card className="card-gradient">
+        <Card className="card-gradient">
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => window.location.href = '/appointments'}
+            >
               <Calendar className="w-6 h-6" />
-              <span className="text-sm">Schedule</span>
+              <span className="text-sm">Appointments</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => window.location.href = '/medical-records'}
+            >
               <FileText className="w-6 h-6" />
-              <span className="text-sm">Reports</span>
+              <span className="text-sm">Medical Records</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => window.location.href = '/patients'}
+            >
               <Users className="w-6 h-6" />
               <span className="text-sm">Patient List</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => window.location.href = '/inventory'}
+            >
               <Phone className="w-6 h-6" />
-              <span className="text-sm">Call Patient</span>
+              <span className="text-sm">Inventory</span>
             </Button>
           </div>
         </CardContent>

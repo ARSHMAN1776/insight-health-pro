@@ -60,12 +60,22 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onClo
 
   const onSubmit = async (data: PatientFormData) => {
     try {
-      // Here you would typically send the data to your backend
-      console.log('Patient registration data:', data);
+      // Import dataManager
+      const { dataManager } = await import('../../lib/dataManager');
+      
+      // Create new patient
+      const newPatient = dataManager.createPatient({
+        ...data,
+        bloodType: '',
+        allergies: '',
+        currentMedications: '',
+        chronicConditions: '',
+        createdBy: 'current_user',
+      });
       
       toast({
         title: 'Success',
-        description: 'Patient registered successfully',
+        description: `Patient registered successfully with ID: ${newPatient.patientId}`,
       });
       
       form.reset();
