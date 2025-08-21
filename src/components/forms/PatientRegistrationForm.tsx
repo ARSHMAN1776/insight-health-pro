@@ -65,7 +65,7 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onClo
       
       // Create new patient
       const newPatient = dataManager.createPatient({
-        ...data,
+        ...(data as Required<PatientFormData>),
         bloodType: '',
         allergies: '',
         currentMedications: '',

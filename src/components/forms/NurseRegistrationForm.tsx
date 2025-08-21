@@ -61,7 +61,7 @@ const NurseRegistrationForm: React.FC<NurseRegistrationFormProps> = ({ onClose }
       
       // Create new nurse
       const newNurse = dataManager.createNurse({
-        ...data,
+        ...(data as Required<NurseFormData>),
         createdBy: 'current_user',
       });
       

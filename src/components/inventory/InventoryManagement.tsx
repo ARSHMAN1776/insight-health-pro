@@ -58,7 +58,7 @@ const InventoryManagement: React.FC = () => {
 
   const createInventoryItem = (itemData: InventoryFormData): Inventory => {
     const newItem: Inventory = {
-      ...itemData,
+      ...(itemData as Required<InventoryFormData>),
       id: Date.now().toString(36) + Math.random().toString(36).substr(2),
       itemId: `ITM${Date.now().toString().substr(-8)}`,
       status: itemData.quantity <= itemData.minStockLevel ? 'low_stock' : 

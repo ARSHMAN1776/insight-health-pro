@@ -87,7 +87,7 @@ const MedicalRecords: React.FC = () => {
       // Remove vital signs fields from the main object
       const { bloodPressure, heartRate, temperature, weight, height, ...cleanData } = recordData;
 
-      const newRecord = dataManager.createMedicalRecord(cleanData);
+      const newRecord = dataManager.createMedicalRecord(cleanData as Required<typeof cleanData>);
       setRecords(dataManager.getMedicalRecords());
       
       toast({

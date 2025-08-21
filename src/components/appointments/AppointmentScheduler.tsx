@@ -80,11 +80,11 @@ const AppointmentScheduler: React.FC = () => {
         }
       } else {
         // Create new appointment
-        const newAppointment = dataManager.createAppointment({
-          ...data,
-          followUpRequired: false,
-          createdBy: 'current_user',
-        });
+      const newAppointment = dataManager.createAppointment({
+        ...(data as Required<AppointmentFormData>),
+        followUpRequired: false,
+        createdBy: 'current_user',
+      });
         setAppointments(dataManager.getAppointments());
         toast({
           title: 'Success',
