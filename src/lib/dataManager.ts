@@ -160,6 +160,56 @@ export interface Inventory {
   updatedAt: string;
 }
 
+export interface Prescription {
+  id: string;
+  prescriptionId: string;
+  patientId: string;
+  doctorId: string;
+  appointmentId?: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+  startDate: string;
+  endDate: string;
+  refills: number;
+  refillsUsed: number;
+  status: 'active' | 'completed' | 'cancelled' | 'expired';
+  pharmacyNotes?: string;
+  sideEffects?: string;
+  interactions?: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LabTest {
+  id: string;
+  testId: string;
+  patientId: string;
+  doctorId: string;
+  testName: string;
+  testType: 'blood' | 'urine' | 'imaging' | 'biopsy' | 'culture' | 'other';
+  category: 'hematology' | 'biochemistry' | 'microbiology' | 'pathology' | 'radiology' | 'cardiology';
+  orderDate: string;
+  sampleCollectedDate?: string;
+  reportDate?: string;
+  status: 'ordered' | 'sample_collected' | 'in_progress' | 'completed' | 'cancelled';
+  results?: string;
+  normalRange?: string;
+  interpretation?: string;
+  attachments?: string[];
+  priority: 'routine' | 'urgent' | 'stat';
+  fastingRequired: boolean;
+  instructions: string;
+  cost: number;
+  labTechnician?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Room {
   id: string;
   roomNumber: string;
@@ -542,6 +592,103 @@ class DataManager {
     return true;
   }
 
+  // Prescription Management
+  createPrescription(prescriptionData: Omit<Prescription, 'id' | 'prescriptionId' | 'refillsUsed' | 'status' | 'createdAt' | 'updatedAt'>): Prescription {
+    const prescriptions = this.getPrescriptions();
+    const newPrescription: Prescription = {
+      ...prescriptionData,
+      id: this.generateId(),
+      prescriptionId: `RX${Date.now().toString().substr(-8)}`,
+      refillsUsed: 0,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    prescriptions.push(newPrescription);
+    this.saveData('prescriptions', prescriptions);
+    return newPrescription;
+  }
+
+  getPrescriptions(): Prescription[] {
+    return this.loadData<Prescription>('prescriptions');
+  }
+
+  getPrescriptionsByPatient(patientId: string): Prescription[] {
+    return this.getPrescriptions().filter(p => p.patientId === patientId);
+  }
+
+  updatePrescription(id: string, updates: Partial<Prescription>): Prescription | null {
+    const prescriptions = this.getPrescriptions();
+    const index = prescriptions.findIndex(p => p.id === id);
+    if (index === -1) return null;
+
+    prescriptions[index] = {
+      ...prescriptions[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveData('prescriptions', prescriptions);
+    return prescriptions[index];
+  }
+
+  deletePrescription(id: string): boolean {
+    const prescriptions = this.getPrescriptions();
+    const index = prescriptions.findIndex(p => p.id === id);
+    if (index === -1) return false;
+
+    prescriptions.splice(index, 1);
+    this.saveData('prescriptions', prescriptions);
+    return true;
+  }
+
+  // Lab Test Management
+  createLabTest(labTestData: Omit<LabTest, 'id' | 'testId' | 'status' | 'createdAt' | 'updatedAt'>): LabTest {
+    const labTests = this.getLabTests();
+    const newLabTest: LabTest = {
+      ...labTestData,
+      id: this.generateId(),
+      testId: `LT${Date.now().toString().substr(-8)}`,
+      status: 'ordered',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    labTests.push(newLabTest);
+    this.saveData('lab_tests', labTests);
+    return newLabTest;
+  }
+
+  getLabTests(): LabTest[] {
+    return this.loadData<LabTest>('lab_tests');
+  }
+
+  getLabTestsByPatient(patientId: string): LabTest[] {
+    return this.getLabTests().filter(l => l.patientId === patientId);
+  }
+
+  updateLabTest(id: string, updates: Partial<LabTest>): LabTest | null {
+    const labTests = this.getLabTests();
+    const index = labTests.findIndex(l => l.id === id);
+    if (index === -1) return null;
+
+    labTests[index] = {
+      ...labTests[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveData('lab_tests', labTests);
+    return labTests[index];
+  }
+
+  deleteLabTest(id: string): boolean {
+    const labTests = this.getLabTests();
+    const index = labTests.findIndex(l => l.id === id);
+    if (index === -1) return false;
+
+    labTests.splice(index, 1);
+    this.saveData('lab_tests', labTests);
+    return true;
+  }
+
   // Analytics and Reports
   getDashboardStats() {
     const patients = this.getPatients();
@@ -813,6 +960,97 @@ class DataManager {
         ];
 
         sampleRecords.forEach(record => this.createMedicalRecord(record));
+      }
+    }
+
+    if (this.getPrescriptions().length === 0) {
+      // Sample prescriptions
+      const patients = this.getPatients();
+      const doctors = this.getDoctors();
+      
+      if (patients.length > 0 && doctors.length > 0) {
+        const samplePrescriptions = [
+          {
+            patientId: patients[0].id,
+            doctorId: doctors[0].id,
+            medication: 'Lisinopril',
+            dosage: '10mg',
+            frequency: 'Once daily',
+            duration: '30 days',
+            instructions: 'Take with food. Monitor blood pressure regularly.',
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            refills: 2,
+            sideEffects: 'May cause dizziness, dry cough',
+            interactions: ['NSAIDs', 'Potassium supplements'],
+            createdBy: 'system',
+          },
+          {
+            patientId: patients[1]?.id || patients[0].id,
+            doctorId: doctors[1]?.id || doctors[0].id,
+            medication: 'Albuterol Inhaler',
+            dosage: '90mcg/puff',
+            frequency: 'As needed',
+            duration: '90 days',
+            instructions: 'Use for shortness of breath. Rinse mouth after use.',
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            refills: 3,
+            sideEffects: 'Tremor, nervousness, headache',
+            interactions: ['Beta-blockers'],
+            createdBy: 'system',
+          }
+        ];
+
+        samplePrescriptions.forEach(prescription => this.createPrescription(prescription));
+      }
+    }
+
+    if (this.getLabTests().length === 0) {
+      // Sample lab tests
+      const patients = this.getPatients();
+      const doctors = this.getDoctors();
+      
+      if (patients.length > 0 && doctors.length > 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        const sampleLabTests = [
+          {
+            patientId: patients[0].id,
+            doctorId: doctors[0].id,
+            testName: 'Complete Blood Count',
+            testType: 'blood' as const,
+            category: 'hematology' as const,
+            orderDate: yesterday,
+            sampleCollectedDate: yesterday,
+            reportDate: today,
+            results: 'WBC: 7.2 K/uL, RBC: 4.5 M/uL, Hemoglobin: 14.2 g/dL, Hematocrit: 42.1%',
+            normalRange: 'WBC: 4.5-11.0, RBC: 4.2-5.4, Hemoglobin: 12.0-15.5, Hematocrit: 36-45%',
+            interpretation: 'Normal',
+            priority: 'routine' as const,
+            fastingRequired: false,
+            instructions: 'No special preparation required',
+            cost: 85.00,
+            labTechnician: 'Sarah Martinez, MLT',
+            createdBy: 'system',
+          },
+          {
+            patientId: patients[1]?.id || patients[0].id,
+            doctorId: doctors[1]?.id || doctors[0].id,
+            testName: 'Chest X-Ray',
+            testType: 'imaging' as const,
+            category: 'radiology' as const,
+            orderDate: today,
+            priority: 'urgent' as const,
+            fastingRequired: false,
+            instructions: 'Remove all metal objects from chest area',
+            cost: 150.00,
+            createdBy: 'system',
+          }
+        ];
+
+        sampleLabTests.forEach(test => this.createLabTest(test));
       }
     }
   }

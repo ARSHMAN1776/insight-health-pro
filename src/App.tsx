@@ -15,6 +15,9 @@ import NotFound from "./pages/NotFound";
 const AppointmentScheduler = React.lazy(() => import('./components/appointments/AppointmentScheduler'));
 const MedicalRecords = React.lazy(() => import('./components/medical/MedicalRecords'));
 const InventoryManagement = React.lazy(() => import('./components/inventory/InventoryManagement'));
+const PrescriptionManagement = React.lazy(() => import('./components/prescriptions/PrescriptionManagement'));
+const LabTestManagement = React.lazy(() => import('./components/lab-tests/LabTestManagement'));
+const Settings = React.lazy(() => import('./components/settings/Settings'));
 
 const queryClient = new QueryClient();
 
@@ -63,6 +66,27 @@ const App = () => (
                   <div className="p-6">
                     <Suspense fallback={<div>Loading...</div>}>
                       <InventoryManagement />
+                    </Suspense>
+                  </div>
+                } />
+                <Route path="prescriptions" element={
+                  <div className="p-6">
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <PrescriptionManagement />
+                    </Suspense>
+                  </div>
+                } />
+                <Route path="lab-tests" element={
+                  <div className="p-6">
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <LabTestManagement />
+                    </Suspense>
+                  </div>
+                } />
+                <Route path="settings" element={
+                  <div className="p-6">
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <Settings />
                     </Suspense>
                   </div>
                 } />
