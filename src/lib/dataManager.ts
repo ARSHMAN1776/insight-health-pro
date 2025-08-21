@@ -340,6 +340,16 @@ class DataManager {
     return doctors[index];
   }
 
+  deleteDoctor(id: string): boolean {
+    const doctors = this.getDoctors();
+    const index = doctors.findIndex(d => d.id === id);
+    if (index === -1) return false;
+
+    doctors.splice(index, 1);
+    this.saveData('doctors', doctors);
+    return true;
+  }
+
   // Nurse Management
   createNurse(nurseData: Omit<Nurse, 'id' | 'nurseId' | 'availability' | 'assignedPatients' | 'createdAt' | 'updatedAt'>): Nurse {
     const nurses = this.getNurses();
@@ -373,6 +383,16 @@ class DataManager {
     };
     this.saveData('nurses', nurses);
     return nurses[index];
+  }
+
+  deleteNurse(id: string): boolean {
+    const nurses = this.getNurses();
+    const index = nurses.findIndex(n => n.id === id);
+    if (index === -1) return false;
+
+    nurses.splice(index, 1);
+    this.saveData('nurses', nurses);
+    return true;
   }
 
   // Appointment Management
@@ -417,6 +437,16 @@ class DataManager {
     return appointments[index];
   }
 
+  deleteAppointment(id: string): boolean {
+    const appointments = this.getAppointments();
+    const index = appointments.findIndex(a => a.id === id);
+    if (index === -1) return false;
+
+    appointments.splice(index, 1);
+    this.saveData('appointments', appointments);
+    return true;
+  }
+
   // Payment Management
   createPayment(paymentData: Omit<Payment, 'id' | 'paymentId' | 'receiptNumber' | 'createdAt' | 'updatedAt'>): Payment {
     const payments = this.getPayments();
@@ -455,6 +485,16 @@ class DataManager {
     return payments[index];
   }
 
+  deletePayment(id: string): boolean {
+    const payments = this.getPayments();
+    const index = payments.findIndex(p => p.id === id);
+    if (index === -1) return false;
+
+    payments.splice(index, 1);
+    this.saveData('payments', payments);
+    return true;
+  }
+
   // Medical Records Management
   createMedicalRecord(recordData: Omit<MedicalRecord, 'id' | 'recordId' | 'createdAt' | 'updatedAt'>): MedicalRecord {
     const records = this.getMedicalRecords();
@@ -476,6 +516,30 @@ class DataManager {
 
   getMedicalRecordsByPatient(patientId: string): MedicalRecord[] {
     return this.getMedicalRecords().filter(r => r.patientId === patientId);
+  }
+
+  updateMedicalRecord(id: string, updates: Partial<MedicalRecord>): MedicalRecord | null {
+    const records = this.getMedicalRecords();
+    const index = records.findIndex(r => r.id === id);
+    if (index === -1) return null;
+
+    records[index] = {
+      ...records[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveData('medical_records', records);
+    return records[index];
+  }
+
+  deleteMedicalRecord(id: string): boolean {
+    const records = this.getMedicalRecords();
+    const index = records.findIndex(r => r.id === id);
+    if (index === -1) return false;
+
+    records.splice(index, 1);
+    this.saveData('medical_records', records);
+    return true;
   }
 
   // Analytics and Reports
@@ -584,6 +648,172 @@ class DataManager {
       ];
 
       sampleDoctors.forEach(doctor => this.createDoctor(doctor));
+    }
+
+    if (this.getNurses().length === 0) {
+      // Sample nurses
+      const sampleNurses = [
+        {
+          firstName: 'Nancy',
+          lastName: 'Wilson',
+          email: 'nancy.wilson@hospital.com',
+          phone: '+1-555-0301',
+          licenseNumber: 'RN12345',
+          nurseType: 'registered',
+          department: 'emergency',
+          shift: 'day',
+          experience: '8',
+          certification: 'BSN, CCRN',
+          createdBy: 'system',
+        },
+        {
+          firstName: 'Robert',
+          lastName: 'Brown',
+          email: 'robert.brown@hospital.com',
+          phone: '+1-555-0302',
+          licenseNumber: 'RN67890',
+          nurseType: 'critical-care',
+          department: 'icu',
+          shift: 'night',
+          experience: '12',
+          certification: 'MSN, CCRN',
+          createdBy: 'system',
+        }
+      ];
+
+      sampleNurses.forEach(nurse => this.createNurse(nurse));
+    }
+
+    if (this.getAppointments().length === 0) {
+      // Sample appointments
+      const patients = this.getPatients();
+      const doctors = this.getDoctors();
+      
+      if (patients.length > 0 && doctors.length > 0) {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const sampleAppointments = [
+          {
+            patientId: patients[0].id,
+            doctorId: doctors[0].id,
+            date: today.toISOString().split('T')[0],
+            time: '10:00',
+            duration: 30,
+            type: 'consultation' as const,
+            notes: 'Regular checkup for hypertension',
+            symptoms: 'High blood pressure, fatigue',
+            followUpRequired: true,
+            createdBy: 'system',
+          },
+          {
+            patientId: patients[1]?.id || patients[0].id,
+            doctorId: doctors[1]?.id || doctors[0].id,
+            date: tomorrow.toISOString().split('T')[0],
+            time: '14:00',
+            duration: 45,
+            type: 'follow-up' as const,
+            notes: 'Follow-up for asthma treatment',
+            symptoms: 'Shortness of breath, wheezing',
+            followUpRequired: false,
+            createdBy: 'system',
+          }
+        ];
+
+        sampleAppointments.forEach(appointment => this.createAppointment(appointment));
+      }
+    }
+
+    if (this.getPayments().length === 0) {
+      // Sample payments
+      const patients = this.getPatients();
+      
+      if (patients.length > 0) {
+        const samplePayments = [
+          {
+            patientId: patients[0].id,
+            amount: 300,
+            currency: 'USD',
+            paymentMethod: 'card' as const,
+            paymentType: 'consultation' as const,
+            description: 'Cardiology consultation with Dr. Smith',
+            status: 'completed' as const,
+            insuranceClaimed: false,
+            createdBy: 'system',
+          },
+          {
+            patientId: patients[1]?.id || patients[0].id,
+            amount: 150,
+            currency: 'USD',
+            paymentMethod: 'insurance' as const,
+            paymentType: 'medication' as const,
+            description: 'Asthma medication prescription',
+            status: 'pending' as const,
+            insuranceClaimed: true,
+            insuranceAmount: 120,
+            createdBy: 'system',
+          }
+        ];
+
+        samplePayments.forEach(payment => this.createPayment(payment));
+      }
+    }
+
+    if (this.getMedicalRecords().length === 0) {
+      // Sample medical records
+      const patients = this.getPatients();
+      const doctors = this.getDoctors();
+      
+      if (patients.length > 0 && doctors.length > 0) {
+        const sampleRecords = [
+          {
+            patientId: patients[0].id,
+            doctorId: doctors[0].id,
+            visitDate: new Date().toISOString().split('T')[0],
+            visitType: 'consultation' as const,
+            notes: 'Patient presents with elevated blood pressure. Prescribed medication and lifestyle changes.',
+            symptoms: 'Headache, dizziness, fatigue',
+            diagnosis: 'Essential hypertension',
+            treatment: 'Lisinopril 10mg daily, dietary changes, exercise program',
+            prescription: 'Lisinopril 10mg - Take one tablet daily with food',
+            followUpRequired: true,
+            followUpDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            vitalSigns: {
+              bloodPressure: '150/95',
+              heartRate: '85',
+              temperature: '98.6',
+              weight: '175',
+              height: '5ft 10in',
+            },
+            labResults: 'Complete Blood Count - Normal, Lipid Panel - Elevated cholesterol',
+            createdBy: 'system',
+          },
+          {
+            patientId: patients[1]?.id || patients[0].id,
+            doctorId: doctors[1]?.id || doctors[0].id,
+            visitDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            visitType: 'follow-up' as const,
+            notes: 'Asthma follow-up visit. Patient responding well to treatment.',
+            symptoms: 'Mild wheezing, improved breathing',
+            diagnosis: 'Asthma - well controlled',
+            treatment: 'Continue current inhaler regimen, pulmonary function test',
+            prescription: 'Albuterol inhaler - 2 puffs as needed for shortness of breath',
+            followUpRequired: false,
+            vitalSigns: {
+              bloodPressure: '120/80',
+              heartRate: '72',
+              temperature: '98.4',
+              weight: '140',
+              height: '5ft 6in',
+            },
+            labResults: 'Peak flow measurement - 380 L/min (improved from 320)',
+            createdBy: 'system',
+          }
+        ];
+
+        sampleRecords.forEach(record => this.createMedicalRecord(record));
+      }
     }
   }
 }

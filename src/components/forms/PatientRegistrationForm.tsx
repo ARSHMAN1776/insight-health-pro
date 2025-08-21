@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
+import { Patient } from '../../lib/dataManager';
 import { 
   Form, 
   FormControl, 
@@ -36,14 +37,32 @@ type PatientFormData = z.infer<typeof patientSchema>;
 
 interface PatientRegistrationFormProps {
   onClose: () => void;
+  editData?: Patient;
+  mode?: 'create' | 'edit';
 }
 
-const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onClose }) => {
+const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ 
+  onClose, 
+  editData, 
+  mode = 'create' 
+}) => {
   const { toast } = useToast();
   
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
-    defaultValues: {
+    defaultValues: editData ? {
+      firstName: editData.firstName,
+      lastName: editData.lastName,
+      email: editData.email,
+      phone: editData.phone,
+      dateOfBirth: editData.dateOfBirth,
+      gender: editData.gender,
+      address: editData.address,
+      emergencyContact: editData.emergencyContact,
+      medicalHistory: editData.medicalHistory || '',
+      insuranceProvider: editData.insuranceProvider,
+      insuranceId: editData.insuranceId,
+    } : {
       firstName: '',
       lastName: '',
       email: '',
@@ -63,27 +82,43 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onClo
       // Import dataManager
       const { dataManager } = await import('../../lib/dataManager');
       
-      // Create new patient
-      const newPatient = dataManager.createPatient({
-        ...(data as Required<PatientFormData>),
-        bloodType: '',
-        allergies: '',
-        currentMedications: '',
-        chronicConditions: '',
-        createdBy: 'current_user',
-      });
-      
-      toast({
-        title: 'Success',
-        description: `Patient registered successfully with ID: ${newPatient.patientId}`,
-      });
+      if (mode === 'edit' && editData) {
+        // Update existing patient
+        const updatedPatient = dataManager.updatePatient(editData.id, {
+          ...(data as Required<PatientFormData>),
+          bloodType: editData.bloodType || '',
+          allergies: editData.allergies || '',
+          currentMedications: editData.currentMedications || '',
+          chronicConditions: editData.chronicConditions || '',
+        });
+        
+        toast({
+          title: 'Success',
+          description: `Patient updated successfully`,
+        });
+      } else {
+        // Create new patient
+        const newPatient = dataManager.createPatient({
+          ...(data as Required<PatientFormData>),
+          bloodType: '',
+          allergies: '',
+          currentMedications: '',
+          chronicConditions: '',
+          createdBy: 'current_user',
+        });
+        
+        toast({
+          title: 'Success',
+          description: `Patient registered successfully with ID: ${newPatient.patientId}`,
+        });
+      }
       
       form.reset();
       onClose();
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to register patient',
+        description: `Failed to ${mode === 'edit' ? 'update' : 'register'} patient`,
         variant: 'destructive',
       });
     }
@@ -92,7 +127,7 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onClo
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Register New Patient</CardTitle>
+        <CardTitle>{mode === 'edit' ? 'Edit Patient' : 'Register New Patient'}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -270,7 +305,7 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onClo
 
             <div className="flex gap-2 pt-4">
               <Button type="submit" className="flex-1">
-                Register Patient
+                {mode === 'edit' ? 'Update Patient' : 'Register Patient'}
               </Button>
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
