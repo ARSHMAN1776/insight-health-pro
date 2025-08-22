@@ -1054,6 +1054,158 @@ class DataManager {
       }
     }
   }
+
+  // Room Management
+  createRoom(roomData: any): any {
+    const rooms = this.getRooms();
+    const newRoom = {
+      id: this.generateId(),
+      roomId: `ROOM-${String(rooms.length + 1).padStart(3, '0')}`,
+      ...roomData,
+      createdBy: 'current-user',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    
+    rooms.push(newRoom);
+    this.saveData('rooms', rooms);
+    return newRoom;
+  }
+
+  getRooms(): any[] {
+    const stored = this.loadData<any>('rooms');
+    if (stored.length > 0) {
+      return stored;
+    }
+    
+    const initialRooms = [
+      {
+        id: '1',
+        roomId: 'ROOM-001',
+        roomNumber: '101',
+        roomType: 'ICU',
+        floor: '1st Floor',
+        department: 'Critical Care',
+        capacity: 1,
+        status: 'occupied',
+        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom', 'Phone'],
+        dailyRate: 500.00,
+        description: 'Intensive Care Unit with advanced monitoring equipment',
+        hasOxygen: true,
+        hasMonitor: true,
+        isAccessible: true,
+        createdBy: 'admin',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        roomId: 'ROOM-002',
+        roomNumber: '102',
+        roomType: 'Private',
+        floor: '1st Floor',
+        department: 'Cardiology',
+        capacity: 1,
+        status: 'available',
+        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom', 'Mini Fridge', 'Phone'],
+        dailyRate: 300.00,
+        description: 'Private room with modern amenities',
+        hasOxygen: true,
+        hasMonitor: false,
+        isAccessible: true,
+        createdBy: 'admin',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '3',
+        roomId: 'ROOM-003',
+        roomNumber: '201',
+        roomType: 'General',
+        floor: '2nd Floor',
+        department: 'Internal Medicine',
+        capacity: 2,
+        status: 'available',
+        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom'],
+        dailyRate: 200.00,
+        description: 'General ward with shared facilities',
+        hasOxygen: false,
+        hasMonitor: false,
+        isAccessible: true,
+        createdBy: 'admin',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '4',
+        roomId: 'ROOM-004',
+        roomNumber: '301',
+        roomType: 'Maternity',
+        floor: '3rd Floor',
+        department: 'Obstetrics',
+        capacity: 1,
+        status: 'occupied',
+        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom', 'Mini Fridge', 'Safe'],
+        dailyRate: 350.00,
+        description: 'Maternity suite with family comfort features',
+        hasOxygen: true,
+        hasMonitor: true,
+        isAccessible: true,
+        createdBy: 'admin',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '5',
+        roomId: 'ROOM-005',
+        roomNumber: '205',
+        roomType: 'Surgery',
+        floor: '2nd Floor',
+        department: 'Surgery',
+        capacity: 1,
+        status: 'maintenance',
+        features: ['Air Conditioning', 'WiFi', 'Phone'],
+        dailyRate: 800.00,
+        description: 'Operating theater with surgical equipment',
+        hasOxygen: true,
+        hasMonitor: true,
+        isAccessible: true,
+        createdBy: 'admin',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+    
+    this.saveData('rooms', initialRooms);
+    return initialRooms;
+  }
+
+  updateRoom(id: string, roomData: any): any | null {
+    const rooms = this.getRooms();
+    const index = rooms.findIndex(room => room.id === id);
+    
+    if (index === -1) return null;
+    
+    rooms[index] = {
+      ...rooms[index],
+      ...roomData,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    this.saveData('rooms', rooms);
+    return rooms[index];
+  }
+
+  deleteRoom(id: string): boolean {
+    const rooms = this.getRooms();
+    const index = rooms.findIndex(room => room.id === id);
+    
+    if (index === -1) return false;
+    
+    rooms.splice(index, 1);
+    this.saveData('rooms', rooms);
+    return true;
+  }
 }
 
 export const dataManager = DataManager.getInstance();
