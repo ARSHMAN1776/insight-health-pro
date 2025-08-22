@@ -18,6 +18,7 @@ const InventoryManagement = React.lazy(() => import('./components/inventory/Inve
 const PrescriptionManagement = React.lazy(() => import('./components/prescriptions/PrescriptionManagement'));
 const LabTestManagement = React.lazy(() => import('./components/lab-tests/LabTestManagement'));
 const RoomManagement = React.lazy(() => import('./components/rooms/RoomManagement'));
+const PatientManagement = React.lazy(() => import('./components/patients/PatientManagement'));
 const Settings = React.lazy(() => import('./components/settings/Settings'));
 
 const queryClient = new QueryClient();
@@ -88,6 +89,13 @@ const App = () => (
                   <div className="p-6">
                     <Suspense fallback={<div>Loading...</div>}>
                       <RoomManagement />
+                    </Suspense>
+                  </div>
+                } />
+                <Route path="patients" element={
+                  <div className="p-6">
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <PatientManagement />
                     </Suspense>
                   </div>
                 } />
