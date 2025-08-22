@@ -252,7 +252,7 @@ const RoomManagement: React.FC = () => {
       key: 'dailyRate',
       label: 'Daily Rate',
       sortable: true,
-      render: (room: any) => `$${room.dailyRate.toFixed(2)}`
+      render: (room: any) => `$${(room.dailyRate || 0).toFixed(2)}`
     },
   ];
 
