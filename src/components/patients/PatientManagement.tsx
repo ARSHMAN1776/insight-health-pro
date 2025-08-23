@@ -120,18 +120,21 @@ const PatientManagement: React.FC = () => {
     {
       key: 'select',
       label: '',
-      render: (patient: Patient) => (
-        <Checkbox
-          checked={selectedPatients.includes(patient.id)}
-          onCheckedChange={(checked) => {
-            if (checked) {
-              setSelectedPatients([...selectedPatients, patient.id]);
-            } else {
-              setSelectedPatients(selectedPatients.filter(id => id !== patient.id));
-            }
-          }}
-        />
-      )
+      render: (patient: Patient) => {
+        if (!patient || !patient.id) return null;
+        return (
+          <Checkbox
+            checked={selectedPatients.includes(patient.id)}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedPatients([...selectedPatients, patient.id]);
+              } else {
+                setSelectedPatients(selectedPatients.filter(id => id !== patient.id));
+              }
+            }}
+          />
+        );
+      }
     },
     {
       key: 'patientId',

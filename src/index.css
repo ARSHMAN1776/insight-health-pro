@@ -2,34 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hospital Management System Design System - Professional Healthcare Theme */
+/* Hospital Management System Design System - Classic Professional Healthcare Theme */
 
 @layer base {
   :root {
-    /* Healthcare Brand Colors */
-    --medical-blue: 210 100% 44%;
-    --medical-blue-light: 210 100% 96%;
-    --medical-blue-dark: 210 100% 30%;
-    --medical-green: 142 71% 45%;
-    --medical-green-light: 142 71% 95%;
-    --medical-red: 0 84% 60%;
-    --medical-red-light: 0 84% 96%;
-    --medical-orange: 25 95% 53%;
-    --medical-orange-light: 25 95% 96%;
-    --medical-purple: 262 83% 58%;
-    --medical-purple-light: 262 83% 96%;
+    /* Classic Healthcare Brand Colors - Refined Palette */
+    --medical-blue: 212 100% 45%;
+    --medical-blue-light: 212 100% 97%;
+    --medical-blue-dark: 212 100% 32%;
+    --medical-green: 142 69% 48%;
+    --medical-green-light: 142 69% 96%;
+    --medical-red: 0 84% 58%;
+    --medical-red-light: 0 84% 97%;
+    --medical-orange: 25 95% 55%;
+    --medical-orange-light: 25 95% 97%;
+    --medical-purple: 262 80% 60%;
+    --medical-purple-light: 262 80% 97%;
     
-    /* Professional Grays */
-    --gray-50: 210 40% 98%;
-    --gray-100: 210 40% 96%;
-    --gray-200: 214 32% 91%;
-    --gray-300: 213 27% 84%;
-    --gray-400: 215 20% 65%;
-    --gray-500: 215 16% 47%;
-    --gray-600: 215 19% 35%;
-    --gray-700: 215 25% 27%;
-    --gray-800: 217 33% 17%;
-    --gray-900: 222 47% 11%;
+    /* Classic Elegant Grays */
+    --gray-50: 210 20% 98%;
+    --gray-100: 210 20% 96%;
+    --gray-200: 214 20% 91%;
+    --gray-300: 213 18% 84%;
+    --gray-400: 215 16% 65%;
+    --gray-500: 215 14% 47%;
+    --gray-600: 215 17% 35%;
+    --gray-700: 215 22% 27%;
+    --gray-800: 217 28% 17%;
+    --gray-900: 222 40% 11%;
+
+    /* Elegant Gold Accents */
+    --gold: 45 90% 60%;
+    --gold-light: 45 90% 95%;
+    --gold-dark: 45 90% 45%;
 
     /* Light Theme */
     --background: var(--gray-50);
@@ -80,24 +85,29 @@
     --sidebar-border: var(--gray-200);
     --sidebar-ring: var(--medical-blue);
     
-    /* Gradients */
+    /* Classic Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--medical-blue)), hsl(var(--medical-blue-dark)));
-    --gradient-success: linear-gradient(135deg, hsl(var(--medical-green)), hsl(142 71% 35%));
-    --gradient-warning: linear-gradient(135deg, hsl(var(--medical-orange)), hsl(25 95% 43%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(var(--gray-50)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--medical-green)), hsl(142 69% 38%));
+    --gradient-warning: linear-gradient(135deg, hsl(var(--medical-orange)), hsl(25 95% 45%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(var(--gray-50)));
+    --gradient-elegant: linear-gradient(135deg, hsl(var(--gold-light)), hsl(0 0% 100%));
+    --gradient-classic: linear-gradient(180deg, hsl(0 0% 100%), hsl(var(--gray-100)));
     
-    /* Shadows */
+    /* Enhanced Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(var(--gray-900) / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(var(--gray-900) / 0.1), 0 2px 4px -2px hsl(var(--gray-900) / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(var(--gray-900) / 0.1), 0 4px 6px -4px hsl(var(--gray-900) / 0.1);
     --shadow-xl: 0 20px 25px -5px hsl(var(--gray-900) / 0.1), 0 8px 10px -6px hsl(var(--gray-900) / 0.1);
+    --shadow-elegant: 0 25px 50px -12px hsl(var(--gray-900) / 0.15);
+    --shadow-inset: inset 0 2px 4px 0 hsl(var(--gray-900) / 0.05);
     
-    /* Animations */
+    /* Refined Animations */
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-elegant: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -158,57 +168,130 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter antialiased;
+  }
+
+  /* Classic Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl lg:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl lg:text-3xl;
+  }
+
+  /* Elegant scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/30;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
   }
 }
 
 @layer components {
-  /* Custom Component Styles */
+  /* Classic Component Styles */
   .btn-primary {
-    @apply bg-gradient-to-r from-primary to-primary-hover text-primary-foreground px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200;
+    @apply bg-gradient-to-r from-primary to-primary-hover text-primary-foreground px-6 py-3 rounded-xl font-medium hover:shadow-elegant transition-all duration-300 hover:scale-105;
   }
   
   .btn-success {
-    @apply bg-gradient-to-r from-success to-success/90 text-success-foreground px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200;
+    @apply bg-gradient-to-r from-success to-success/90 text-success-foreground px-6 py-3 rounded-xl font-medium hover:shadow-elegant transition-all duration-300 hover:scale-105;
   }
   
   .btn-warning {
-    @apply bg-gradient-to-r from-warning to-warning/90 text-warning-foreground px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200;
+    @apply bg-gradient-to-r from-warning to-warning/90 text-warning-foreground px-6 py-3 rounded-xl font-medium hover:shadow-elegant transition-all duration-300 hover:scale-105;
   }
   
   .btn-danger {
-    @apply bg-gradient-to-r from-destructive to-destructive/90 text-destructive-foreground px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200;
+    @apply bg-gradient-to-r from-destructive to-destructive/90 text-destructive-foreground px-6 py-3 rounded-xl font-medium hover:shadow-elegant transition-all duration-300 hover:scale-105;
+  }
+  
+  .btn-elegant {
+    @apply bg-gradient-to-r from-gold-light to-gold text-foreground px-6 py-3 rounded-xl font-medium border border-gold/20 hover:shadow-elegant transition-all duration-300 hover:scale-105;
   }
   
   .card-gradient {
-    @apply bg-gradient-to-br from-card to-card/50 backdrop-blur-sm shadow-lg border border-border/50;
+    @apply bg-gradient-to-br from-card to-card/50 backdrop-blur-sm shadow-lg border border-border/50 rounded-2xl;
+  }
+  
+  .card-elegant {
+    @apply bg-gradient-elegant backdrop-blur-sm shadow-elegant border border-gold/20 rounded-2xl hover:shadow-xl transition-all duration-500;
   }
   
   .stat-card {
-    @apply card-gradient p-6 rounded-xl hover:shadow-xl transition-all duration-300;
+    @apply card-gradient p-8 rounded-2xl hover:shadow-elegant transition-all duration-500 hover:scale-105 relative overflow-hidden;
+  }
+  
+  .stat-card::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity duration-500;
+  }
+  
+  .stat-card:hover::before {
+    @apply opacity-100;
   }
   
   .sidebar-item {
-    @apply flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
+    @apply flex items-center space-x-4 px-6 py-4 rounded-xl transition-all duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:scale-105 font-medium;
   }
   
   .sidebar-item.active {
-    @apply bg-sidebar-primary text-sidebar-primary-foreground shadow-md;
+    @apply bg-sidebar-primary text-sidebar-primary-foreground shadow-md scale-105;
+  }
+  
+  /* Classic Form Elements */
+  .form-input {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-border bg-background text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300;
+  }
+  
+  .form-select {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-border bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300;
+  }
+  
+  .form-textarea {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-border bg-background text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 resize-none;
   }
 }
 
 @layer utilities {
-  /* Custom Utility Classes */
+  /* Classic Utility Classes */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent font-semibold;
   }
   
-  .shadow-custom {
-    box-shadow: var(--shadow-lg);
+  .text-elegant {
+    @apply bg-gradient-to-r from-gold to-gold-dark bg-clip-text text-transparent font-playfair font-semibold;
   }
   
-  .transition-custom {
-    transition: var(--transition-normal);
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+  
+  .shadow-inset {
+    box-shadow: var(--shadow-inset);
+  }
+  
+  .transition-elegant {
+    transition: var(--transition-elegant);
   }
   
   .bg-medical-blue {
@@ -231,6 +314,10 @@
     background-color: hsl(var(--medical-purple));
   }
   
+  .bg-gold {
+    background-color: hsl(var(--gold));
+  }
+  
   .text-medical-blue {
     color: hsl(var(--medical-blue));
   }
@@ -249,5 +336,31 @@
   
   .text-medical-purple {
     color: hsl(var(--medical-purple));
+  }
+  
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+  
+  /* Classic Layout Utilities */
+  .container-elegant {
+    @apply max-w-7xl mx-auto px-6 lg:px-8;
+  }
+  
+  .grid-elegant {
+    @apply grid gap-8 md:gap-12;
+  }
+  
+  .flex-elegant {
+    @apply flex items-center gap-6;
+  }
+  
+  /* Backdrop and Glass Effects */
+  .backdrop-elegant {
+    @apply backdrop-blur-xl bg-background/80 border border-border/50;
+  }
+  
+  .glass-card {
+    @apply bg-background/60 backdrop-blur-xl border border-border/30 shadow-elegant;
   }
 }
