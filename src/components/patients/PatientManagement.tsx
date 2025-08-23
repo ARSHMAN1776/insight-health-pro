@@ -140,56 +140,71 @@ const PatientManagement: React.FC = () => {
       key: 'patientId',
       label: 'Patient ID',
       sortable: true,
-      render: (patient: Patient) => (
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-medical-blue to-medical-green"></div>
-          <span className="font-mono text-sm font-semibold text-medical-blue">{patient.patientId}</span>
-        </div>
-      )
+      render: (patient: Patient) => {
+        if (!patient || !patient.patientId) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-medical-blue to-medical-green"></div>
+            <span className="font-mono text-sm font-semibold text-medical-blue">{patient.patientId}</span>
+          </div>
+        );
+      }
     },
     {
       key: 'name',
       label: 'Full Name',
       sortable: true,
-      render: (patient: Patient) => (
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-medical-purple to-medical-blue flex items-center justify-center text-white font-bold">
-            {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
-          </div>
-          <div>
-            <div className="font-semibold text-foreground">{patient.firstName} {patient.lastName}</div>
-            <div className="text-sm text-muted-foreground flex items-center space-x-1">
-              <Mail className="w-3 h-3" />
-              <span>{patient.email}</span>
+      render: (patient: Patient) => {
+        if (!patient || !patient.firstName || !patient.lastName) {
+          return <span className="text-muted-foreground">Invalid Patient Data</span>;
+        }
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-medical-purple to-medical-blue flex items-center justify-center text-white font-bold">
+              {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">{patient.firstName} {patient.lastName}</div>
+              <div className="text-sm text-muted-foreground flex items-center space-x-1">
+                <Mail className="w-3 h-3" />
+                <span>{patient.email || 'No email'}</span>
+              </div>
             </div>
           </div>
-        </div>
-      )
+        );
+      }
     },
     {
       key: 'gender',
       label: 'Gender',
-      render: (patient: Patient) => (
-        <Badge variant="outline" className={`capitalize ${getGenderColor(patient.gender)}`}>
-          {patient.gender}
-        </Badge>
-      )
+      render: (patient: Patient) => {
+        if (!patient || !patient.gender) return <span className="text-muted-foreground">-</span>;
+        return (
+          <Badge variant="outline" className={`capitalize ${getGenderColor(patient.gender)}`}>
+            {patient.gender}
+          </Badge>
+        );
+      }
     },
     {
       key: 'phone',
       label: 'Contact',
-      render: (patient: Patient) => (
-        <div className="flex items-center space-x-2 px-3 py-1 bg-medical-green/10 rounded-lg border border-medical-green/20">
-          <Phone className="w-4 h-4 text-medical-green" />
-          <span className="text-sm font-medium">{patient.phone}</span>
-        </div>
-      )
+      render: (patient: Patient) => {
+        if (!patient || !patient.phone) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex items-center space-x-2 px-3 py-1 bg-medical-green/10 rounded-lg border border-medical-green/20">
+            <Phone className="w-4 h-4 text-medical-green" />
+            <span className="text-sm font-medium">{patient.phone}</span>
+          </div>
+        );
+      }
     },
     {
       key: 'dateOfBirth',
       label: 'Age',
       sortable: true,
       render: (patient: Patient) => {
+        if (!patient || !patient.dateOfBirth) return <span className="text-muted-foreground">-</span>;
         const age = new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
         return (
           <div className="flex items-center space-x-2">
@@ -202,60 +217,72 @@ const PatientManagement: React.FC = () => {
     {
       key: 'bloodType',
       label: 'Blood Type',
-      render: (patient: Patient) => patient.bloodType ? (
-        <div className="flex items-center space-x-2 px-2 py-1 bg-medical-red/10 rounded-full border border-medical-red/20">
-          <Heart className="w-4 h-4 text-medical-red" />
-          <span className="font-bold text-medical-red">{patient.bloodType}</span>
-        </div>
-      ) : (
-        <span className="text-muted-foreground text-sm">N/A</span>
-      )
+      render: (patient: Patient) => {
+        if (!patient) return <span className="text-muted-foreground">-</span>;
+        return patient.bloodType ? (
+          <div className="flex items-center space-x-2 px-2 py-1 bg-medical-red/10 rounded-full border border-medical-red/20">
+            <Heart className="w-4 h-4 text-medical-red" />
+            <span className="font-bold text-medical-red">{patient.bloodType}</span>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-sm">N/A</span>
+        );
+      }
     },
     {
       key: 'insuranceProvider',
       label: 'Insurance',
-      render: (patient: Patient) => patient.insuranceProvider ? (
-        <div className="flex items-center space-x-2 px-2 py-1 bg-medical-purple/10 rounded-lg border border-medical-purple/20">
-          <Shield className="w-4 h-4 text-medical-purple" />
-          <span className="text-sm font-medium text-medical-purple">{patient.insuranceProvider}</span>
-        </div>
-      ) : (
-        <span className="text-muted-foreground text-sm">No Insurance</span>
-      )
+      render: (patient: Patient) => {
+        if (!patient) return <span className="text-muted-foreground">-</span>;
+        return patient.insuranceProvider ? (
+          <div className="flex items-center space-x-2 px-2 py-1 bg-medical-purple/10 rounded-lg border border-medical-purple/20">
+            <Shield className="w-4 h-4 text-medical-purple" />
+            <span className="text-sm font-medium text-medical-purple">{patient.insuranceProvider}</span>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-sm">No Insurance</span>
+        );
+      }
     },
     {
       key: 'status',
       label: 'Status',
       sortable: true,
-      render: (patient: Patient) => (
-        <Badge variant={getStatusBadgeVariant(patient.status)} className="capitalize">
-          {patient.status}
-        </Badge>
-      )
+      render: (patient: Patient) => {
+        if (!patient || !patient.status) return <span className="text-muted-foreground">-</span>;
+        return (
+          <Badge variant={getStatusBadgeVariant(patient.status)} className="capitalize">
+            {patient.status}
+          </Badge>
+        );
+      }
     },
     {
       key: 'actions',
       label: 'Actions',
-      render: (patient: Patient) => (
-        <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEdit(patient)}
-            className="hover:bg-medical-blue/10 hover:text-medical-blue"
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDelete(patient.id)}
-            className="hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      )
+      render: (patient: Patient) => {
+        if (!patient || !patient.id) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleEdit(patient)}
+              className="hover:bg-medical-blue/10 hover:text-medical-blue"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDelete(patient.id)}
+              className="hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        );
+      }
     },
   ];
 
