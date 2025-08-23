@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -41,10 +41,20 @@ const appointmentSchema = z.object({
 type AppointmentFormData = z.infer<typeof appointmentSchema>;
 
 const AppointmentScheduler: React.FC = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>(dataManager.getAppointments());
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState(dataManager.getPatients());
+  const [doctors, setDoctors] = useState(dataManager.getDoctors());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Initialize sample data and load all data
+    dataManager.initializeSampleData();
+    setAppointments(dataManager.getAppointments());
+    setPatients(dataManager.getPatients());
+    setDoctors(dataManager.getDoctors());
+  }, []);
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -60,8 +70,6 @@ const AppointmentScheduler: React.FC = () => {
     },
   });
 
-  const patients = dataManager.getPatients();
-  const doctors = dataManager.getDoctors();
 
   const onSubmit = async (data: AppointmentFormData) => {
     try {

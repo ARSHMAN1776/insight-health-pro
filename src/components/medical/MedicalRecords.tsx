@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -38,11 +38,21 @@ const medicalRecordSchema = z.object({
 type MedicalRecordFormData = z.infer<typeof medicalRecordSchema>;
 
 const MedicalRecords: React.FC = () => {
-  const [records, setRecords] = useState<MedicalRecord[]>(dataManager.getMedicalRecords());
+  const [records, setRecords] = useState<MedicalRecord[]>([]);
+  const [patients, setPatients] = useState(dataManager.getPatients());
+  const [doctors, setDoctors] = useState(dataManager.getDoctors());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Initialize sample data and load all data
+    dataManager.initializeSampleData();
+    setRecords(dataManager.getMedicalRecords());
+    setPatients(dataManager.getPatients());
+    setDoctors(dataManager.getDoctors());
+  }, []);
 
   const form = useForm<MedicalRecordFormData>({
     resolver: zodResolver(medicalRecordSchema),
@@ -67,8 +77,6 @@ const MedicalRecords: React.FC = () => {
     },
   });
 
-  const patients = dataManager.getPatients();
-  const doctors = dataManager.getDoctors();
 
   const onSubmit = async (data: MedicalRecordFormData) => {
     try {

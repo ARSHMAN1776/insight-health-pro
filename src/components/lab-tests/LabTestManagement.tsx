@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,11 +14,21 @@ import { dataManager } from '@/lib/dataManager';
 import type { LabTest } from '@/lib/dataManager';
 
 const LabTestManagement: React.FC = () => {
-  const [labTests, setLabTests] = useState<LabTest[]>(dataManager.getLabTests());
+  const [labTests, setLabTests] = useState<LabTest[]>([]);
+  const [patients, setPatients] = useState(dataManager.getPatients());
+  const [doctors, setDoctors] = useState(dataManager.getDoctors());
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedLabTest, setSelectedLabTest] = useState<LabTest | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Initialize sample data and load all data
+    dataManager.initializeSampleData();
+    setLabTests(dataManager.getLabTests());
+    setPatients(dataManager.getPatients());
+    setDoctors(dataManager.getDoctors());
+  }, []);
 
   const [formData, setFormData] = useState({
     patientId: '',
@@ -39,8 +49,6 @@ const LabTestManagement: React.FC = () => {
     labTechnician: ''
   });
 
-  const patients = dataManager.getPatients();
-  const doctors = dataManager.getDoctors();
 
   const filteredLabTests = labTests.filter(test =>
     test.testName.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,11 +15,21 @@ import { dataManager } from '@/lib/dataManager';
 import type { Prescription } from '@/lib/dataManager';
 
 const PrescriptionManagement: React.FC = () => {
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>(dataManager.getPrescriptions());
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [patients, setPatients] = useState(dataManager.getPatients());
+  const [doctors, setDoctors] = useState(dataManager.getDoctors());
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Initialize sample data and load all data
+    dataManager.initializeSampleData();
+    setPrescriptions(dataManager.getPrescriptions());
+    setPatients(dataManager.getPatients());
+    setDoctors(dataManager.getDoctors());
+  }, []);
 
   const [formData, setFormData] = useState({
     patientId: '',
@@ -36,8 +46,6 @@ const PrescriptionManagement: React.FC = () => {
     interactions: ''
   });
 
-  const patients = dataManager.getPatients();
-  const doctors = dataManager.getDoctors();
 
   const filteredPrescriptions = prescriptions.filter(prescription =>
     prescription.medication.toLowerCase().includes(searchTerm.toLowerCase()) ||
