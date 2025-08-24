@@ -170,17 +170,19 @@ const AppointmentScheduler: React.FC = () => {
     {
       key: 'patientId',
       label: 'Patient',
-      render: (patientId) => {
-        const patient = patients.find(p => p.id === patientId);
-        return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown';
+      render: (patientId, appointment) => {
+        if (!appointment || !appointment.patientId) return 'Unknown';
+        const patient = patients.find(p => p?.id === appointment.patientId);
+        return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'Unknown';
       },
     },
     {
       key: 'doctorId',
       label: 'Doctor',
-      render: (doctorId) => {
-        const doctor = doctors.find(d => d.id === doctorId);
-        return doctor ? `${doctor.firstName} ${doctor.lastName}` : 'Unknown';
+      render: (doctorId, appointment) => {
+        if (!appointment || !appointment.doctorId) return 'Unknown';
+        const doctor = doctors.find(d => d?.id === appointment.doctorId);
+        return doctor ? `${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() : 'Unknown';
       },
     },
     {
@@ -303,6 +305,14 @@ const AppointmentScheduler: React.FC = () => {
         columns={columns}
         data={appointments}
         onEdit={handleEdit}
+        onDelete={(appointment) => {
+          dataManager.deleteAppointment(appointment.id);
+          setAppointments(dataManager.getAppointments());
+          toast({
+            title: 'Success',
+            description: 'Appointment deleted successfully',
+          });
+        }}
         onAdd={() => {
           setSelectedAppointment(null);
           form.reset();

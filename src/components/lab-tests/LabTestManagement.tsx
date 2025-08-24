@@ -162,16 +162,18 @@ const LabTestManagement: React.FC = () => {
       key: 'patientName', 
       label: 'Patient',
       render: (test: LabTest) => {
-        const patient = patients.find(p => p.id === test.patientId);
-        return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown';
+        if (!test || !test.patientId) return 'Unknown';
+        const patient = patients.find(p => p?.id === test.patientId);
+        return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'Unknown';
       }
     },
     { 
       key: 'doctorName', 
       label: 'Doctor',
       render: (test: LabTest) => {
-        const doctor = doctors.find(d => d.id === test.doctorId);
-        return doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : 'Unknown';
+        if (!test || !test.doctorId) return 'Unknown';
+        const doctor = doctors.find(d => d?.id === test.doctorId);
+        return doctor ? `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() : 'Unknown';
       }
     },
     { key: 'testName', label: 'Test Name' },
@@ -461,6 +463,12 @@ const LabTestManagement: React.FC = () => {
             columns={columns}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onAdd={() => {
+              setSelectedLabTest(null);
+              resetForm();
+              setIsDialogOpen(true);
+            }}
+            addButtonText="New Lab Test"
           />
         </CardContent>
       </Card>

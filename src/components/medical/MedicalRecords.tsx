@@ -80,38 +80,103 @@ const MedicalRecords: React.FC = () => {
 
   const onSubmit = async (data: MedicalRecordFormData) => {
     try {
-      const recordData = {
-        ...data,
-        vitalSigns: {
-          bloodPressure: data.bloodPressure || '',
-          heartRate: data.heartRate || '',
-          temperature: data.temperature || '',
-          weight: data.weight || '',
-          height: data.height || '',
-        },
-        createdBy: 'current_user',
-      };
+      if (selectedRecord) {
+        // Update existing record
+        const recordData = {
+          ...data,
+          vitalSigns: {
+            bloodPressure: data.bloodPressure || '',
+            heartRate: data.heartRate || '',
+            temperature: data.temperature || '',
+            weight: data.weight || '',
+            height: data.height || '',
+          },
+          updatedAt: new Date().toISOString(),
+        };
 
-      // Remove vital signs fields from the main object
-      const { bloodPressure, heartRate, temperature, weight, height, ...cleanData } = recordData;
+        // Remove vital signs fields from the main object
+        const { bloodPressure, heartRate, temperature, weight, height, ...cleanData } = recordData;
+        
+        const updated = dataManager.updateMedicalRecord(selectedRecord.id, cleanData as any);
+        setRecords(dataManager.getMedicalRecords());
+        
+        toast({
+          title: 'Success',
+          description: 'Medical record updated successfully',
+        });
+      } else {
+        // Create new record
+        const recordData = {
+          ...data,
+          vitalSigns: {
+            bloodPressure: data.bloodPressure || '',
+            heartRate: data.heartRate || '',
+            temperature: data.temperature || '',
+            weight: data.weight || '',
+            height: data.height || '',
+          },
+          createdBy: 'current_user',
+        };
 
-      const newRecord = dataManager.createMedicalRecord(cleanData as Required<typeof cleanData>);
-      setRecords(dataManager.getMedicalRecords());
-      
-      toast({
-        title: 'Success',
-        description: `Medical record created successfully with ID: ${newRecord.recordId}`,
-      });
+        // Remove vital signs fields from the main object
+        const { bloodPressure, heartRate, temperature, weight, height, ...cleanData } = recordData;
+
+        const newRecord = dataManager.createMedicalRecord(cleanData as Required<typeof cleanData>);
+        setRecords(dataManager.getMedicalRecords());
+        
+        toast({
+          title: 'Success',
+          description: `Medical record created successfully with ID: ${newRecord.recordId}`,
+        });
+      }
       
       form.reset();
+      setSelectedRecord(null);
       setIsDialogOpen(false);
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to create medical record',
+        description: selectedRecord ? 'Failed to update medical record' : 'Failed to create medical record',
         variant: 'destructive',
       });
     }
+  };
+
+  const handleEdit = (record: MedicalRecord) => {
+    setSelectedRecord(record);
+    const vitalSigns = record.vitalSigns || {
+      bloodPressure: '',
+      heartRate: '',
+      temperature: '',
+      weight: '',
+      height: ''
+    };
+    form.reset({
+      patientId: record.patientId,
+      doctorId: record.doctorId,
+      visitDate: record.visitDate,
+      visitType: record.visitType,
+      symptoms: record.symptoms,
+      diagnosis: record.diagnosis,
+      treatment: record.treatment,
+      prescription: record.prescription || '',
+      labResults: record.labResults || '',
+      bloodPressure: vitalSigns.bloodPressure || '',
+      heartRate: vitalSigns.heartRate || '',
+      temperature: vitalSigns.temperature || '',
+      weight: vitalSigns.weight || '',
+      height: vitalSigns.height || '',
+      notes: record.notes || '',
+      followUpRequired: record.followUpRequired,
+      followUpDate: record.followUpDate || '',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    dataManager.deleteMedicalRecord(id);
+    setRecords(dataManager.getMedicalRecords());
+    toast({ title: 'Success', description: 'Medical record deleted successfully' });
   };
 
   const handleView = (record: MedicalRecord) => {
@@ -192,17 +257,19 @@ Generated on: ${new Date().toLocaleString()}
     {
       key: 'patientId',
       label: 'Patient',
-      render: (patientId) => {
-        const patient = patients.find(p => p.id === patientId);
-        return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown';
+      render: (patientId, record) => {
+        if (!record || !record.patientId) return 'Unknown';
+        const patient = patients.find(p => p?.id === record.patientId);
+        return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'Unknown';
       },
     },
     {
       key: 'doctorId',
       label: 'Doctor',
-      render: (doctorId) => {
-        const doctor = doctors.find(d => d.id === doctorId);
-        return doctor ? `${doctor.firstName} ${doctor.lastName}` : 'Unknown';
+      render: (doctorId, record) => {
+        if (!record || !record.doctorId) return 'Unknown';
+        const doctor = doctors.find(d => d?.id === record.doctorId);
+        return doctor ? `${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() : 'Unknown';
       },
     },
     {
@@ -302,8 +369,11 @@ Generated on: ${new Date().toLocaleString()}
         columns={columns}
         data={records}
         onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
         onAdd={() => {
           form.reset();
+          setSelectedRecord(null);
           setIsDialogOpen(true);
         }}
         addButtonText="New Medical Record"
@@ -313,7 +383,7 @@ Generated on: ${new Date().toLocaleString()}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Medical Record</DialogTitle>
+            <DialogTitle>{selectedRecord ? 'Edit Medical Record' : 'Create New Medical Record'}</DialogTitle>
           </DialogHeader>
           
           <Form {...form}>

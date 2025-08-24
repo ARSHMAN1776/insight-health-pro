@@ -727,6 +727,12 @@ const RoomManagement: React.FC = () => {
         searchable={false}
         onEdit={handleEdit}
         onDelete={(room) => handleDelete(room.id)}
+        onAdd={() => {
+          setSelectedRoom(null);
+          form.reset();
+          setIsDialogOpen(true);
+        }}
+        addButtonText="Add Room"
       />
     </div>
   );

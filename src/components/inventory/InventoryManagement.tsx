@@ -364,6 +364,15 @@ const InventoryManagement: React.FC = () => {
         columns={columns}
         data={inventory}
         onEdit={handleEdit}
+        onDelete={(id) => {
+          const items = inventory.filter(item => item.id !== id);
+          dataManager.saveData('inventory', items);
+          setInventory(items);
+          toast({
+            title: 'Success',
+            description: 'Inventory item deleted successfully',
+          });
+        }}
         onAdd={() => {
           setSelectedItem(null);
           form.reset();

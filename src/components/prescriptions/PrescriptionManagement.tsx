@@ -141,16 +141,18 @@ const PrescriptionManagement: React.FC = () => {
       key: 'patientName', 
       label: 'Patient',
       render: (prescription: Prescription) => {
-        const patient = patients.find(p => p.id === prescription.patientId);
-        return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown';
+        if (!prescription || !prescription.patientId) return 'Unknown';
+        const patient = patients.find(p => p?.id === prescription.patientId);
+        return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'Unknown';
       }
     },
     { 
       key: 'doctorName', 
       label: 'Doctor',
       render: (prescription: Prescription) => {
-        const doctor = doctors.find(d => d.id === prescription.doctorId);
-        return doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : 'Unknown';
+        if (!prescription || !prescription.doctorId) return 'Unknown';
+        const doctor = doctors.find(d => d?.id === prescription.doctorId);
+        return doctor ? `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() : 'Unknown';
       }
     },
     { key: 'medication', label: 'Medication' },
@@ -376,6 +378,12 @@ const PrescriptionManagement: React.FC = () => {
             columns={columns}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onAdd={() => {
+              setSelectedPrescription(null);
+              resetForm();
+              setIsDialogOpen(true);
+            }}
+            addButtonText="New Prescription"
           />
         </CardContent>
       </Card>
