@@ -27,10 +27,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
   
-  return user ? <>{children}</> : <Navigate to="/login" />;
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 const App = () => (
@@ -43,70 +50,90 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-              <Route path="/*" element={
+              <Route path="/" element={
                 <ProtectedRoute>
-                  <MainLayout />
+                  <Navigate to="/dashboard" />
                 </ProtectedRoute>
-              }>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="appointments" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Dashboard />
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/appointments" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <AppointmentScheduler />
                     </Suspense>
-                  </div>
-                } />
-                <Route path="medical-records" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/medical-records" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <MedicalRecords />
                     </Suspense>
-                  </div>
-                } />
-                <Route path="inventory" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/inventory" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <InventoryManagement />
                     </Suspense>
-                  </div>
-                } />
-                <Route path="prescriptions" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/prescriptions" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <PrescriptionManagement />
                     </Suspense>
-                  </div>
-                } />
-                <Route path="lab-tests" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/lab-tests" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <LabTestManagement />
                     </Suspense>
-                  </div>
-                } />
-                <Route path="rooms" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/rooms" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <RoomManagement />
                     </Suspense>
-                  </div>
-                } />
-                <Route path="patients" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/patients" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <PatientManagement />
                     </Suspense>
-                  </div>
-                } />
-                <Route path="settings" element={
-                  <div className="p-6">
-                    <Suspense fallback={<div>Loading...</div>}>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <Settings />
                     </Suspense>
-                  </div>
-                } />
-              </Route>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

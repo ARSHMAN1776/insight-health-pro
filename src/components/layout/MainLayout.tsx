@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const MainLayout: React.FC = () => {
+const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const toggleSidebar = () => {
@@ -18,7 +18,7 @@ const MainLayout: React.FC = () => {
         <Header onToggleSidebar={toggleSidebar} />
         
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>
