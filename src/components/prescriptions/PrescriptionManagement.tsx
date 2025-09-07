@@ -141,18 +141,22 @@ const PrescriptionManagement: React.FC = () => {
       key: 'patientName', 
       label: 'Patient',
       render: (prescription: Prescription) => {
-        if (!prescription || !prescription.patientId) return 'Unknown';
+        if (!prescription || !prescription.patientId) return <span className="text-muted-foreground">Unknown Patient</span>;
         const patient = patients.find(p => p?.id === prescription.patientId);
-        return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'Unknown';
+        if (!patient) return <span className="text-muted-foreground">Patient Not Found</span>;
+        const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+        return fullName || <span className="text-muted-foreground">No Name</span>;
       }
     },
     { 
       key: 'doctorName', 
       label: 'Doctor',
       render: (prescription: Prescription) => {
-        if (!prescription || !prescription.doctorId) return 'Unknown';
+        if (!prescription || !prescription.doctorId) return <span className="text-muted-foreground">Unknown Doctor</span>;
         const doctor = doctors.find(d => d?.id === prescription.doctorId);
-        return doctor ? `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() : 'Unknown';
+        if (!doctor) return <span className="text-muted-foreground">Doctor Not Found</span>;
+        const fullName = `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim();
+        return fullName || <span className="text-muted-foreground">No Name</span>;
       }
     },
     { key: 'medication', label: 'Medication' },

@@ -164,18 +164,22 @@ const LabTestManagement: React.FC = () => {
       key: 'patientName', 
       label: 'Patient',
       render: (test: LabTest) => {
-        if (!test || !test.patientId) return 'Unknown';
+        if (!test || !test.patientId) return <span className="text-muted-foreground">Unknown Patient</span>;
         const patient = patients.find(p => p?.id === test.patientId);
-        return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'Unknown';
+        if (!patient) return <span className="text-muted-foreground">Patient Not Found</span>;
+        const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+        return fullName || <span className="text-muted-foreground">No Name</span>;
       }
     },
     { 
       key: 'doctorName', 
       label: 'Doctor',
       render: (test: LabTest) => {
-        if (!test || !test.doctorId) return 'Unknown';
+        if (!test || !test.doctorId) return <span className="text-muted-foreground">Unknown Doctor</span>;
         const doctor = doctors.find(d => d?.id === test.doctorId);
-        return doctor ? `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() : 'Unknown';
+        if (!doctor) return <span className="text-muted-foreground">Doctor Not Found</span>;
+        const fullName = `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim();
+        return fullName || <span className="text-muted-foreground">No Name</span>;
       }
     },
     { key: 'testName', label: 'Test Name' },

@@ -171,18 +171,22 @@ const AppointmentScheduler: React.FC = () => {
       key: 'patientId',
       label: 'Patient',
       render: (patientId, appointment) => {
-        if (!appointment || !appointment.patientId) return 'Unknown';
+        if (!appointment || !appointment.patientId) return <span className="text-muted-foreground">Unknown Patient</span>;
         const patient = patients.find(p => p?.id === appointment.patientId);
-        return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'Unknown';
+        if (!patient) return <span className="text-muted-foreground">Patient Not Found</span>;
+        const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+        return fullName || <span className="text-muted-foreground">No Name</span>;
       },
     },
     {
       key: 'doctorId',
       label: 'Doctor',
       render: (doctorId, appointment) => {
-        if (!appointment || !appointment.doctorId) return 'Unknown';
+        if (!appointment || !appointment.doctorId) return <span className="text-muted-foreground">Unknown Doctor</span>;
         const doctor = doctors.find(d => d?.id === appointment.doctorId);
-        return doctor ? `${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() : 'Unknown';
+        if (!doctor) return <span className="text-muted-foreground">Doctor Not Found</span>;
+        const fullName = `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim();
+        return fullName || <span className="text-muted-foreground">No Name</span>;
       },
     },
     {
