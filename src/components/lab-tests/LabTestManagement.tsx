@@ -135,6 +135,8 @@ const LabTestManagement: React.FC = () => {
   };
 
   const getStatusBadge = (status: LabTest['status']) => {
+    if (!status) return <Badge variant="secondary">Unknown</Badge>;
+    
     const variants = {
       ordered: 'secondary',
       sample_collected: 'outline',
@@ -143,7 +145,7 @@ const LabTestManagement: React.FC = () => {
       cancelled: 'destructive'
     } as const;
     
-    return <Badge variant={variants[status]}>{status.replace('_', ' ')}</Badge>;
+    return <Badge variant={variants[status] || 'secondary'}>{status.replace('_', ' ')}</Badge>;
   };
 
   const getPriorityBadge = (priority: LabTest['priority']) => {
