@@ -1,234 +1,176 @@
+import { supabase } from '@/integrations/supabase/client';
 import { User } from '../contexts/AuthContext';
 
-// Data interfaces for the HMS
+// Data interfaces aligned with Supabase schema
 export interface Patient {
   id: string;
-  patientId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
-  address: string;
-  emergencyContact: string;
-  medicalHistory: string;
-  insuranceProvider: string;
-  insuranceId: string;
-  bloodType?: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  gender: 'Male' | 'Female' | 'Other';
+  phone?: string;
+  email?: string;
+  address?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  blood_type?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   allergies?: string;
-  currentMedications?: string;
-  chronicConditions?: string;
-  admissionDate: string;
-  status: 'active' | 'discharged' | 'deceased';
-  assignedDoctor?: string;
-  roomNumber?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  medical_history?: string;
+  insurance_provider?: string;
+  insurance_policy_number?: string;
+  status: 'active' | 'inactive' | 'discharged';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Doctor {
   id: string;
-  doctorId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  licenseNumber: string;
-  specialty: string;
-  department: string;
-  experience: string;
-  education: string;
-  schedule: string;
-  consultationFee: string;
-  availability: boolean;
-  patients: string[];
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  first_name: string;
+  last_name: string;
+  specialization: string;
+  phone?: string;
+  email?: string;
+  license_number: string;
+  department?: string;
+  years_of_experience?: number;
+  consultation_fee?: number;
+  availability_schedule?: any;
+  status: 'active' | 'inactive' | 'on_leave';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Nurse {
   id: string;
-  nurseId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  licenseNumber: string;
-  nurseType: string;
-  department: string;
-  shift: string;
-  experience: string;
-  certification: string;
-  availability: boolean;
-  assignedPatients: string[];
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  email?: string;
+  license_number: string;
+  department?: string;
+  shift_schedule?: string;
+  years_of_experience?: number;
+  specialization?: string;
+  status: 'active' | 'inactive' | 'on_leave';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Appointment {
   id: string;
-  appointmentId: string;
-  patientId: string;
-  doctorId: string;
-  date: string;
-  time: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_date: string;
+  appointment_time: string;
   duration: number;
-  type: 'consultation' | 'follow-up' | 'emergency' | 'surgery' | 'checkup';
-  status: 'scheduled' | 'confirmed' | 'in-progress' | 'completed' | 'cancelled' | 'no-show';
-  notes: string;
-  symptoms: string;
-  diagnosis?: string;
-  prescription?: string;
-  followUpRequired: boolean;
-  followUpDate?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Payment {
-  id: string;
-  paymentId: string;
-  patientId: string;
-  amount: number;
-  currency: string;
-  paymentMethod: 'cash' | 'card' | 'insurance' | 'bank_transfer' | 'check';
-  paymentType: 'consultation' | 'surgery' | 'medication' | 'room_charges' | 'lab_tests' | 'other';
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
-  description: string;
-  insuranceClaimed: boolean;
-  insuranceAmount?: number;
-  discount?: number;
-  tax?: number;
-  receiptNumber: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  type: string;
+  status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
+  symptoms?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MedicalRecord {
   id: string;
-  recordId: string;
-  patientId: string;
-  doctorId: string;
-  visitDate: string;
-  visitType: 'emergency' | 'routine' | 'follow-up' | 'surgery' | 'consultation';
-  symptoms: string;
-  diagnosis: string;
-  treatment: string;
-  prescription: string;
-  labResults?: string;
-  vitalSigns?: {
-    bloodPressure: string;
-    heartRate: string;
-    temperature: string;
-    weight: string;
-    height: string;
-  };
-  notes: string;
-  followUpRequired: boolean;
-  followUpDate?: string;
-  attachments?: string[];
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Inventory {
-  id: string;
-  itemId: string;
-  name: string;
-  category: 'medication' | 'equipment' | 'supplies' | 'consumables';
-  description: string;
-  quantity: number;
-  unit: string;
-  minStockLevel: number;
-  maxStockLevel: number;
-  unitPrice: number;
-  supplier: string;
-  expiryDate?: string;
-  batchNumber?: string;
-  location: string;
-  status: 'available' | 'low_stock' | 'out_of_stock' | 'expired';
-  lastRestocked: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  patient_id: string;
+  doctor_id: string;
+  visit_date: string;
+  diagnosis?: string;
+  symptoms?: string;
+  treatment?: string;
+  medications?: string;
+  follow_up_date?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Prescription {
   id: string;
-  prescriptionId: string;
-  patientId: string;
-  doctorId: string;
-  appointmentId?: string;
-  medication: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions: string;
-  startDate: string;
-  endDate: string;
-  refills: number;
-  refillsUsed: number;
-  status: 'active' | 'completed' | 'cancelled' | 'expired';
-  pharmacyNotes?: string;
-  sideEffects?: string;
-  interactions?: string[];
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  patient_id: string;
+  doctor_id: string;
+  medication_name: string;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  quantity?: number;
+  instructions?: string;
+  side_effects?: string;
+  drug_interactions?: string;
+  date_prescribed: string;
+  status: 'active' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LabTest {
   id: string;
-  testId: string;
-  patientId: string;
-  doctorId: string;
-  testName: string;
-  testType: 'blood' | 'urine' | 'imaging' | 'biopsy' | 'culture' | 'other';
-  category: 'hematology' | 'biochemistry' | 'microbiology' | 'pathology' | 'radiology' | 'cardiology';
-  orderDate: string;
-  sampleCollectedDate?: string;
-  reportDate?: string;
-  status: 'ordered' | 'sample_collected' | 'in_progress' | 'completed' | 'cancelled';
+  patient_id: string;
+  doctor_id: string;
+  test_name: string;
+  test_type?: string;
+  test_date: string;
   results?: string;
-  normalRange?: string;
-  interpretation?: string;
-  attachments?: string[];
-  priority: 'routine' | 'urgent' | 'stat';
-  fastingRequired: boolean;
-  instructions: string;
-  cost: number;
-  labTechnician?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  normal_range?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  cost?: number;
+  lab_technician?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Inventory {
+  id: string;
+  item_name: string;
+  category?: string;
+  current_stock: number;
+  minimum_stock: number;
+  maximum_stock: number;
+  unit_price?: number;
+  supplier?: string;
+  expiry_date?: string;
+  batch_number?: string;
+  location?: string;
+  status: 'available' | 'out_of_stock' | 'expired' | 'discontinued';
+  last_restocked?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Room {
   id: string;
-  roomNumber: string;
-  floor: string;
-  type: 'general' | 'private' | 'icu' | 'emergency' | 'surgery' | 'pediatric';
+  room_number: string;
+  room_type: string;
   capacity: number;
-  currentOccupancy: number;
-  status: 'available' | 'occupied' | 'maintenance' | 'cleaning';
-  amenities: string[];
-  dailyRate: number;
-  assignedPatients: string[];
-  assignedNurse?: string;
-  equipment: string[];
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
+  current_occupancy: number;
+  floor?: number;
+  department?: string;
+  amenities?: string[];
+  daily_rate?: number;
+  status: 'available' | 'occupied' | 'maintenance' | 'reserved';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// Data Management Class
+export interface Payment {
+  id: string;
+  patient_id: string;
+  amount: number;
+  payment_method: string;
+  payment_status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
+  payment_date: string;
+  description?: string;
+  invoice_number?: string;
+  transaction_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Data Management Class using Supabase
 class DataManager {
   private static instance: DataManager;
   
@@ -241,971 +183,583 @@ class DataManager {
     return DataManager.instance;
   }
 
-  // Generate unique IDs
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
-
-  private generatePatientId(): string {
-    const existing = this.getPatients();
-    const nextNumber = existing.length + 1;
-    return `P${nextNumber.toString().padStart(6, '0')}`;
-  }
-
-  private generateDoctorId(): string {
-    const existing = this.getDoctors();
-    const nextNumber = existing.length + 1;
-    return `D${nextNumber.toString().padStart(6, '0')}`;
-  }
-
-  private generateNurseId(): string {
-    const existing = this.getNurses();
-    const nextNumber = existing.length + 1;
-    return `N${nextNumber.toString().padStart(6, '0')}`;
-  }
-
-  private generateAppointmentId(): string {
-    const existing = this.getAppointments();
-    const nextNumber = existing.length + 1;
-    return `A${nextNumber.toString().padStart(6, '0')}`;
-  }
-
-  private generatePaymentId(): string {
-    const existing = this.getPayments();
-    const nextNumber = existing.length + 1;
-    return `PAY${nextNumber.toString().padStart(6, '0')}`;
-  }
-
-  private generateReceiptNumber(): string {
-    return `R${Date.now().toString().substr(-8)}`;
-  }
-
-  // Generic CRUD operations
-  public saveData<T>(key: string, data: T[]): void {
-    localStorage.setItem(`hms_${key}`, JSON.stringify(data));
-  }
-
-  public loadData<T>(key: string): T[] {
-    const data = localStorage.getItem(`hms_${key}`);
-    return data ? JSON.parse(data) : [];
-  }
-
   // Patient Management
-  createPatient(patientData: Omit<Patient, 'id' | 'patientId' | 'admissionDate' | 'status' | 'createdAt' | 'updatedAt'>): Patient {
-    const patients = this.getPatients();
-    const newPatient: Patient = {
-      ...patientData,
-      id: this.generateId(),
-      patientId: this.generatePatientId(),
-      admissionDate: new Date().toISOString(),
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    patients.push(newPatient);
-    this.saveData('patients', patients);
-    return newPatient;
+  async createPatient(patientData: Omit<Patient, 'id' | 'created_at' | 'updated_at'>): Promise<Patient> {
+    const { data, error } = await supabase
+      .from('patients')
+      .insert([patientData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getPatients(): Patient[] {
-    return this.loadData<Patient>('patients');
+  async getPatients(): Promise<Patient[]> {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  getPatientById(id: string): Patient | null {
-    const patients = this.getPatients();
-    return patients.find(p => p.id === id) || null;
+  async getPatientById(id: string): Promise<Patient | null> {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return null;
+    return data;
   }
 
-  updatePatient(id: string, updates: Partial<Patient>): Patient | null {
-    const patients = this.getPatients();
-    const index = patients.findIndex(p => p.id === id);
-    if (index === -1) return null;
+  async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient | null> {
+    const { data, error } = await supabase
+      .from('patients')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    patients[index] = {
-      ...patients[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('patients', patients);
-    return patients[index];
+    if (error) return null;
+    return data;
   }
 
-  deletePatient(id: string): boolean {
-    const patients = this.getPatients();
-    const filteredPatients = patients.filter(p => p.id !== id);
-    if (filteredPatients.length === patients.length) return false;
-    this.saveData('patients', filteredPatients);
-    return true;
+  async deletePatient(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('patients')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
-  searchPatients(query: string): Patient[] {
-    const patients = this.getPatients();
-    const lowercaseQuery = query.toLowerCase();
-    return patients.filter(p => 
-      p.firstName.toLowerCase().includes(lowercaseQuery) ||
-      p.lastName.toLowerCase().includes(lowercaseQuery) ||
-      p.patientId.toLowerCase().includes(lowercaseQuery) ||
-      p.email.toLowerCase().includes(lowercaseQuery) ||
-      p.phone.includes(query)
-    );
+  async searchPatients(query: string): Promise<Patient[]> {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*')
+      .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`);
+
+    if (error) throw error;
+    return data || [];
   }
 
   // Doctor Management
-  createDoctor(doctorData: Omit<Doctor, 'id' | 'doctorId' | 'availability' | 'patients' | 'createdAt' | 'updatedAt'>): Doctor {
-    const doctors = this.getDoctors();
-    const newDoctor: Doctor = {
-      ...doctorData,
-      id: this.generateId(),
-      doctorId: this.generateDoctorId(),
-      availability: true,
-      patients: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    doctors.push(newDoctor);
-    this.saveData('doctors', doctors);
-    return newDoctor;
+  async createDoctor(doctorData: Omit<Doctor, 'id' | 'created_at' | 'updated_at'>): Promise<Doctor> {
+    const { data, error } = await supabase
+      .from('doctors')
+      .insert([doctorData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getDoctors(): Doctor[] {
-    return this.loadData<Doctor>('doctors');
+  async getDoctors(): Promise<Doctor[]> {
+    const { data, error } = await supabase
+      .from('doctors')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  getDoctorById(id: string): Doctor | null {
-    const doctors = this.getDoctors();
-    return doctors.find(d => d.id === id) || null;
+  async getDoctorById(id: string): Promise<Doctor | null> {
+    const { data, error } = await supabase
+      .from('doctors')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return null;
+    return data;
   }
 
-  updateDoctor(id: string, updates: Partial<Doctor>): Doctor | null {
-    const doctors = this.getDoctors();
-    const index = doctors.findIndex(d => d.id === id);
-    if (index === -1) return null;
+  async updateDoctor(id: string, updates: Partial<Doctor>): Promise<Doctor | null> {
+    const { data, error } = await supabase
+      .from('doctors')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    doctors[index] = {
-      ...doctors[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('doctors', doctors);
-    return doctors[index];
+    if (error) return null;
+    return data;
   }
 
-  deleteDoctor(id: string): boolean {
-    const doctors = this.getDoctors();
-    const index = doctors.findIndex(d => d.id === id);
-    if (index === -1) return false;
+  async deleteDoctor(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('doctors')
+      .delete()
+      .eq('id', id);
 
-    doctors.splice(index, 1);
-    this.saveData('doctors', doctors);
-    return true;
+    return !error;
   }
 
   // Nurse Management
-  createNurse(nurseData: Omit<Nurse, 'id' | 'nurseId' | 'availability' | 'assignedPatients' | 'createdAt' | 'updatedAt'>): Nurse {
-    const nurses = this.getNurses();
-    const newNurse: Nurse = {
-      ...nurseData,
-      id: this.generateId(),
-      nurseId: this.generateNurseId(),
-      availability: true,
-      assignedPatients: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    nurses.push(newNurse);
-    this.saveData('nurses', nurses);
-    return newNurse;
+  async createNurse(nurseData: Omit<Nurse, 'id' | 'created_at' | 'updated_at'>): Promise<Nurse> {
+    const { data, error } = await supabase
+      .from('nurses')
+      .insert([nurseData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getNurses(): Nurse[] {
-    return this.loadData<Nurse>('nurses');
+  async getNurses(): Promise<Nurse[]> {
+    const { data, error } = await supabase
+      .from('nurses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  updateNurse(id: string, updates: Partial<Nurse>): Nurse | null {
-    const nurses = this.getNurses();
-    const index = nurses.findIndex(n => n.id === id);
-    if (index === -1) return null;
+  async updateNurse(id: string, updates: Partial<Nurse>): Promise<Nurse | null> {
+    const { data, error } = await supabase
+      .from('nurses')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    nurses[index] = {
-      ...nurses[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('nurses', nurses);
-    return nurses[index];
+    if (error) return null;
+    return data;
   }
 
-  deleteNurse(id: string): boolean {
-    const nurses = this.getNurses();
-    const index = nurses.findIndex(n => n.id === id);
-    if (index === -1) return false;
+  async deleteNurse(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('nurses')
+      .delete()
+      .eq('id', id);
 
-    nurses.splice(index, 1);
-    this.saveData('nurses', nurses);
-    return true;
+    return !error;
   }
 
   // Appointment Management
-  createAppointment(appointmentData: Omit<Appointment, 'id' | 'appointmentId' | 'status' | 'createdAt' | 'updatedAt'>): Appointment {
-    const appointments = this.getAppointments();
-    const newAppointment: Appointment = {
-      ...appointmentData,
-      id: this.generateId(),
-      appointmentId: this.generateAppointmentId(),
-      status: 'scheduled',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    appointments.push(newAppointment);
-    this.saveData('appointments', appointments);
-    return newAppointment;
+  async createAppointment(appointmentData: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>): Promise<Appointment> {
+    const { data, error } = await supabase
+      .from('appointments')
+      .insert([appointmentData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getAppointments(): Appointment[] {
-    return this.loadData<Appointment>('appointments');
+  async getAppointments(): Promise<Appointment[]> {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .order('appointment_date', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  getAppointmentsByPatient(patientId: string): Appointment[] {
-    return this.getAppointments().filter(a => a.patientId === patientId);
+  async getAppointmentsByPatient(patientId: string): Promise<Appointment[]> {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('appointment_date', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  getAppointmentsByDoctor(doctorId: string): Appointment[] {
-    return this.getAppointments().filter(a => a.doctorId === doctorId);
+  async getAppointmentsByDoctor(doctorId: string): Promise<Appointment[]> {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('doctor_id', doctorId)
+      .order('appointment_date', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  updateAppointment(id: string, updates: Partial<Appointment>): Appointment | null {
-    const appointments = this.getAppointments();
-    const index = appointments.findIndex(a => a.id === id);
-    if (index === -1) return null;
+  async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment | null> {
+    const { data, error } = await supabase
+      .from('appointments')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    appointments[index] = {
-      ...appointments[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('appointments', appointments);
-    return appointments[index];
+    if (error) return null;
+    return data;
   }
 
-  deleteAppointment(id: string): boolean {
-    const appointments = this.getAppointments();
-    const index = appointments.findIndex(a => a.id === id);
-    if (index === -1) return false;
+  async deleteAppointment(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('appointments')
+      .delete()
+      .eq('id', id);
 
-    appointments.splice(index, 1);
-    this.saveData('appointments', appointments);
-    return true;
-  }
-
-  // Payment Management
-  createPayment(paymentData: Omit<Payment, 'id' | 'paymentId' | 'receiptNumber' | 'createdAt' | 'updatedAt'>): Payment {
-    const payments = this.getPayments();
-    const newPayment: Payment = {
-      ...paymentData,
-      id: this.generateId(),
-      paymentId: this.generatePaymentId(),
-      receiptNumber: this.generateReceiptNumber(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    payments.push(newPayment);
-    this.saveData('payments', payments);
-    return newPayment;
-  }
-
-  getPayments(): Payment[] {
-    return this.loadData<Payment>('payments');
-  }
-
-  getPaymentsByPatient(patientId: string): Payment[] {
-    return this.getPayments().filter(p => p.patientId === patientId);
-  }
-
-  updatePayment(id: string, updates: Partial<Payment>): Payment | null {
-    const payments = this.getPayments();
-    const index = payments.findIndex(p => p.id === id);
-    if (index === -1) return null;
-
-    payments[index] = {
-      ...payments[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('payments', payments);
-    return payments[index];
-  }
-
-  deletePayment(id: string): boolean {
-    const payments = this.getPayments();
-    const index = payments.findIndex(p => p.id === id);
-    if (index === -1) return false;
-
-    payments.splice(index, 1);
-    this.saveData('payments', payments);
-    return true;
+    return !error;
   }
 
   // Medical Records Management
-  createMedicalRecord(recordData: Omit<MedicalRecord, 'id' | 'recordId' | 'createdAt' | 'updatedAt'>): MedicalRecord {
-    const records = this.getMedicalRecords();
-    const newRecord: MedicalRecord = {
-      ...recordData,
-      id: this.generateId(),
-      recordId: `MR${Date.now().toString().substr(-8)}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    records.push(newRecord);
-    this.saveData('medical_records', records);
-    return newRecord;
+  async createMedicalRecord(recordData: Omit<MedicalRecord, 'id' | 'created_at' | 'updated_at'>): Promise<MedicalRecord> {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .insert([recordData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getMedicalRecords(): MedicalRecord[] {
-    return this.loadData<MedicalRecord>('medical_records');
+  async getMedicalRecords(): Promise<MedicalRecord[]> {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select('*')
+      .order('visit_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  getMedicalRecordsByPatient(patientId: string): MedicalRecord[] {
-    return this.getMedicalRecords().filter(r => r.patientId === patientId);
+  async getMedicalRecordsByPatient(patientId: string): Promise<MedicalRecord[]> {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('visit_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  updateMedicalRecord(id: string, updates: Partial<MedicalRecord>): MedicalRecord | null {
-    const records = this.getMedicalRecords();
-    const index = records.findIndex(r => r.id === id);
-    if (index === -1) return null;
+  async updateMedicalRecord(id: string, updates: Partial<MedicalRecord>): Promise<MedicalRecord | null> {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    records[index] = {
-      ...records[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('medical_records', records);
-    return records[index];
+    if (error) return null;
+    return data;
   }
 
-  deleteMedicalRecord(id: string): boolean {
-    const records = this.getMedicalRecords();
-    const index = records.findIndex(r => r.id === id);
-    if (index === -1) return false;
+  async deleteMedicalRecord(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('medical_records')
+      .delete()
+      .eq('id', id);
 
-    records.splice(index, 1);
-    this.saveData('medical_records', records);
-    return true;
+    return !error;
   }
 
   // Prescription Management
-  createPrescription(prescriptionData: Omit<Prescription, 'id' | 'prescriptionId' | 'refillsUsed' | 'status' | 'createdAt' | 'updatedAt'>): Prescription {
-    const prescriptions = this.getPrescriptions();
-    const newPrescription: Prescription = {
-      ...prescriptionData,
-      id: this.generateId(),
-      prescriptionId: `RX${Date.now().toString().substr(-8)}`,
-      refillsUsed: 0,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    prescriptions.push(newPrescription);
-    this.saveData('prescriptions', prescriptions);
-    return newPrescription;
+  async createPrescription(prescriptionData: Omit<Prescription, 'id' | 'created_at' | 'updated_at'>): Promise<Prescription> {
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .insert([prescriptionData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getPrescriptions(): Prescription[] {
-    return this.loadData<Prescription>('prescriptions');
+  async getPrescriptions(): Promise<Prescription[]> {
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .select('*')
+      .order('date_prescribed', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  getPrescriptionsByPatient(patientId: string): Prescription[] {
-    return this.getPrescriptions().filter(p => p.patientId === patientId);
+  async getPrescriptionsByPatient(patientId: string): Promise<Prescription[]> {
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('date_prescribed', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  updatePrescription(id: string, updates: Partial<Prescription>): Prescription | null {
-    const prescriptions = this.getPrescriptions();
-    const index = prescriptions.findIndex(p => p.id === id);
-    if (index === -1) return null;
+  async updatePrescription(id: string, updates: Partial<Prescription>): Promise<Prescription | null> {
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    prescriptions[index] = {
-      ...prescriptions[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('prescriptions', prescriptions);
-    return prescriptions[index];
+    if (error) return null;
+    return data;
   }
 
-  deletePrescription(id: string): boolean {
-    const prescriptions = this.getPrescriptions();
-    const index = prescriptions.findIndex(p => p.id === id);
-    if (index === -1) return false;
+  async deletePrescription(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('prescriptions')
+      .delete()
+      .eq('id', id);
 
-    prescriptions.splice(index, 1);
-    this.saveData('prescriptions', prescriptions);
-    return true;
+    return !error;
   }
 
   // Lab Test Management
-  createLabTest(labTestData: Omit<LabTest, 'id' | 'testId' | 'status' | 'createdAt' | 'updatedAt'>): LabTest {
-    const labTests = this.getLabTests();
-    const newLabTest: LabTest = {
-      ...labTestData,
-      id: this.generateId(),
-      testId: `LT${Date.now().toString().substr(-8)}`,
-      status: 'ordered',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    labTests.push(newLabTest);
-    this.saveData('lab_tests', labTests);
-    return newLabTest;
+  async createLabTest(labTestData: Omit<LabTest, 'id' | 'created_at' | 'updated_at'>): Promise<LabTest> {
+    const { data, error } = await supabase
+      .from('lab_tests')
+      .insert([labTestData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getLabTests(): LabTest[] {
-    return this.loadData<LabTest>('lab_tests');
+  async getLabTests(): Promise<LabTest[]> {
+    const { data, error } = await supabase
+      .from('lab_tests')
+      .select('*')
+      .order('test_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  getLabTestsByPatient(patientId: string): LabTest[] {
-    return this.getLabTests().filter(l => l.patientId === patientId);
+  async getLabTestsByPatient(patientId: string): Promise<LabTest[]> {
+    const { data, error } = await supabase
+      .from('lab_tests')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('test_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  updateLabTest(id: string, updates: Partial<LabTest>): LabTest | null {
-    const labTests = this.getLabTests();
-    const index = labTests.findIndex(l => l.id === id);
-    if (index === -1) return null;
+  async updateLabTest(id: string, updates: Partial<LabTest>): Promise<LabTest | null> {
+    const { data, error } = await supabase
+      .from('lab_tests')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    labTests[index] = {
-      ...labTests[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveData('lab_tests', labTests);
-    return labTests[index];
+    if (error) return null;
+    return data;
   }
 
-  deleteLabTest(id: string): boolean {
-    const labTests = this.getLabTests();
-    const index = labTests.findIndex(l => l.id === id);
-    if (index === -1) return false;
+  async deleteLabTest(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('lab_tests')
+      .delete()
+      .eq('id', id);
 
-    labTests.splice(index, 1);
-    this.saveData('lab_tests', labTests);
-    return true;
+    return !error;
   }
 
-  // Analytics and Reports
-  getDashboardStats() {
-    const patients = this.getPatients();
-    const doctors = this.getDoctors();
-    const nurses = this.getNurses();
-    const appointments = this.getAppointments();
-    const payments = this.getPayments();
-    
-    const today = new Date().toISOString().split('T')[0];
-    const todayAppointments = appointments.filter(a => a.date === today);
-    const todayPayments = payments.filter(p => p.createdAt.startsWith(today));
-    const todayRevenue = todayPayments.reduce((sum, p) => sum + p.amount, 0);
+  // Inventory Management
+  async createInventory(inventoryData: Omit<Inventory, 'id' | 'created_at' | 'updated_at'>): Promise<Inventory> {
+    const { data, error } = await supabase
+      .from('inventory')
+      .insert([inventoryData])
+      .select()
+      .single();
 
-    return {
-      totalPatients: patients.length,
-      activePatients: patients.filter(p => p.status === 'active').length,
-      totalDoctors: doctors.length,
-      availableDoctors: doctors.filter(d => d.availability).length,
-      totalNurses: nurses.length,
-      availableNurses: nurses.filter(n => n.availability).length,
-      todayAppointments: todayAppointments.length,
-      scheduledAppointments: todayAppointments.filter(a => a.status === 'scheduled').length,
-      completedAppointments: todayAppointments.filter(a => a.status === 'completed').length,
-      todayRevenue,
-      totalRevenue: payments.reduce((sum, p) => sum + p.amount, 0),
-      pendingPayments: payments.filter(p => p.status === 'pending').length,
-    };
+    if (error) throw error;
+    return data;
   }
 
-  // Initialize with sample data
-  initializeSampleData() {
-    // Only initialize if no data exists
-    if (this.getPatients().length === 0) {
-      // Sample patients
-      const samplePatients = [
-        {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@email.com',
-          phone: '+1-555-0101',
-          dateOfBirth: '1985-03-15',
-          gender: 'male' as const,
-          address: '123 Main St, City, State 12345',
-          emergencyContact: 'Jane Doe: +1-555-0102',
-          medicalHistory: 'Hypertension, Diabetes Type 2',
-          insuranceProvider: 'Blue Cross',
-          insuranceId: 'BC123456789',
-          bloodType: 'O+',
-          allergies: 'Penicillin',
-          createdBy: 'system',
-        },
-        {
-          firstName: 'Sarah',
-          lastName: 'Johnson',
-          email: 'sarah.j@email.com',
-          phone: '+1-555-0103',
-          dateOfBirth: '1992-08-22',
-          gender: 'female' as const,
-          address: '456 Oak Ave, City, State 12345',
-          emergencyContact: 'Mike Johnson: +1-555-0104',
-          medicalHistory: 'Asthma',
-          insuranceProvider: 'Aetna',
-          insuranceId: 'AET987654321',
-          bloodType: 'A-',
-          allergies: 'None',
-          createdBy: 'system',
-        }
-      ];
+  async getInventory(): Promise<Inventory[]> {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*')
+      .order('item_name', { ascending: true });
 
-      samplePatients.forEach(patient => this.createPatient(patient));
-    }
+    if (error) throw error;
+    return data || [];
+  }
 
-    if (this.getDoctors().length === 0) {
-      // Sample doctors
-      const sampleDoctors = [
-        {
-          firstName: 'Dr. Michael',
-          lastName: 'Smith',
-          email: 'dr.smith@hospital.com',
-          phone: '+1-555-0201',
-          licenseNumber: 'MD12345',
-          specialty: 'cardiology',
-          department: 'Cardiology',
-          experience: '15',
-          education: 'MD from Harvard Medical School, Cardiology Fellowship at Mayo Clinic',
-          schedule: 'Mon-Fri 8AM-5PM',
-          consultationFee: '$300',
-          createdBy: 'system',
-        },
-        {
-          firstName: 'Dr. Emily',
-          lastName: 'Davis',
-          email: 'dr.davis@hospital.com',
-          phone: '+1-555-0202',
-          licenseNumber: 'MD67890',
-          specialty: 'pediatrics',
-          department: 'Pediatrics',
-          experience: '10',
-          education: 'MD from Johns Hopkins, Pediatrics Residency at Children\'s Hospital',
-          schedule: 'Mon-Fri 9AM-6PM',
-          consultationFee: '$250',
-          createdBy: 'system',
-        }
-      ];
+  async updateInventory(id: string, updates: Partial<Inventory>): Promise<Inventory | null> {
+    const { data, error } = await supabase
+      .from('inventory')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-      sampleDoctors.forEach(doctor => this.createDoctor(doctor));
-    }
+    if (error) return null;
+    return data;
+  }
 
-    if (this.getNurses().length === 0) {
-      // Sample nurses
-      const sampleNurses = [
-        {
-          firstName: 'Nancy',
-          lastName: 'Wilson',
-          email: 'nancy.wilson@hospital.com',
-          phone: '+1-555-0301',
-          licenseNumber: 'RN12345',
-          nurseType: 'registered',
-          department: 'emergency',
-          shift: 'day',
-          experience: '8',
-          certification: 'BSN, CCRN',
-          createdBy: 'system',
-        },
-        {
-          firstName: 'Robert',
-          lastName: 'Brown',
-          email: 'robert.brown@hospital.com',
-          phone: '+1-555-0302',
-          licenseNumber: 'RN67890',
-          nurseType: 'critical-care',
-          department: 'icu',
-          shift: 'night',
-          experience: '12',
-          certification: 'MSN, CCRN',
-          createdBy: 'system',
-        }
-      ];
+  async deleteInventory(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('inventory')
+      .delete()
+      .eq('id', id);
 
-      sampleNurses.forEach(nurse => this.createNurse(nurse));
-    }
-
-    if (this.getAppointments().length === 0) {
-      // Sample appointments
-      const patients = this.getPatients();
-      const doctors = this.getDoctors();
-      
-      if (patients.length > 0 && doctors.length > 0) {
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const sampleAppointments = [
-          {
-            patientId: patients[0].id,
-            doctorId: doctors[0].id,
-            date: today.toISOString().split('T')[0],
-            time: '10:00',
-            duration: 30,
-            type: 'consultation' as const,
-            notes: 'Regular checkup for hypertension',
-            symptoms: 'High blood pressure, fatigue',
-            followUpRequired: true,
-            createdBy: 'system',
-          },
-          {
-            patientId: patients[1]?.id || patients[0].id,
-            doctorId: doctors[1]?.id || doctors[0].id,
-            date: tomorrow.toISOString().split('T')[0],
-            time: '14:00',
-            duration: 45,
-            type: 'follow-up' as const,
-            notes: 'Follow-up for asthma treatment',
-            symptoms: 'Shortness of breath, wheezing',
-            followUpRequired: false,
-            createdBy: 'system',
-          }
-        ];
-
-        sampleAppointments.forEach(appointment => this.createAppointment(appointment));
-      }
-    }
-
-    if (this.getPayments().length === 0) {
-      // Sample payments
-      const patients = this.getPatients();
-      
-      if (patients.length > 0) {
-        const samplePayments = [
-          {
-            patientId: patients[0].id,
-            amount: 300,
-            currency: 'USD',
-            paymentMethod: 'card' as const,
-            paymentType: 'consultation' as const,
-            description: 'Cardiology consultation with Dr. Smith',
-            status: 'completed' as const,
-            insuranceClaimed: false,
-            createdBy: 'system',
-          },
-          {
-            patientId: patients[1]?.id || patients[0].id,
-            amount: 150,
-            currency: 'USD',
-            paymentMethod: 'insurance' as const,
-            paymentType: 'medication' as const,
-            description: 'Asthma medication prescription',
-            status: 'pending' as const,
-            insuranceClaimed: true,
-            insuranceAmount: 120,
-            createdBy: 'system',
-          }
-        ];
-
-        samplePayments.forEach(payment => this.createPayment(payment));
-      }
-    }
-
-    if (this.getMedicalRecords().length === 0) {
-      // Sample medical records
-      const patients = this.getPatients();
-      const doctors = this.getDoctors();
-      
-      if (patients.length > 0 && doctors.length > 0) {
-        const sampleRecords = [
-          {
-            patientId: patients[0].id,
-            doctorId: doctors[0].id,
-            visitDate: new Date().toISOString().split('T')[0],
-            visitType: 'consultation' as const,
-            notes: 'Patient presents with elevated blood pressure. Prescribed medication and lifestyle changes.',
-            symptoms: 'Headache, dizziness, fatigue',
-            diagnosis: 'Essential hypertension',
-            treatment: 'Lisinopril 10mg daily, dietary changes, exercise program',
-            prescription: 'Lisinopril 10mg - Take one tablet daily with food',
-            followUpRequired: true,
-            followUpDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            vitalSigns: {
-              bloodPressure: '150/95',
-              heartRate: '85',
-              temperature: '98.6',
-              weight: '175',
-              height: '5ft 10in',
-            },
-            labResults: 'Complete Blood Count - Normal, Lipid Panel - Elevated cholesterol',
-            createdBy: 'system',
-          },
-          {
-            patientId: patients[1]?.id || patients[0].id,
-            doctorId: doctors[1]?.id || doctors[0].id,
-            visitDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            visitType: 'follow-up' as const,
-            notes: 'Asthma follow-up visit. Patient responding well to treatment.',
-            symptoms: 'Mild wheezing, improved breathing',
-            diagnosis: 'Asthma - well controlled',
-            treatment: 'Continue current inhaler regimen, pulmonary function test',
-            prescription: 'Albuterol inhaler - 2 puffs as needed for shortness of breath',
-            followUpRequired: false,
-            vitalSigns: {
-              bloodPressure: '120/80',
-              heartRate: '72',
-              temperature: '98.4',
-              weight: '140',
-              height: '5ft 6in',
-            },
-            labResults: 'Peak flow measurement - 380 L/min (improved from 320)',
-            createdBy: 'system',
-          }
-        ];
-
-        sampleRecords.forEach(record => this.createMedicalRecord(record));
-      }
-    }
-
-    if (this.getPrescriptions().length === 0) {
-      // Sample prescriptions
-      const patients = this.getPatients();
-      const doctors = this.getDoctors();
-      
-      if (patients.length > 0 && doctors.length > 0) {
-        const samplePrescriptions = [
-          {
-            patientId: patients[0].id,
-            doctorId: doctors[0].id,
-            medication: 'Lisinopril',
-            dosage: '10mg',
-            frequency: 'Once daily',
-            duration: '30 days',
-            instructions: 'Take with food. Monitor blood pressure regularly.',
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            refills: 2,
-            sideEffects: 'May cause dizziness, dry cough',
-            interactions: ['NSAIDs', 'Potassium supplements'],
-            createdBy: 'system',
-          },
-          {
-            patientId: patients[1]?.id || patients[0].id,
-            doctorId: doctors[1]?.id || doctors[0].id,
-            medication: 'Albuterol Inhaler',
-            dosage: '90mcg/puff',
-            frequency: 'As needed',
-            duration: '90 days',
-            instructions: 'Use for shortness of breath. Rinse mouth after use.',
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            refills: 3,
-            sideEffects: 'Tremor, nervousness, headache',
-            interactions: ['Beta-blockers'],
-            createdBy: 'system',
-          }
-        ];
-
-        samplePrescriptions.forEach(prescription => this.createPrescription(prescription));
-      }
-    }
-
-    if (this.getLabTests().length === 0) {
-      // Sample lab tests
-      const patients = this.getPatients();
-      const doctors = this.getDoctors();
-      
-      if (patients.length > 0 && doctors.length > 0) {
-        const today = new Date().toISOString().split('T')[0];
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-        const sampleLabTests = [
-          {
-            patientId: patients[0].id,
-            doctorId: doctors[0].id,
-            testName: 'Complete Blood Count',
-            testType: 'blood' as const,
-            category: 'hematology' as const,
-            orderDate: yesterday,
-            sampleCollectedDate: yesterday,
-            reportDate: today,
-            results: 'WBC: 7.2 K/uL, RBC: 4.5 M/uL, Hemoglobin: 14.2 g/dL, Hematocrit: 42.1%',
-            normalRange: 'WBC: 4.5-11.0, RBC: 4.2-5.4, Hemoglobin: 12.0-15.5, Hematocrit: 36-45%',
-            interpretation: 'Normal',
-            priority: 'routine' as const,
-            fastingRequired: false,
-            instructions: 'No special preparation required',
-            cost: 85.00,
-            labTechnician: 'Sarah Martinez, MLT',
-            createdBy: 'system',
-          },
-          {
-            patientId: patients[1]?.id || patients[0].id,
-            doctorId: doctors[1]?.id || doctors[0].id,
-            testName: 'Chest X-Ray',
-            testType: 'imaging' as const,
-            category: 'radiology' as const,
-            orderDate: today,
-            priority: 'urgent' as const,
-            fastingRequired: false,
-            instructions: 'Remove all metal objects from chest area',
-            cost: 150.00,
-            createdBy: 'system',
-          }
-        ];
-
-        sampleLabTests.forEach(test => this.createLabTest(test));
-      }
-    }
+    return !error;
   }
 
   // Room Management
-  createRoom(roomData: any): any {
-    const rooms = this.getRooms();
-    const newRoom = {
-      id: this.generateId(),
-      roomId: `ROOM-${String(rooms.length + 1).padStart(3, '0')}`,
-      ...roomData,
-      createdBy: 'current-user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    rooms.push(newRoom);
-    this.saveData('rooms', rooms);
-    return newRoom;
+  async createRoom(roomData: Omit<Room, 'id' | 'created_at' | 'updated_at'>): Promise<Room> {
+    const { data, error } = await supabase
+      .from('rooms')
+      .insert([roomData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
-  getRooms(): any[] {
-    const stored = this.loadData<any>('rooms');
-    if (stored.length > 0) {
-      return stored;
+  async getRooms(): Promise<Room[]> {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('*')
+      .order('room_number', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async updateRoom(id: string, updates: Partial<Room>): Promise<Room | null> {
+    const { data, error } = await supabase
+      .from('rooms')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return null;
+    return data;
+  }
+
+  async deleteRoom(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('rooms')
+      .delete()
+      .eq('id', id);
+
+    return !error;
+  }
+
+  // Payment Management
+  async createPayment(paymentData: Omit<Payment, 'id' | 'created_at' | 'updated_at'>): Promise<Payment> {
+    const { data, error } = await supabase
+      .from('payments')
+      .insert([paymentData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getPayments(): Promise<Payment[]> {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .order('payment_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getPaymentsByPatient(patientId: string): Promise<Payment[]> {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('payment_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async updatePayment(id: string, updates: Partial<Payment>): Promise<Payment | null> {
+    const { data, error } = await supabase
+      .from('payments')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return null;
+    return data;
+  }
+
+  async deletePayment(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('payments')
+      .delete()
+      .eq('id', id);
+
+    return !error;
+  }
+
+  // Analytics and Dashboard Stats
+  async getDashboardStats() {
+    try {
+      const [patients, doctors, nurses, appointments, payments] = await Promise.all([
+        this.getPatients(),
+        this.getDoctors(),
+        this.getNurses(),
+        this.getAppointments(),
+        this.getPayments()
+      ]);
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayAppointments = appointments.filter(a => a.appointment_date === today);
+      const todayPayments = payments.filter(p => p.payment_date === today);
+      const todayRevenue = todayPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      return {
+        totalPatients: patients.length,
+        activePatients: patients.filter(p => p.status === 'active').length,
+        totalDoctors: doctors.length,
+        activeDoctors: doctors.filter(d => d.status === 'active').length,
+        totalNurses: nurses.length,
+        activeNurses: nurses.filter(n => n.status === 'active').length,
+        todayAppointments: todayAppointments.length,
+        scheduledAppointments: todayAppointments.filter(a => a.status === 'scheduled').length,
+        completedAppointments: todayAppointments.filter(a => a.status === 'completed').length,
+        todayRevenue,
+        totalRevenue: payments.reduce((sum, p) => sum + p.amount, 0),
+        pendingPayments: payments.filter(p => p.payment_status === 'pending').length,
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return {
+        totalPatients: 0,
+        activePatients: 0,
+        totalDoctors: 0,
+        activeDoctors: 0,
+        totalNurses: 0,
+        activeNurses: 0,
+        todayAppointments: 0,
+        scheduledAppointments: 0,
+        completedAppointments: 0,
+        todayRevenue: 0,
+        totalRevenue: 0,
+        pendingPayments: 0,
+      };
     }
-    
-    const initialRooms = [
-      {
-        id: '1',
-        roomId: 'ROOM-001',
-        roomNumber: '101',
-        roomType: 'ICU',
-        floor: '1st Floor',
-        department: 'Critical Care',
-        capacity: 1,
-        status: 'occupied',
-        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom', 'Phone'],
-        dailyRate: 500.00,
-        description: 'Intensive Care Unit with advanced monitoring equipment',
-        hasOxygen: true,
-        hasMonitor: true,
-        isAccessible: true,
-        createdBy: 'admin',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        roomId: 'ROOM-002',
-        roomNumber: '102',
-        roomType: 'Private',
-        floor: '1st Floor',
-        department: 'Cardiology',
-        capacity: 1,
-        status: 'available',
-        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom', 'Mini Fridge', 'Phone'],
-        dailyRate: 300.00,
-        description: 'Private room with modern amenities',
-        hasOxygen: true,
-        hasMonitor: false,
-        isAccessible: true,
-        createdBy: 'admin',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '3',
-        roomId: 'ROOM-003',
-        roomNumber: '201',
-        roomType: 'General',
-        floor: '2nd Floor',
-        department: 'Internal Medicine',
-        capacity: 2,
-        status: 'available',
-        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom'],
-        dailyRate: 200.00,
-        description: 'General ward with shared facilities',
-        hasOxygen: false,
-        hasMonitor: false,
-        isAccessible: true,
-        createdBy: 'admin',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '4',
-        roomId: 'ROOM-004',
-        roomNumber: '301',
-        roomType: 'Maternity',
-        floor: '3rd Floor',
-        department: 'Obstetrics',
-        capacity: 1,
-        status: 'occupied',
-        features: ['Air Conditioning', 'TV', 'WiFi', 'Bathroom', 'Mini Fridge', 'Safe'],
-        dailyRate: 350.00,
-        description: 'Maternity suite with family comfort features',
-        hasOxygen: true,
-        hasMonitor: true,
-        isAccessible: true,
-        createdBy: 'admin',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '5',
-        roomId: 'ROOM-005',
-        roomNumber: '205',
-        roomType: 'Surgery',
-        floor: '2nd Floor',
-        department: 'Surgery',
-        capacity: 1,
-        status: 'maintenance',
-        features: ['Air Conditioning', 'WiFi', 'Phone'],
-        dailyRate: 800.00,
-        description: 'Operating theater with surgical equipment',
-        hasOxygen: true,
-        hasMonitor: true,
-        isAccessible: true,
-        createdBy: 'admin',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-    
-    this.saveData('rooms', initialRooms);
-    return initialRooms;
-  }
-
-  updateRoom(id: string, roomData: any): any | null {
-    const rooms = this.getRooms();
-    const index = rooms.findIndex(room => room.id === id);
-    
-    if (index === -1) return null;
-    
-    rooms[index] = {
-      ...rooms[index],
-      ...roomData,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    this.saveData('rooms', rooms);
-    return rooms[index];
-  }
-
-  deleteRoom(id: string): boolean {
-    const rooms = this.getRooms();
-    const index = rooms.findIndex(room => room.id === id);
-    
-    if (index === -1) return false;
-    
-    rooms.splice(index, 1);
-    this.saveData('rooms', rooms);
-    return true;
   }
 }
 
+// Export singleton instance
 export const dataManager = DataManager.getInstance();
