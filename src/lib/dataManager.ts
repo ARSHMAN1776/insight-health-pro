@@ -192,7 +192,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Patient;
   }
 
   async getPatients(): Promise<Patient[]> {
@@ -202,7 +202,7 @@ class DataManager {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Patient[];
   }
 
   async getPatientById(id: string): Promise<Patient | null> {
@@ -213,7 +213,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Patient;
   }
 
   async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient | null> {
@@ -225,7 +225,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Patient;
   }
 
   async deletePatient(id: string): Promise<boolean> {
@@ -244,7 +244,7 @@ class DataManager {
       .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Patient[];
   }
 
   // Doctor Management
@@ -256,7 +256,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Doctor;
   }
 
   async getDoctors(): Promise<Doctor[]> {
@@ -266,7 +266,7 @@ class DataManager {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Doctor[];
   }
 
   async getDoctorById(id: string): Promise<Doctor | null> {
@@ -277,7 +277,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Doctor;
   }
 
   async updateDoctor(id: string, updates: Partial<Doctor>): Promise<Doctor | null> {
@@ -289,7 +289,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Doctor;
   }
 
   async deleteDoctor(id: string): Promise<boolean> {
@@ -310,7 +310,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Nurse;
   }
 
   async getNurses(): Promise<Nurse[]> {
@@ -320,7 +320,7 @@ class DataManager {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Nurse[];
   }
 
   async updateNurse(id: string, updates: Partial<Nurse>): Promise<Nurse | null> {
@@ -332,7 +332,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Nurse;
   }
 
   async deleteNurse(id: string): Promise<boolean> {
@@ -353,7 +353,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Appointment;
   }
 
   async getAppointments(): Promise<Appointment[]> {
@@ -363,7 +363,7 @@ class DataManager {
       .order('appointment_date', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Appointment[];
   }
 
   async getAppointmentsByPatient(patientId: string): Promise<Appointment[]> {
@@ -374,7 +374,7 @@ class DataManager {
       .order('appointment_date', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Appointment[];
   }
 
   async getAppointmentsByDoctor(doctorId: string): Promise<Appointment[]> {
@@ -385,7 +385,7 @@ class DataManager {
       .order('appointment_date', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Appointment[];
   }
 
   async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment | null> {
@@ -397,7 +397,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Appointment;
   }
 
   async deleteAppointment(id: string): Promise<boolean> {
