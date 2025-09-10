@@ -20,15 +20,15 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
 
-  // Mock data for charts
+  // Real data will be loaded from database
   const dailyPatients = [
-    { day: 'Mon', patients: 45, appointments: 52 },
-    { day: 'Tue', patients: 52, appointments: 48 },
-    { day: 'Wed', patients: 48, appointments: 61 },
-    { day: 'Thu', patients: 61, appointments: 55 },
-    { day: 'Fri', patients: 55, appointments: 67 },
-    { day: 'Sat', patients: 67, appointments: 44 },
-    { day: 'Sun', patients: 44, appointments: 38 }
+    { day: 'Mon', patients: 0, appointments: 0 },
+    { day: 'Tue', patients: 0, appointments: 0 },
+    { day: 'Wed', patients: 0, appointments: 0 },
+    { day: 'Thu', patients: 0, appointments: 0 },
+    { day: 'Fri', patients: 0, appointments: 0 },
+    { day: 'Sat', patients: 0, appointments: 0 },
+    { day: 'Sun', patients: 0, appointments: 0 }
   ];
 
   const departmentData = [
