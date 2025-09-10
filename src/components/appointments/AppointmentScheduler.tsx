@@ -221,7 +221,7 @@ const AppointmentScheduler: React.FC = () => {
   const inProgressToday = todayAppointments.filter(a => a.status === 'in_progress');
   const completedToday = todayAppointments.filter(a => a.status === 'completed');
 
-  const columns: Column<Appointment>[] = [
+  const columns = [
     {
       key: 'id',
       label: 'ID',
@@ -529,13 +529,13 @@ const AppointmentScheduler: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={appointments}
-            columns={columns}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            searchPlaceholder="Search appointments..."
-          />
+        <DataTable
+          title="Appointments"
+          data={appointments}
+          columns={columns}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
         </CardContent>
       </Card>
     </div>

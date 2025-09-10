@@ -60,14 +60,22 @@ const NurseRegistrationForm: React.FC<NurseRegistrationFormProps> = ({ onClose }
       const { dataManager } = await import('../../lib/dataManager');
       
       // Create new nurse
-      const newNurse = dataManager.createNurse({
-        ...(data as Required<NurseFormData>),
-        createdBy: 'current_user',
+      const newNurse = await dataManager.createNurse({
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        license_number: data.licenseNumber,
+        department: data.department,
+        years_of_experience: parseInt(data.experience),
+        specialization: data.nurseType,
+        shift_schedule: data.shift,
+        status: 'active' as const,
       });
       
       toast({
         title: 'Success',
-        description: `Nurse registered successfully with ID: ${newNurse.nurseId}`,
+        description: `Nurse registered successfully with ID: ${newNurse.id}`,
       });
       
       form.reset();

@@ -51,17 +51,17 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
     defaultValues: editData ? {
-      firstName: editData.firstName,
-      lastName: editData.lastName,
+      firstName: editData.first_name,
+      lastName: editData.last_name,
       email: editData.email,
       phone: editData.phone,
-      dateOfBirth: editData.dateOfBirth,
-      gender: editData.gender,
+      dateOfBirth: editData.date_of_birth,
+      gender: editData.gender?.toLowerCase() as 'male' | 'female' | 'other',
       address: editData.address,
-      emergencyContact: editData.emergencyContact,
-      medicalHistory: editData.medicalHistory || '',
-      insuranceProvider: editData.insuranceProvider,
-      insuranceId: editData.insuranceId,
+      emergencyContact: editData.emergency_contact_name,
+      medicalHistory: editData.medical_history || '',
+      insuranceProvider: editData.insurance_provider,
+      insuranceId: editData.insurance_policy_number,
     } : {
       firstName: '',
       lastName: '',
@@ -84,12 +84,18 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({
       
       if (mode === 'edit' && editData) {
         // Update existing patient
-        const updatedPatient = dataManager.updatePatient(editData.id, {
-          ...(data as Required<PatientFormData>),
-          bloodType: editData.bloodType || '',
-          allergies: editData.allergies || '',
-          currentMedications: editData.currentMedications || '',
-          chronicConditions: editData.chronicConditions || '',
+        const updatedPatient = await dataManager.updatePatient(editData.id, {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          date_of_birth: data.dateOfBirth,
+          gender: data.gender.charAt(0).toUpperCase() + data.gender.slice(1) as 'Male' | 'Female' | 'Other',
+          address: data.address,
+          emergency_contact_name: data.emergencyContact,
+          medical_history: data.medicalHistory,
+          insurance_provider: data.insuranceProvider,
+          insurance_policy_number: data.insuranceId,
         });
         
         toast({
@@ -98,18 +104,24 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({
         });
       } else {
         // Create new patient
-        const newPatient = dataManager.createPatient({
-          ...(data as Required<PatientFormData>),
-          bloodType: '',
-          allergies: '',
-          currentMedications: '',
-          chronicConditions: '',
-          createdBy: 'current_user',
+        const newPatient = await dataManager.createPatient({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          date_of_birth: data.dateOfBirth,
+          gender: data.gender.charAt(0).toUpperCase() + data.gender.slice(1) as 'Male' | 'Female' | 'Other',
+          address: data.address,
+          emergency_contact_name: data.emergencyContact,
+          medical_history: data.medicalHistory,
+          insurance_provider: data.insuranceProvider,
+          insurance_policy_number: data.insuranceId,
+          status: 'active' as const,
         });
         
         toast({
           title: 'Success',
-          description: `Patient registered successfully with ID: ${newPatient.patientId}`,
+          description: `Patient registered successfully with ID: ${newPatient.id}`,
         });
       }
       
