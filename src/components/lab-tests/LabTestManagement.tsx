@@ -1,483 +1,513 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import DataTable from '@/components/shared/DataTable';
-import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, TestTube, Calendar, User, FileText } from 'lucide-react';
-import { dataManager } from '@/lib/dataManager';
-import type { LabTest } from '@/lib/dataManager';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Badge } from '../ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Textarea } from '../ui/textarea';
+import { useToast } from '../../hooks/use-toast';
+import { dataManager, LabTest, Patient, Doctor } from '../../lib/dataManager';
+import { TestTube, Plus, Search, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import DataTable from '../shared/DataTable';
 
 const LabTestManagement: React.FC = () => {
   const [labTests, setLabTests] = useState<LabTest[]>([]);
-  const [patients, setPatients] = useState(dataManager.getPatients());
-  const [doctors, setDoctors] = useState(dataManager.getDoctors());
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedLabTest, setSelectedLabTest] = useState<LabTest | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize sample data and load all data
-    dataManager.initializeSampleData();
-    setLabTests(dataManager.getLabTests());
-    setPatients(dataManager.getPatients());
-    setDoctors(dataManager.getDoctors());
+    loadData();
   }, []);
 
-  const [formData, setFormData] = useState({
-    patientId: '',
-    doctorId: '',
-    testName: '',
-    testType: 'blood' as LabTest['testType'],
-    category: 'hematology' as LabTest['category'],
-    orderDate: '',
-    sampleCollectedDate: '',
-    reportDate: '',
-    results: '',
-    normalRange: '',
-    interpretation: '',
-    priority: 'routine' as LabTest['priority'],
-    fastingRequired: false,
-    instructions: '',
-    cost: '',
-    labTechnician: ''
-  });
-
-
-  const filteredLabTests = labTests.filter(test =>
-    test.testName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    test.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    test.doctorId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const loadData = async () => {
     try {
-      const labTestData = {
-        ...formData,
-        cost: parseFloat(formData.cost) || 0,
-        createdBy: 'current-user'
-      };
-
-      if (selectedLabTest) {
-        const updated = dataManager.updateLabTest(selectedLabTest.id, labTestData);
-        setLabTests(dataManager.getLabTests());
-        toast({ title: 'Success', description: 'Lab test updated successfully' });
-      } else {
-        const newLabTest = dataManager.createLabTest(labTestData);
-        setLabTests(dataManager.getLabTests());
-        toast({ title: 'Success', description: 'Lab test created successfully' });
-      }
-
-      resetForm();
-      setIsDialogOpen(false);
+      setLoading(true);
+      const [testsData, patientsData, doctorsData] = await Promise.all([
+        dataManager.getLabTests(),
+        dataManager.getPatients(),
+        dataManager.getDoctors(),
+      ]);
+      
+      setLabTests(testsData);
+      setPatients(patientsData);
+      setDoctors(doctorsData);
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to save lab test', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: 'Failed to load data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      patientId: '',
-      doctorId: '',
-      testName: '',
-      testType: 'blood',
-      category: 'hematology',
-      orderDate: '',
-      sampleCollectedDate: '',
-      reportDate: '',
-      results: '',
-      normalRange: '',
-      interpretation: '',
-      priority: 'routine',
-      fastingRequired: false,
-      instructions: '',
-      cost: '',
-      labTechnician: ''
-    });
-    setSelectedLabTest(null);
+  const [formData, setFormData] = useState({
+    patient_id: '',
+    doctor_id: '',
+    test_name: '',
+    test_type: '',
+    test_date: new Date().toISOString().split('T')[0],
+    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
+    status: 'pending' as 'pending' | 'in_progress' | 'completed' | 'cancelled',
+    results: '',
+    normal_range: '',
+    notes: '',
+    cost: 0,
+    lab_technician: '',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.patient_id || !formData.doctor_id || !formData.test_name) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      if (selectedLabTest) {
+        // Update existing test
+        const updated = await dataManager.updateLabTest(selectedLabTest.id, formData);
+        if (updated) {
+          setLabTests(prev => prev.map(test => test.id === selectedLabTest.id ? updated : test));
+          toast({
+            title: 'Success',
+            description: 'Lab test updated successfully',
+          });
+        }
+      } else {
+        // Create new test
+        const newTest = await dataManager.createLabTest(formData);
+        setLabTests(prev => [...prev, newTest]);
+        toast({
+          title: 'Success',
+          description: 'Lab test created successfully',
+        });
+      }
+      
+      setFormData({
+        patient_id: '',
+        doctor_id: '',
+        test_name: '',
+        test_type: '',
+        test_date: new Date().toISOString().split('T')[0],
+        priority: 'normal',
+        status: 'pending',
+        results: '',
+        normal_range: '',
+        notes: '',
+        cost: 0,
+        lab_technician: '',
+      });
+      setSelectedLabTest(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to ${selectedLabTest ? 'update' : 'create'} lab test`,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEdit = (labTest: LabTest) => {
     setSelectedLabTest(labTest);
     setFormData({
-      patientId: labTest.patientId,
-      doctorId: labTest.doctorId,
-      testName: labTest.testName,
-      testType: labTest.testType,
-      category: labTest.category,
-      orderDate: labTest.orderDate,
-      sampleCollectedDate: labTest.sampleCollectedDate || '',
-      reportDate: labTest.reportDate || '',
-      results: labTest.results || '',
-      normalRange: labTest.normalRange || '',
-      interpretation: labTest.interpretation || '',
+      patient_id: labTest.patient_id,
+      doctor_id: labTest.doctor_id,
+      test_name: labTest.test_name,
+      test_type: labTest.test_type || '',
+      test_date: labTest.test_date,
       priority: labTest.priority,
-      fastingRequired: labTest.fastingRequired,
-      instructions: labTest.instructions,
-      cost: labTest.cost.toString(),
-      labTechnician: labTest.labTechnician || ''
+      status: labTest.status,
+      results: labTest.results || '',
+      normal_range: labTest.normal_range || '',
+      notes: labTest.notes || '',
+      cost: labTest.cost || 0,
+      lab_technician: labTest.lab_technician || '',
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    dataManager.deleteLabTest(id);
-    setLabTests(dataManager.getLabTests());
-    toast({ title: 'Success', description: 'Lab test deleted successfully' });
+  const handleDelete = async (labTest: LabTest) => {
+    try {
+      const success = await dataManager.deleteLabTest(labTest.id);
+      if (success) {
+        setLabTests(prev => prev.filter(test => test.id !== labTest.id));
+        toast({
+          title: 'Success',
+          description: 'Lab test deleted successfully',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete lab test',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const getStatusBadge = (status: LabTest['status']) => {
-    if (!status) return <Badge variant="secondary">Unknown</Badge>;
-    
-    const variants = {
-      ordered: 'secondary',
-      sample_collected: 'outline',
-      in_progress: 'default',
-      completed: 'default',
-      cancelled: 'destructive'
-    } as const;
-    
-    return <Badge variant={variants[status] || 'secondary'}>{status.replace('_', ' ')}</Badge>;
+  const getPatientName = (patientId: string) => {
+    const patient = patients.find(p => p.id === patientId);
+    return patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown Patient';
   };
 
-  const getPriorityBadge = (priority: LabTest['priority']) => {
-    const variants = {
-      routine: 'secondary',
-      urgent: 'destructive',
-      stat: 'destructive'
-    } as const;
-    
-    return <Badge variant={variants[priority]}>{priority}</Badge>;
+  const getDoctorName = (doctorId: string) => {
+    const doctor = doctors.find(d => d.id === doctorId);
+    return doctor ? `Dr. ${doctor.first_name} ${doctor.last_name}` : 'Unknown Doctor';
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      pending: { color: 'bg-yellow-500', icon: Clock },
+      in_progress: { color: 'bg-blue-500', icon: AlertCircle },
+      completed: { color: 'bg-green-500', icon: CheckCircle },
+      cancelled: { color: 'bg-red-500', icon: AlertCircle },
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const Icon = config.icon;
+
+    return (
+      <Badge className={`${config.color} text-white`}>
+        <Icon className="w-3 h-3 mr-1" />
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const colors = {
+      low: 'bg-gray-500',
+      normal: 'bg-blue-500',
+      high: 'bg-orange-500',
+      urgent: 'bg-red-500',
+    };
+
+    return (
+      <Badge className={`${colors[priority as keyof typeof colors] || colors.normal} text-white`}>
+        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+      </Badge>
+    );
   };
 
   const columns = [
-    { key: 'testId', label: 'Test ID' },
-    { 
-      key: 'patientName', 
+    {
+      key: 'test_name',
+      label: 'Test Name',
+      sortable: true,
+    },
+    {
+      key: 'patient_id',
       label: 'Patient',
-      render: (test: LabTest) => {
-        if (!test || !test.patientId) return <span className="text-muted-foreground">Unknown Patient</span>;
-        const patient = patients.find(p => p?.id === test.patientId);
-        if (!patient) return <span className="text-muted-foreground">Patient Not Found</span>;
-        const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
-        return fullName || <span className="text-muted-foreground">No Name</span>;
-      }
+      render: (_, test: LabTest) => getPatientName(test.patient_id),
     },
-    { 
-      key: 'doctorName', 
+    {
+      key: 'doctor_id',
       label: 'Doctor',
-      render: (test: LabTest) => {
-        if (!test || !test.doctorId) return <span className="text-muted-foreground">Unknown Doctor</span>;
-        const doctor = doctors.find(d => d?.id === test.doctorId);
-        if (!doctor) return <span className="text-muted-foreground">Doctor Not Found</span>;
-        const fullName = `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim();
-        return fullName || <span className="text-muted-foreground">No Name</span>;
-      }
+      render: (_, test: LabTest) => getDoctorName(test.doctor_id),
     },
-    { key: 'testName', label: 'Test Name' },
-    { key: 'category', label: 'Category' },
-    { 
-      key: 'priority', 
+    {
+      key: 'test_date',
+      label: 'Test Date',
+      sortable: true,
+    },
+    {
+      key: 'priority',
       label: 'Priority',
-      render: (test: LabTest) => getPriorityBadge(test.priority)
+      render: (_, test: LabTest) => getPriorityBadge(test.priority),
     },
-    { 
-      key: 'status', 
+    {
+      key: 'status',
       label: 'Status',
-      render: (test: LabTest) => getStatusBadge(test.status)
+      render: (_, test: LabTest) => getStatusBadge(test.status),
     },
-    { key: 'orderDate', label: 'Order Date' },
-    { key: 'cost', label: 'Cost', render: (test: LabTest) => `$${test.cost}` }
+    {
+      key: 'cost',
+      label: 'Cost',
+      render: (value: number) => value ? `$${value.toFixed(2)}` : 'N/A',
+    },
   ];
+
+  const filteredTests = labTests.filter(test =>
+    test.test_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getPatientName(test.patient_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getDoctorName(test.doctor_id).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const pendingTests = labTests.filter(test => test.status === 'pending').length;
+  const inProgressTests = labTests.filter(test => test.status === 'in_progress').length;
+  const completedTests = labTests.filter(test => test.status === 'completed').length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading lab tests...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Lab Test Management</h1>
-          <p className="text-muted-foreground">Manage patient lab tests and results</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Lab Test
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedLabTest ? 'Edit Lab Test' : 'Create New Lab Test'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="patientId">Patient</Label>
-                  <Select value={formData.patientId} onValueChange={(value) => setFormData({...formData, patientId: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select patient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map(patient => (
-                        <SelectItem key={patient.id} value={patient.id}>
-                          {patient.firstName} {patient.lastName} ({patient.patientId})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="doctorId">Doctor</Label>
-                  <Select value={formData.doctorId} onValueChange={(value) => setFormData({...formData, doctorId: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select doctor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {doctors.map(doctor => (
-                        <SelectItem key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.firstName} {doctor.lastName} ({doctor.specialty})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <TestTube className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Total Tests</p>
+                <p className="text-2xl font-bold">{labTests.length}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="testName">Test Name</Label>
-                  <Input
-                    id="testName"
-                    value={formData.testName}
-                    onChange={(e) => setFormData({...formData, testName: e.target.value})}
-                    placeholder="e.g., Complete Blood Count"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="testType">Test Type</Label>
-                  <Select value={formData.testType} onValueChange={(value: LabTest['testType']) => setFormData({...formData, testType: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="blood">Blood</SelectItem>
-                      <SelectItem value="urine">Urine</SelectItem>
-                      <SelectItem value="imaging">Imaging</SelectItem>
-                      <SelectItem value="biopsy">Biopsy</SelectItem>
-                      <SelectItem value="culture">Culture</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                <p className="text-2xl font-bold">{pendingTests}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={(value: LabTest['category']) => setFormData({...formData, category: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hematology">Hematology</SelectItem>
-                      <SelectItem value="biochemistry">Biochemistry</SelectItem>
-                      <SelectItem value="microbiology">Microbiology</SelectItem>
-                      <SelectItem value="pathology">Pathology</SelectItem>
-                      <SelectItem value="radiology">Radiology</SelectItem>
-                      <SelectItem value="cardiology">Cardiology</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Priority</Label>
-                  <Select value={formData.priority} onValueChange={(value: LabTest['priority']) => setFormData({...formData, priority: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="routine">Routine</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                      <SelectItem value="stat">STAT</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                <p className="text-2xl font-bold">{inProgressTests}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="orderDate">Order Date</Label>
-                  <Input
-                    id="orderDate"
-                    type="date"
-                    value={formData.orderDate}
-                    onChange={(e) => setFormData({...formData, orderDate: e.target.value})}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sampleCollectedDate">Sample Collected</Label>
-                  <Input
-                    id="sampleCollectedDate"
-                    type="date"
-                    value={formData.sampleCollectedDate}
-                    onChange={(e) => setFormData({...formData, sampleCollectedDate: e.target.value})}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="reportDate">Report Date</Label>
-                  <Input
-                    id="reportDate"
-                    type="date"
-                    value={formData.reportDate}
-                    onChange={(e) => setFormData({...formData, reportDate: e.target.value})}
-                  />
-                </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold">{completedTests}</p>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cost">Cost ($)</Label>
-                  <Input
-                    id="cost"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({...formData, cost: e.target.value})}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="labTechnician">Lab Technician</Label>
-                  <Input
-                    id="labTechnician"
-                    value={formData.labTechnician}
-                    onChange={(e) => setFormData({...formData, labTechnician: e.target.value})}
-                    placeholder="Technician name"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="fastingRequired"
-                  checked={formData.fastingRequired}
-                  onChange={(e) => setFormData({...formData, fastingRequired: e.target.checked})}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="fastingRequired">Fasting Required</Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="instructions">Instructions</Label>
-                <Textarea
-                  id="instructions"
-                  value={formData.instructions}
-                  onChange={(e) => setFormData({...formData, instructions: e.target.value})}
-                  placeholder="Test preparation instructions..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="results">Results</Label>
-                <Textarea
-                  id="results"
-                  value={formData.results}
-                  onChange={(e) => setFormData({...formData, results: e.target.value})}
-                  placeholder="Test results..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="normalRange">Normal Range</Label>
-                  <Input
-                    id="normalRange"
-                    value={formData.normalRange}
-                    onChange={(e) => setFormData({...formData, normalRange: e.target.value})}
-                    placeholder="e.g., 4.5-11.0 x10³/µL"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="interpretation">Interpretation</Label>
-                  <Input
-                    id="interpretation"
-                    value={formData.interpretation}
-                    onChange={(e) => setFormData({...formData, interpretation: e.target.value})}
-                    placeholder="Normal, High, Low, etc."
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {selectedLabTest ? 'Update' : 'Create'} Lab Test
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <TestTube className="h-5 w-5" />
-              All Lab Tests
-            </CardTitle>
-            <div className="flex items-center space-x-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      {/* Data Table */}
+      <DataTable
+        title="Lab Test Management"
+        data={filteredTests}
+        columns={columns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onAdd={() => {
+          setSelectedLabTest(null);
+          setFormData({
+            patient_id: '',
+            doctor_id: '',
+            test_name: '',
+            test_type: '',
+            test_date: new Date().toISOString().split('T')[0],
+            priority: 'normal',
+            status: 'pending',
+            results: '',
+            normal_range: '',
+            notes: '',
+            cost: 0,
+            lab_technician: '',
+          });
+          setIsDialogOpen(true);
+        }}
+        addButtonText="Order Test"
+      />
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedLabTest ? 'Edit Lab Test' : 'Order New Lab Test'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Patient *</Label>
+                <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select patient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map(patient => (
+                      <SelectItem key={patient.id} value={patient.id}>
+                        {patient.first_name} {patient.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Doctor *</Label>
+                <Select value={formData.doctor_id} onValueChange={(value) => setFormData({...formData, doctor_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select doctor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctors.map(doctor => (
+                      <SelectItem key={doctor.id} value={doctor.id}>
+                        Dr. {doctor.first_name} {doctor.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Test Name *</Label>
                 <Input
-                  placeholder="Search lab tests..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 w-64"
+                  value={formData.test_name}
+                  onChange={(e) => setFormData({...formData, test_name: e.target.value})}
+                  placeholder="Complete Blood Count"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Test Type</Label>
+                <Input
+                  value={formData.test_type}
+                  onChange={(e) => setFormData({...formData, test_type: e.target.value})}
+                  placeholder="Blood"
                 />
               </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            title="Lab Tests"
-            data={filteredLabTests}
-            columns={columns}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onAdd={() => {
-              setSelectedLabTest(null);
-              resetForm();
-              setIsDialogOpen(true);
-            }}
-            addButtonText="New Lab Test"
-          />
-        </CardContent>
-      </Card>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Test Date</Label>
+                <Input
+                  type="date"
+                  value={formData.test_date}
+                  onChange={(e) => setFormData({...formData, test_date: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={formData.priority} onValueChange={(value: any) => setFormData({...formData, priority: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={formData.status} onValueChange={(value: any) => setFormData({...formData, status: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Cost</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.cost}
+                  onChange={(e) => setFormData({...formData, cost: parseFloat(e.target.value) || 0})}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Lab Technician</Label>
+                <Input
+                  value={formData.lab_technician}
+                  onChange={(e) => setFormData({...formData, lab_technician: e.target.value})}
+                  placeholder="John Smith"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Normal Range</Label>
+              <Input
+                value={formData.normal_range}
+                onChange={(e) => setFormData({...formData, normal_range: e.target.value})}
+                placeholder="4.5-11.0 x10³/μL"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Results</Label>
+              <Textarea
+                value={formData.results}
+                onChange={(e) => setFormData({...formData, results: e.target.value})}
+                placeholder="Test results..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                placeholder="Additional notes..."
+                rows={2}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" className="flex-1">
+                {selectedLabTest ? 'Update Test' : 'Order Test'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

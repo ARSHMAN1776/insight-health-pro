@@ -1,39 +1,46 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
-import { Package, AlertTriangle, Plus, TrendingDown, TrendingUp } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Textarea } from '../ui/textarea';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Badge } from '../ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { dataManager, Inventory } from '../../lib/dataManager';
-import DataTable, { Column } from '../shared/DataTable';
+import { Package, Plus, Search, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import DataTable from '../shared/DataTable';
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from '../ui/form';
 
 const inventorySchema = z.object({
-  name: z.string().min(1, 'Item name is required'),
-  category: z.enum(['medication', 'equipment', 'supplies', 'consumables']),
-  description: z.string().min(1, 'Description is required'),
-  quantity: z.number().min(0, 'Quantity must be non-negative'),
-  unit: z.string().min(1, 'Unit is required'),
-  minStockLevel: z.number().min(0, 'Minimum stock level must be non-negative'),
-  maxStockLevel: z.number().min(1, 'Maximum stock level must be positive'),
-  unitPrice: z.number().min(0, 'Unit price must be non-negative'),
-  supplier: z.string().min(1, 'Supplier is required'),
-  expiryDate: z.string().optional(),
-  batchNumber: z.string().optional(),
-  location: z.string().min(1, 'Location is required'),
+  item_name: z.string().min(1, 'Item name is required'),
+  category: z.string().min(1, 'Category is required'),
+  current_stock: z.number().min(0, 'Stock must be non-negative'),
+  minimum_stock: z.number().min(0, 'Minimum stock must be non-negative'),
+  maximum_stock: z.number().min(1, 'Maximum stock must be positive'),
+  unit_price: z.number().min(0, 'Price must be non-negative').optional(),
+  supplier: z.string().optional(),
+  expiry_date: z.string().optional(),
+  batch_number: z.string().optional(),
+  location: z.string().optional(),
 });
 
 type InventoryFormData = z.infer<typeof inventorySchema>;
 
 const InventoryManagement: React.FC = () => {
-  const [inventory, setInventory] = useState<Inventory[]>(dataManager.loadData('inventory'));
+  const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Inventory | null>(null);
   const { toast } = useToast();
@@ -41,79 +48,46 @@ const InventoryManagement: React.FC = () => {
   const form = useForm<InventoryFormData>({
     resolver: zodResolver(inventorySchema),
     defaultValues: {
-      name: '',
-      category: 'supplies',
-      description: '',
-      quantity: 0,
-      unit: '',
-      minStockLevel: 0,
-      maxStockLevel: 100,
-      unitPrice: 0,
+      item_name: '',
+      category: '',
+      current_stock: 0,
+      minimum_stock: 0,
+      maximum_stock: 100,
+      unit_price: 0,
       supplier: '',
-      expiryDate: '',
-      batchNumber: '',
+      expiry_date: '',
+      batch_number: '',
       location: '',
     },
   });
 
-  const createInventoryItem = (itemData: InventoryFormData): Inventory => {
-    const newItem: Inventory = {
-      ...(itemData as Required<InventoryFormData>),
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-      itemId: `ITM${Date.now().toString().substr(-8)}`,
-      status: itemData.quantity <= itemData.minStockLevel ? 'low_stock' : 
-              itemData.quantity === 0 ? 'out_of_stock' : 'available',
-      lastRestocked: new Date().toISOString(),
-      createdBy: 'current_user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+  useEffect(() => {
+    loadInventory();
+  }, []);
 
-    // Check expiry date
-    if (itemData.expiryDate && new Date(itemData.expiryDate) <= new Date()) {
-      newItem.status = 'expired';
+  const loadInventory = async () => {
+    try {
+      setLoading(true);
+      const items = await dataManager.getInventory();
+      setInventory(items);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load inventory',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-
-    return newItem;
   };
 
-  const updateInventoryItem = (id: string, updates: Partial<Inventory>): Inventory | null => {
-    const items = [...inventory];
-    const index = items.findIndex(item => item.id === id);
-    if (index === -1) return null;
-
-    const updatedItem = {
-      ...items[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Update status based on quantity
-    if (updatedItem.quantity <= updatedItem.minStockLevel) {
-      updatedItem.status = 'low_stock';
-    } else if (updatedItem.quantity === 0) {
-      updatedItem.status = 'out_of_stock';
-    } else {
-      updatedItem.status = 'available';
-    }
-
-    // Check expiry date
-    if (updatedItem.expiryDate && new Date(updatedItem.expiryDate) <= new Date()) {
-      updatedItem.status = 'expired';
-    }
-
-    items[index] = updatedItem;
-    dataManager.saveData('inventory', items);
-    return updatedItem;
-  };
-
-  const onSubmit = async (data: InventoryFormData) => {
+  const handleSubmit = async (data: InventoryFormData) => {
     try {
       if (selectedItem) {
         // Update existing item
-        const updated = updateInventoryItem(selectedItem.id, data);
+        const updated = await dataManager.updateInventory(selectedItem.id, data);
         if (updated) {
-          setInventory([...inventory]);
+          setInventory(prev => prev.map(item => item.id === selectedItem.id ? updated : item));
           toast({
             title: 'Success',
             description: 'Inventory item updated successfully',
@@ -121,24 +95,24 @@ const InventoryManagement: React.FC = () => {
         }
       } else {
         // Create new item
-        const newItem = createInventoryItem(data);
-        const updatedInventory = [...inventory, newItem];
-        dataManager.saveData('inventory', updatedInventory);
-        setInventory(updatedInventory);
-        
+        const newItem = await dataManager.createInventory({
+          ...data,
+          status: 'available' as const,
+        } as Omit<Inventory, 'id' | 'created_at' | 'updated_at'>);
+        setInventory(prev => [...prev, newItem]);
         toast({
           title: 'Success',
-          description: `Inventory item added successfully with ID: ${newItem.itemId}`,
+          description: 'Inventory item added successfully',
         });
       }
       
       form.reset();
-      setIsDialogOpen(false);
       setSelectedItem(null);
+      setIsDialogOpen(false);
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to save inventory item',
+        description: `Failed to ${selectedItem ? 'update' : 'add'} inventory item`,
         variant: 'destructive',
       });
     }
@@ -147,210 +121,172 @@ const InventoryManagement: React.FC = () => {
   const handleEdit = (item: Inventory) => {
     setSelectedItem(item);
     form.reset({
-      name: item.name,
-      category: item.category,
-      description: item.description,
-      quantity: item.quantity,
-      unit: item.unit,
-      minStockLevel: item.minStockLevel,
-      maxStockLevel: item.maxStockLevel,
-      unitPrice: item.unitPrice,
-      supplier: item.supplier,
-      expiryDate: item.expiryDate || '',
-      batchNumber: item.batchNumber || '',
-      location: item.location,
+      item_name: item.item_name,
+      category: item.category || '',
+      current_stock: item.current_stock,
+      minimum_stock: item.minimum_stock,
+      maximum_stock: item.maximum_stock,
+      unit_price: item.unit_price || 0,
+      supplier: item.supplier || '',
+      expiry_date: item.expiry_date || '',
+      batch_number: item.batch_number || '',
+      location: item.location || '',
     });
     setIsDialogOpen(true);
   };
 
-  const handleRestock = (item: Inventory, additionalQuantity: number) => {
-    const updated = updateInventoryItem(item.id, {
-      quantity: item.quantity + additionalQuantity,
-      lastRestocked: new Date().toISOString(),
-    });
-    
-    if (updated) {
-      setInventory(dataManager.loadData('inventory'));
+  const handleDelete = async (item: Inventory) => {
+    try {
+      const success = await dataManager.deleteInventory(item.id);
+      if (success) {
+        setInventory(prev => prev.filter(i => i.id !== item.id));
+        toast({
+          title: 'Success',
+          description: 'Inventory item deleted successfully',
+        });
+      }
+    } catch (error) {
       toast({
-        title: 'Success',
-        description: `${item.name} restocked with ${additionalQuantity} ${item.unit}`,
+        title: 'Error',
+        description: 'Failed to delete inventory item',
+        variant: 'destructive',
       });
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'available': return 'default';
-      case 'low_stock': return 'outline';
-      case 'out_of_stock': return 'destructive';
-      case 'expired': return 'destructive';
-      default: return 'secondary';
+  const getStockStatus = (item: Inventory) => {
+    if (item.current_stock === 0) {
+      return { status: 'Out of Stock', color: 'bg-red-500' };
+    } else if (item.current_stock <= item.minimum_stock) {
+      return { status: 'Low Stock', color: 'bg-yellow-500' };
+    } else {
+      return { status: 'In Stock', color: 'bg-green-500' };
     }
   };
 
-  const getCategoryBadgeVariant = (category: string) => {
-    switch (category) {
-      case 'medication': return 'default';
-      case 'equipment': return 'secondary';
-      case 'supplies': return 'outline';
-      case 'consumables': return 'outline';
-      default: return 'secondary';
-    }
-  };
-
-  // Calculate stats
-  const stats = {
-    totalItems: inventory.length,
-    lowStock: inventory.filter(item => item.status === 'low_stock').length,
-    outOfStock: inventory.filter(item => item.status === 'out_of_stock').length,
-    expired: inventory.filter(item => item.status === 'expired').length,
-    totalValue: inventory.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0),
-  };
-
-  const columns: Column[] = [
+  const columns = [
     {
-      key: 'itemId',
-      label: 'Item ID',
-      sortable: true,
-    },
-    {
-      key: 'name',
-      label: 'Name',
+      key: 'item_name',
+      label: 'Item Name',
       sortable: true,
     },
     {
       key: 'category',
       label: 'Category',
-      render: (category) => (
-        <Badge variant={getCategoryBadgeVariant(category)}>
-          {category.charAt(0).toUpperCase() + category.slice(1)}
-        </Badge>
-      ),
-    },
-    {
-      key: 'quantity',
-      label: 'Quantity',
       sortable: true,
-      render: (quantity, item) => (
-        <div className="flex items-center space-x-2">
-          <span>{quantity} {item.unit}</span>
-          {item.status === 'low_stock' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
-          {item.status === 'out_of_stock' && <AlertTriangle className="w-4 h-4 text-red-500" />}
-        </div>
-      ),
     },
     {
-      key: 'minStockLevel',
+      key: 'current_stock',
+      label: 'Current Stock',
+      sortable: true,
+    },
+    {
+      key: 'minimum_stock',
       label: 'Min Stock',
-      render: (minStock, item) => `${minStock} ${item.unit}`,
-    },
-    {
-      key: 'unitPrice',
-      label: 'Unit Price',
       sortable: true,
-      render: (price) => `$${price.toFixed(2)}`,
-    },
-    {
-      key: 'supplier',
-      label: 'Supplier',
-    },
-    {
-      key: 'location',
-      label: 'Location',
     },
     {
       key: 'status',
       label: 'Status',
-      render: (status) => (
-        <Badge variant={getStatusBadgeVariant(status)}>
-          {status.replace('_', ' ').toUpperCase()}
-        </Badge>
-      ),
+      render: (_, item: Inventory) => {
+        const { status, color } = getStockStatus(item);
+        return (
+          <Badge className={`${color} text-white`}>
+            {status}
+          </Badge>
+        );
+      },
     },
     {
-      key: 'expiryDate',
-      label: 'Expiry',
-      render: (date) => date ? new Date(date).toLocaleDateString() : 'N/A',
+      key: 'unit_price',
+      label: 'Unit Price',
+      render: (value: number) => value ? `$${value.toFixed(2)}` : 'N/A',
+    },
+    {
+      key: 'expiry_date',
+      label: 'Expiry Date',
+      render: (value: string) => value || 'N/A',
     },
   ];
 
+  const lowStockItems = inventory.filter(item => 
+    item.current_stock <= item.minimum_stock && item.current_stock > 0
+  );
+  const outOfStockItems = inventory.filter(item => item.current_stock === 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading inventory...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Package className="w-5 h-5 text-medical-blue" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Items</p>
-                <p className="text-xl font-bold">{stats.totalItems}</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Total Items</p>
+                <p className="text-2xl font-bold">{inventory.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingDown className="w-5 h-5 text-yellow-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Low Stock</p>
-                <p className="text-xl font-bold text-yellow-600">{stats.lowStock}</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">In Stock</p>
+                <p className="text-2xl font-bold">
+                  {inventory.filter(item => item.current_stock > item.minimum_stock).length}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Out of Stock</p>
-                <p className="text-xl font-bold text-red-600">{stats.outOfStock}</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <AlertTriangle className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
+                <p className="text-2xl font-bold">{lowStockItems.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Expired</p>
-                <p className="text-xl font-bold text-red-600">{stats.expired}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-medical-green" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-xl font-bold">${stats.totalValue.toLocaleString()}</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <XCircle className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Out of Stock</p>
+                <p className="text-2xl font-bold">{outOfStockItems.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Alerts */}
-      {(stats.lowStock > 0 || stats.outOfStock > 0 || stats.expired > 0) && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
+      {/* Low Stock Alert */}
+      {lowStockItems.length > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-600" />
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
               <div>
-                <h3 className="font-medium text-yellow-800 dark:text-yellow-200">Inventory Alerts</h3>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  {stats.outOfStock > 0 && `${stats.outOfStock} items out of stock. `}
-                  {stats.lowStock > 0 && `${stats.lowStock} items low on stock. `}
-                  {stats.expired > 0 && `${stats.expired} items expired.`}
+                <h4 className="font-semibold text-yellow-800">Low Stock Alert</h4>
+                <p className="text-sm text-yellow-700">
+                  {lowStockItems.length} item(s) are running low on stock
                 </p>
               </div>
             </div>
@@ -358,21 +294,13 @@ const InventoryManagement: React.FC = () => {
         </Card>
       )}
 
-      {/* Inventory Table */}
+      {/* Data Table */}
       <DataTable
         title="Inventory Management"
-        columns={columns}
         data={inventory}
+        columns={columns}
         onEdit={handleEdit}
-        onDelete={(id) => {
-          const items = inventory.filter(item => item.id !== id);
-          dataManager.saveData('inventory', items);
-          setInventory(items);
-          toast({
-            title: 'Success',
-            description: 'Inventory item deleted successfully',
-          });
-        }}
+        onDelete={handleDelete}
         onAdd={() => {
           setSelectedItem(null);
           form.reset();
@@ -381,21 +309,21 @@ const InventoryManagement: React.FC = () => {
         addButtonText="Add Item"
       />
 
-      {/* Add/Edit Inventory Dialog */}
+      {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedItem ? 'Edit Inventory Item' : 'Add New Item'}
+              {selectedItem ? 'Edit Inventory Item' : 'Add New Inventory Item'}
             </DialogTitle>
           </DialogHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="item_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Item Name</FormLabel>
@@ -406,60 +334,32 @@ const InventoryManagement: React.FC = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="medication">Medication</SelectItem>
-                          <SelectItem value="equipment">Equipment</SelectItem>
-                          <SelectItem value="supplies">Supplies</SelectItem>
-                          <SelectItem value="consumables">Consumables</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input placeholder="Medication" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Item description..."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="quantity"
+                  name="current_stock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Quantity</FormLabel>
+                      <FormLabel>Current Stock</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
-                          min="0"
                           {...field}
                           onChange={e => field.onChange(parseInt(e.target.value) || 0)}
                         />
@@ -468,32 +368,56 @@ const InventoryManagement: React.FC = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
-                  name="unit"
+                  name="minimum_stock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Unit</FormLabel>
+                      <FormLabel>Minimum Stock</FormLabel>
                       <FormControl>
-                        <Input placeholder="tablets, boxes, etc." {...field} />
+                        <Input 
+                          type="number" 
+                          {...field}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
-                  name="unitPrice"
+                  name="maximum_stock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Unit Price ($)</FormLabel>
+                      <FormLabel>Maximum Stock</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          {...field}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="unit_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit Price</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           step="0.01"
-                          min="0"
+                          placeholder="0.00"
                           {...field}
                           onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
                         />
@@ -502,49 +426,7 @@ const InventoryManagement: React.FC = () => {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="minStockLevel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Minimum Stock Level</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="maxStockLevel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Stock Level</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="1"
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value) || 1)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="supplier"
@@ -552,21 +434,7 @@ const InventoryManagement: React.FC = () => {
                     <FormItem>
                       <FormLabel>Supplier</FormLabel>
                       <FormControl>
-                        <Input placeholder="Supplier name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Storage Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Pharmacy, Storage Room A, etc." {...field} />
+                        <Input placeholder="ABC Medical Supplies" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -574,13 +442,13 @@ const InventoryManagement: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="expiryDate"
+                  name="expiry_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Expiry Date (Optional)</FormLabel>
+                      <FormLabel>Expiry Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -588,15 +456,29 @@ const InventoryManagement: React.FC = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
-                  name="batchNumber"
+                  name="batch_number"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Batch Number (Optional)</FormLabel>
+                      <FormLabel>Batch Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="Batch/Lot number" {...field} />
+                        <Input placeholder="BATCH001" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Shelf A1" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -608,15 +490,7 @@ const InventoryManagement: React.FC = () => {
                 <Button type="submit" className="flex-1">
                   {selectedItem ? 'Update Item' : 'Add Item'}
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    setSelectedItem(null);
-                    form.reset();
-                  }}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
               </div>
