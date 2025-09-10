@@ -77,7 +77,7 @@ const ReceptionistDashboard: React.FC = () => {
                   <span className="text-sm">Register Patient</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
                 <PatientRegistrationForm onClose={() => handleModalClose('patientRegistration')} />
               </DialogContent>
             </Dialog>
@@ -89,7 +89,7 @@ const ReceptionistDashboard: React.FC = () => {
                   <span className="text-sm">Register Doctor</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
                 <DoctorRegistrationForm onClose={() => handleModalClose('doctorRegistration')} />
               </DialogContent>
             </Dialog>
@@ -101,7 +101,7 @@ const ReceptionistDashboard: React.FC = () => {
                   <span className="text-sm">Register Nurse</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
                 <NurseRegistrationForm onClose={() => handleModalClose('nurseRegistration')} />
               </DialogContent>
             </Dialog>
@@ -122,7 +122,7 @@ const ReceptionistDashboard: React.FC = () => {
                   <span className="text-sm">Payment Management</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
                 <PaymentManagementForm onClose={() => handleModalClose('paymentManagement')} />
               </DialogContent>
             </Dialog>
@@ -134,7 +134,7 @@ const ReceptionistDashboard: React.FC = () => {
                   <span className="text-sm">Update Records</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
                 <RecordUpdateForm onClose={() => handleModalClose('recordUpdate')} />
               </DialogContent>
             </Dialog>

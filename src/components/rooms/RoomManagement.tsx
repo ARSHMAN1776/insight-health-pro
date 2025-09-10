@@ -276,7 +276,7 @@ const RoomManagement: React.FC = () => {
               Add New Room
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
             <DialogHeader>
               <DialogTitle className="text-xl text-medical-blue">
                 {selectedRoom ? 'Edit Room' : 'Add New Room'}
@@ -284,7 +284,7 @@ const RoomManagement: React.FC = () => {
             </DialogHeader>
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-h-[70vh] overflow-y-auto scroll-smooth px-1">
                 {/* Basic Information Section */}
                 <Card className="card-gradient">
                   <CardHeader className="pb-3">

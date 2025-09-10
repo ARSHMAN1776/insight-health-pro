@@ -99,7 +99,7 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto scroll-smooth px-1">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -108,7 +108,15 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Dr. John" {...field} />
+                      <Input 
+                        placeholder="Dr. John" 
+                        {...field} 
+                        onFocus={(e) => {
+                          setTimeout(() => {
+                            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 100);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -122,7 +130,15 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Smith" {...field} />
+                      <Input 
+                        placeholder="Smith" 
+                        {...field} 
+                        onFocus={(e) => {
+                          setTimeout(() => {
+                            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 100);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

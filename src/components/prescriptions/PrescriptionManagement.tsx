@@ -194,7 +194,7 @@ const PrescriptionManagement: React.FC = () => {
               New Prescription
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth">
             <DialogHeader>
               <DialogTitle>
                 {selectedPrescription ? 'Edit Prescription' : 'Create New Prescription'}
@@ -204,8 +204,17 @@ const PrescriptionManagement: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="patient_id">Patient</Label>
-                  <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
-                    <SelectTrigger>
+                  <Select 
+                    value={formData.patient_id} 
+                    onValueChange={(value) => setFormData({...formData, patient_id: value})}
+                    onOpenChange={() => {
+                      setTimeout(() => {
+                        const element = document.querySelector('[data-field="patient_id"]');
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
+                  >
+                    <SelectTrigger data-field="patient_id">
                       <SelectValue placeholder="Select patient" />
                     </SelectTrigger>
                     <SelectContent>
@@ -220,8 +229,17 @@ const PrescriptionManagement: React.FC = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="doctor_id">Doctor</Label>
-                  <Select value={formData.doctor_id} onValueChange={(value) => setFormData({...formData, doctor_id: value})}>
-                    <SelectTrigger>
+                  <Select 
+                    value={formData.doctor_id} 
+                    onValueChange={(value) => setFormData({...formData, doctor_id: value})}
+                    onOpenChange={() => {
+                      setTimeout(() => {
+                        const element = document.querySelector('[data-field="doctor_id"]');
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
+                  >
+                    <SelectTrigger data-field="doctor_id">
                       <SelectValue placeholder="Select doctor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -240,8 +258,15 @@ const PrescriptionManagement: React.FC = () => {
                   <Label htmlFor="medication_name">Medication</Label>
                   <Input
                     id="medication_name"
+                    data-field="medication_name"
                     value={formData.medication_name}
                     onChange={(e) => setFormData({...formData, medication_name: e.target.value})}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        const element = document.querySelector('[data-field="medication_name"]');
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
                     placeholder="e.g., Lisinopril"
                     required
                   />
@@ -251,8 +276,15 @@ const PrescriptionManagement: React.FC = () => {
                   <Label htmlFor="dosage">Dosage</Label>
                   <Input
                     id="dosage"
+                    data-field="dosage"
                     value={formData.dosage}
                     onChange={(e) => setFormData({...formData, dosage: e.target.value})}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        const element = document.querySelector('[data-field="dosage"]');
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
                     placeholder="e.g., 10mg"
                     required
                   />
@@ -264,8 +296,15 @@ const PrescriptionManagement: React.FC = () => {
                   <Label htmlFor="frequency">Frequency</Label>
                   <Input
                     id="frequency"
+                    data-field="frequency"
                     value={formData.frequency}
                     onChange={(e) => setFormData({...formData, frequency: e.target.value})}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        const element = document.querySelector('[data-field="frequency"]');
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
                     placeholder="e.g., Once daily"
                     required
                   />
@@ -275,8 +314,15 @@ const PrescriptionManagement: React.FC = () => {
                   <Label htmlFor="duration">Duration</Label>
                   <Input
                     id="duration"
+                    data-field="duration"
                     value={formData.duration}
                     onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        const element = document.querySelector('[data-field="duration"]');
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
                     placeholder="e.g., 30 days"
                     required
                   />
@@ -286,10 +332,17 @@ const PrescriptionManagement: React.FC = () => {
                   <Label htmlFor="quantity">Quantity</Label>
                   <Input
                     id="quantity"
+                    data-field="quantity"
                     type="number"
                     min="1"
                     value={formData.quantity}
                     onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        const element = document.querySelector('[data-field="quantity"]');
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
                     placeholder="30"
                     required
                   />
@@ -300,8 +353,15 @@ const PrescriptionManagement: React.FC = () => {
                 <Label htmlFor="instructions">Instructions</Label>
                 <Textarea
                   id="instructions"
+                  data-field="instructions"
                   value={formData.instructions}
                   onChange={(e) => setFormData({...formData, instructions: e.target.value})}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      const element = document.querySelector('[data-field="instructions"]');
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                  }}
                   placeholder="Take with food, avoid alcohol..."
                   rows={3}
                 />
@@ -311,8 +371,15 @@ const PrescriptionManagement: React.FC = () => {
                 <Label htmlFor="side_effects">Side Effects</Label>
                 <Textarea
                   id="side_effects"
+                  data-field="side_effects"
                   value={formData.side_effects}
                   onChange={(e) => setFormData({...formData, side_effects: e.target.value})}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      const element = document.querySelector('[data-field="side_effects"]');
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                  }}
                   placeholder="Dizziness, nausea..."
                   rows={2}
                 />
@@ -322,8 +389,15 @@ const PrescriptionManagement: React.FC = () => {
                 <Label htmlFor="drug_interactions">Drug Interactions</Label>
                 <Textarea
                   id="drug_interactions"
+                  data-field="drug_interactions"
                   value={formData.drug_interactions}
                   onChange={(e) => setFormData({...formData, drug_interactions: e.target.value})}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      const element = document.querySelector('[data-field="drug_interactions"]');
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                  }}
                   placeholder="Avoid taking with aspirin, warfarin..."
                   rows={2}
                 />
