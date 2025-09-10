@@ -16,64 +16,73 @@ import type { Prescription } from '@/lib/dataManager';
 
 const PrescriptionManagement: React.FC = () => {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [patients, setPatients] = useState(dataManager.getPatients());
-  const [doctors, setDoctors] = useState(dataManager.getDoctors());
+  const [patients, setPatients] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize sample data and load all data
-    dataManager.initializeSampleData();
-    setPrescriptions(dataManager.getPrescriptions());
-    setPatients(dataManager.getPatients());
-    setDoctors(dataManager.getDoctors());
+    const loadData = async () => {
+      try {
+        const [prescriptionsData, patientsData, doctorsData] = await Promise.all([
+          dataManager.getPrescriptions(),
+          dataManager.getPatients(),
+          dataManager.getDoctors()
+        ]);
+        setPrescriptions(prescriptionsData);
+        setPatients(patientsData);
+        setDoctors(doctorsData);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    };
+    loadData();
   }, []);
 
   const [formData, setFormData] = useState({
-    patientId: '',
-    doctorId: '',
-    medication: '',
+    patient_id: '',
+    doctor_id: '',
+    medication_name: '',
     dosage: '',
     frequency: '',
     duration: '',
     instructions: '',
-    startDate: '',
-    endDate: '',
-    refills: '',
-    sideEffects: '',
-    interactions: ''
+    quantity: '',
+    side_effects: '',
+    drug_interactions: ''
   });
 
 
   const filteredPrescriptions = prescriptions.filter(prescription =>
-    prescription.medication.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    prescription.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    prescription.doctorId.toLowerCase().includes(searchTerm.toLowerCase())
+    prescription.medication_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    prescription.patient_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    prescription.doctor_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       const prescriptionData = {
         ...formData,
-        refills: parseInt(formData.refills) || 0,
-        interactions: formData.interactions.split(',').map(s => s.trim()).filter(s => s),
-        createdBy: 'current-user'
+        quantity: parseInt(formData.quantity) || 1,
+        status: 'active' as const,
+        date_prescribed: new Date().toISOString().split('T')[0]
       };
 
       if (selectedPrescription) {
-        const updated = dataManager.updatePrescription(selectedPrescription.id, prescriptionData);
-        setPrescriptions(dataManager.getPrescriptions());
+        await dataManager.updatePrescription(selectedPrescription.id, prescriptionData);
         toast({ title: 'Success', description: 'Prescription updated successfully' });
       } else {
-        const newPrescription = dataManager.createPrescription(prescriptionData);
-        setPrescriptions(dataManager.getPrescriptions());
+        await dataManager.createPrescription(prescriptionData);
         toast({ title: 'Success', description: 'Prescription created successfully' });
       }
 
+      // Reload data
+      const updatedPrescriptions = await dataManager.getPrescriptions();
+      setPrescriptions(updatedPrescriptions);
       resetForm();
       setIsDialogOpen(false);
     } catch (error) {
@@ -83,18 +92,16 @@ const PrescriptionManagement: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      patientId: '',
-      doctorId: '',
-      medication: '',
+      patient_id: '',
+      doctor_id: '',
+      medication_name: '',
       dosage: '',
       frequency: '',
       duration: '',
       instructions: '',
-      startDate: '',
-      endDate: '',
-      refills: '',
-      sideEffects: '',
-      interactions: ''
+      quantity: '',
+      side_effects: '',
+      drug_interactions: ''
     });
     setSelectedPrescription(null);
   };
@@ -102,49 +109,51 @@ const PrescriptionManagement: React.FC = () => {
   const handleEdit = (prescription: Prescription) => {
     setSelectedPrescription(prescription);
     setFormData({
-      patientId: prescription.patientId,
-      doctorId: prescription.doctorId,
-      medication: prescription.medication,
-      dosage: prescription.dosage,
-      frequency: prescription.frequency,
-      duration: prescription.duration,
-      instructions: prescription.instructions,
-      startDate: prescription.startDate,
-      endDate: prescription.endDate,
-      refills: prescription.refills.toString(),
-      sideEffects: prescription.sideEffects || '',
-      interactions: prescription.interactions?.join(', ') || ''
+      patient_id: prescription.patient_id,
+      doctor_id: prescription.doctor_id,
+      medication_name: prescription.medication_name,
+      dosage: prescription.dosage || '',
+      frequency: prescription.frequency || '',
+      duration: prescription.duration || '',
+      instructions: prescription.instructions || '',
+      quantity: prescription.quantity?.toString() || '',
+      side_effects: prescription.side_effects || '',
+      drug_interactions: prescription.drug_interactions || ''
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    dataManager.deletePrescription(id);
-    setPrescriptions(dataManager.getPrescriptions());
-    toast({ title: 'Success', description: 'Prescription deleted successfully' });
+  const handleDelete = async (id: string) => {
+    try {
+      await dataManager.deletePrescription(id);
+      const updatedPrescriptions = await dataManager.getPrescriptions();
+      setPrescriptions(updatedPrescriptions);
+      toast({ title: 'Success', description: 'Prescription deleted successfully' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete prescription', variant: 'destructive' });
+    }
   };
 
   const getStatusBadge = (status: Prescription['status']) => {
     const variants = {
       active: 'default',
       completed: 'secondary',
-      cancelled: 'destructive',
-      expired: 'outline'
+      cancelled: 'destructive'
     } as const;
     
-    return <Badge variant={variants[status]}>{status}</Badge>;
+    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
   };
 
   const columns = [
-    { key: 'prescriptionId', label: 'Prescription ID' },
+    { key: 'id', label: 'Prescription ID' },
     { 
       key: 'patientName', 
       label: 'Patient',
       render: (prescription: Prescription) => {
-        if (!prescription || !prescription.patientId) return <span className="text-muted-foreground">Unknown Patient</span>;
-        const patient = patients.find(p => p?.id === prescription.patientId);
+        if (!prescription || !prescription.patient_id) return <span className="text-muted-foreground">Unknown Patient</span>;
+        const patient = patients.find(p => p?.id === prescription.patient_id);
         if (!patient) return <span className="text-muted-foreground">Patient Not Found</span>;
-        const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+        const fullName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
         return fullName || <span className="text-muted-foreground">No Name</span>;
       }
     },
@@ -152,14 +161,14 @@ const PrescriptionManagement: React.FC = () => {
       key: 'doctorName', 
       label: 'Doctor',
       render: (prescription: Prescription) => {
-        if (!prescription || !prescription.doctorId) return <span className="text-muted-foreground">Unknown Doctor</span>;
-        const doctor = doctors.find(d => d?.id === prescription.doctorId);
+        if (!prescription || !prescription.doctor_id) return <span className="text-muted-foreground">Unknown Doctor</span>;
+        const doctor = doctors.find(d => d?.id === prescription.doctor_id);
         if (!doctor) return <span className="text-muted-foreground">Doctor Not Found</span>;
-        const fullName = `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim();
+        const fullName = `Dr. ${doctor.first_name || ''} ${doctor.last_name || ''}`.trim();
         return fullName || <span className="text-muted-foreground">No Name</span>;
       }
     },
-    { key: 'medication', label: 'Medication' },
+    { key: 'medication_name', label: 'Medication' },
     { key: 'dosage', label: 'Dosage' },
     { key: 'frequency', label: 'Frequency' },
     { 
@@ -167,8 +176,8 @@ const PrescriptionManagement: React.FC = () => {
       label: 'Status',
       render: (prescription: Prescription) => getStatusBadge(prescription.status)
     },
-    { key: 'startDate', label: 'Start Date' },
-    { key: 'endDate', label: 'End Date' }
+    { key: 'date_prescribed', label: 'Date Prescribed' },
+    { key: 'duration', label: 'Duration' }
   ];
 
   return (
@@ -194,15 +203,15 @@ const PrescriptionManagement: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="patientId">Patient</Label>
-                  <Select value={formData.patientId} onValueChange={(value) => setFormData({...formData, patientId: value})}>
+                  <Label htmlFor="patient_id">Patient</Label>
+                  <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select patient" />
                     </SelectTrigger>
                     <SelectContent>
                       {patients.map(patient => (
                         <SelectItem key={patient.id} value={patient.id}>
-                          {patient.firstName} {patient.lastName} ({patient.patientId})
+                          {patient.first_name} {patient.last_name} ({patient.id.substring(0, 8)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -210,15 +219,15 @@ const PrescriptionManagement: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="doctorId">Doctor</Label>
-                  <Select value={formData.doctorId} onValueChange={(value) => setFormData({...formData, doctorId: value})}>
+                  <Label htmlFor="doctor_id">Doctor</Label>
+                  <Select value={formData.doctor_id} onValueChange={(value) => setFormData({...formData, doctor_id: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select doctor" />
                     </SelectTrigger>
                     <SelectContent>
                       {doctors.map(doctor => (
                         <SelectItem key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.firstName} {doctor.lastName} ({doctor.specialty})
+                          Dr. {doctor.first_name} {doctor.last_name} ({doctor.specialization})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -228,11 +237,11 @@ const PrescriptionManagement: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="medication">Medication</Label>
+                  <Label htmlFor="medication_name">Medication</Label>
                   <Input
-                    id="medication"
-                    value={formData.medication}
-                    onChange={(e) => setFormData({...formData, medication: e.target.value})}
+                    id="medication_name"
+                    value={formData.medication_name}
+                    onChange={(e) => setFormData({...formData, medication_name: e.target.value})}
                     placeholder="e.g., Lisinopril"
                     required
                   />
@@ -250,7 +259,7 @@ const PrescriptionManagement: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="frequency">Frequency</Label>
                   <Input
@@ -272,40 +281,17 @@ const PrescriptionManagement: React.FC = () => {
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                    required
-                  />
-                </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
+                  <Label htmlFor="quantity">Quantity</Label>
                   <Input
-                    id="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="refills">Refills</Label>
-                  <Input
-                    id="refills"
+                    id="quantity"
                     type="number"
-                    min="0"
-                    value={formData.refills}
-                    onChange={(e) => setFormData({...formData, refills: e.target.value})}
-                    placeholder="0"
+                    min="1"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                    placeholder="30"
+                    required
                   />
                 </div>
               </div>
@@ -322,23 +308,24 @@ const PrescriptionManagement: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sideEffects">Side Effects</Label>
+                <Label htmlFor="side_effects">Side Effects</Label>
                 <Textarea
-                  id="sideEffects"
-                  value={formData.sideEffects}
-                  onChange={(e) => setFormData({...formData, sideEffects: e.target.value})}
+                  id="side_effects"
+                  value={formData.side_effects}
+                  onChange={(e) => setFormData({...formData, side_effects: e.target.value})}
                   placeholder="Dizziness, nausea..."
                   rows={2}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="interactions">Drug Interactions (comma separated)</Label>
-                <Input
-                  id="interactions"
-                  value={formData.interactions}
-                  onChange={(e) => setFormData({...formData, interactions: e.target.value})}
-                  placeholder="Aspirin, Warfarin..."
+                <Label htmlFor="drug_interactions">Drug Interactions</Label>
+                <Textarea
+                  id="drug_interactions"
+                  value={formData.drug_interactions}
+                  onChange={(e) => setFormData({...formData, drug_interactions: e.target.value})}
+                  placeholder="Avoid taking with aspirin, warfarin..."
+                  rows={2}
                 />
               </div>
 

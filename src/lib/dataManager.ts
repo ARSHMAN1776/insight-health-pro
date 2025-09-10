@@ -472,7 +472,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Prescription;
   }
 
   async getPrescriptions(): Promise<Prescription[]> {
@@ -482,7 +482,7 @@ class DataManager {
       .order('date_prescribed', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Prescription[];
   }
 
   async getPrescriptionsByPatient(patientId: string): Promise<Prescription[]> {
@@ -493,7 +493,7 @@ class DataManager {
       .order('date_prescribed', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Prescription[];
   }
 
   async updatePrescription(id: string, updates: Partial<Prescription>): Promise<Prescription | null> {
@@ -505,7 +505,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Prescription;
   }
 
   async deletePrescription(id: string): Promise<boolean> {
@@ -526,7 +526,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as LabTest;
   }
 
   async getLabTests(): Promise<LabTest[]> {
@@ -536,7 +536,7 @@ class DataManager {
       .order('test_date', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as LabTest[];
   }
 
   async getLabTestsByPatient(patientId: string): Promise<LabTest[]> {
@@ -547,7 +547,7 @@ class DataManager {
       .order('test_date', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as LabTest[];
   }
 
   async updateLabTest(id: string, updates: Partial<LabTest>): Promise<LabTest | null> {
@@ -559,7 +559,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as LabTest;
   }
 
   async deleteLabTest(id: string): Promise<boolean> {
@@ -580,7 +580,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Inventory;
   }
 
   async getInventory(): Promise<Inventory[]> {
@@ -590,7 +590,7 @@ class DataManager {
       .order('item_name', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Inventory[];
   }
 
   async updateInventory(id: string, updates: Partial<Inventory>): Promise<Inventory | null> {
@@ -602,7 +602,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Inventory;
   }
 
   async deleteInventory(id: string): Promise<boolean> {
@@ -623,7 +623,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Room;
   }
 
   async getRooms(): Promise<Room[]> {
@@ -633,7 +633,7 @@ class DataManager {
       .order('room_number', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Room[];
   }
 
   async updateRoom(id: string, updates: Partial<Room>): Promise<Room | null> {
@@ -645,7 +645,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Room;
   }
 
   async deleteRoom(id: string): Promise<boolean> {
@@ -666,7 +666,7 @@ class DataManager {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Payment;
   }
 
   async getPayments(): Promise<Payment[]> {
@@ -676,7 +676,7 @@ class DataManager {
       .order('payment_date', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Payment[];
   }
 
   async getPaymentsByPatient(patientId: string): Promise<Payment[]> {
@@ -687,7 +687,7 @@ class DataManager {
       .order('payment_date', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Payment[];
   }
 
   async updatePayment(id: string, updates: Partial<Payment>): Promise<Payment | null> {
@@ -699,7 +699,7 @@ class DataManager {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Payment;
   }
 
   async deletePayment(id: string): Promise<boolean> {
