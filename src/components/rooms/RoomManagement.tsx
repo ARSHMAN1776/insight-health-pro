@@ -28,7 +28,7 @@ const roomSchema = z.object({
   floor: z.string().min(1, 'Floor is required'),
   department: z.string().min(1, 'Department is required'),
   capacity: z.number().min(1, 'Capacity must be at least 1').max(10, 'Capacity cannot exceed 10'),
-  status: z.enum(['available', 'occupied', 'maintenance', 'cleaning']),
+  status: z.enum(['available', 'occupied', 'maintenance', 'reserved']),
   features: z.array(z.string()).optional(),
   dailyRate: z.number().min(0, 'Daily rate must be positive'),
   description: z.string().optional(),
@@ -85,14 +85,28 @@ const RoomManagement: React.FC = () => {
 
   const onSubmit = async (data: RoomFormData) => {
     try {
+      // Map camelCase form data to snake_case database schema
+      const roomData = {
+        room_number: data.roomNumber,
+        room_type: data.roomType,
+        floor: parseInt(data.floor) || 1,
+        department: data.department,
+        capacity: data.capacity,
+        status: data.status,
+        amenities: data.features || [],
+        daily_rate: data.dailyRate,
+        notes: data.description || '',
+        current_occupancy: 0, // Default for new rooms
+      };
+
       if (selectedRoom) {
-        await dataManager.updateRoom(selectedRoom.id, data as any);
+        await dataManager.updateRoom(selectedRoom.id, roomData);
         toast({
           title: "Success",
           description: "Room updated successfully",
         });
       } else {
-        await dataManager.createRoom(data as any);
+        await dataManager.createRoom(roomData);
         toast({
           title: "Success",
           description: "Room created successfully",
@@ -104,6 +118,7 @@ const RoomManagement: React.FC = () => {
       form.reset();
       loadRooms();
     } catch (error) {
+      console.error('Room save error:', error);
       toast({
         title: "Error",
         description: selectedRoom ? "Failed to update room" : "Failed to create room",
@@ -115,18 +130,18 @@ const RoomManagement: React.FC = () => {
   const handleEdit = (room: any) => {
     setSelectedRoom(room);
     form.reset({
-      roomNumber: room.roomNumber,
-      roomType: room.roomType,
-      floor: room.floor,
+      roomNumber: room.room_number,
+      roomType: room.room_type,
+      floor: room.floor?.toString() || '',
       department: room.department,
       capacity: room.capacity,
       status: room.status,
-      features: room.features || [],
-      dailyRate: room.dailyRate,
-      description: room.description || '',
-      hasOxygen: room.hasOxygen || false,
-      hasMonitor: room.hasMonitor || false,
-      isAccessible: room.isAccessible || false,
+      features: room.amenities || [],
+      dailyRate: room.daily_rate || 0,
+      description: room.notes || '',
+      hasOxygen: false, // These fields don't exist in DB yet
+      hasMonitor: false,
+      isAccessible: false,
     });
     setIsDialogOpen(true);
   };
@@ -153,7 +168,7 @@ const RoomManagement: React.FC = () => {
       case 'available': return 'default';
       case 'occupied': return 'destructive';
       case 'maintenance': return 'secondary';
-      case 'cleaning': return 'outline';
+      case 'reserved': return 'outline';
       default: return 'default';
     }
   };
@@ -163,15 +178,15 @@ const RoomManagement: React.FC = () => {
       case 'available': return CheckCircle;
       case 'occupied': return XCircle;
       case 'maintenance': return Clock;
-      case 'cleaning': return Clock;
+      case 'reserved': return Clock;
       default: return CheckCircle;
     }
   };
 
   const filteredRooms = rooms.filter(room => {
-    const matchesSearch = room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = room.room_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          room.department.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'all' || room.roomType === filterType;
+    const matchesType = filterType === 'all' || room.room_type === filterType;
     const matchesStatus = filterStatus === 'all' || room.status === filterStatus;
     
     return matchesSearch && matchesType && matchesStatus;
@@ -185,23 +200,23 @@ const RoomManagement: React.FC = () => {
 
   const columns = [
     {
-      key: 'roomNumber',
+      key: 'room_number',
       label: 'Room Number',
       sortable: true,
       render: (room: any) => (
         <div className="flex items-center space-x-2">
           <Bed className="h-4 w-4 text-medical-blue" />
-          <span className="font-semibold text-medical-blue">{room.roomNumber}</span>
+          <span className="font-semibold text-medical-blue">{room.room_number}</span>
         </div>
       )
     },
     {
-      key: 'roomType',
+      key: 'room_type',
       label: 'Type',
       sortable: true,
       render: (room: any) => (
         <Badge variant="outline" className="bg-medical-blue-light text-medical-blue border-medical-blue">
-          {room.roomType}
+          {room.room_type}
         </Badge>
       )
     },
@@ -249,10 +264,10 @@ const RoomManagement: React.FC = () => {
       }
     },
     {
-      key: 'dailyRate',
+      key: 'daily_rate',
       label: 'Daily Rate',
       sortable: true,
-      render: (room: any) => `$${(room.dailyRate || 0).toFixed(2)}`
+      render: (room: any) => `$${(room.daily_rate || 0).toFixed(2)}`
     },
   ];
 
@@ -446,10 +461,10 @@ const RoomManagement: React.FC = () => {
                                   <RadioGroupItem value="maintenance" id="maintenance" />
                                   <Label htmlFor="maintenance" className="text-warning font-medium">Maintenance</Label>
                                 </div>
-                                <div className="flex items-center space-x-2 p-3 border-2 border-info/20 rounded-lg bg-info/5">
-                                  <RadioGroupItem value="cleaning" id="cleaning" />
-                                  <Label htmlFor="cleaning" className="text-info font-medium">Cleaning</Label>
-                                </div>
+                                 <div className="flex items-center space-x-2 p-3 border-2 border-info/20 rounded-lg bg-info/5">
+                                   <RadioGroupItem value="reserved" id="reserved" />
+                                   <Label htmlFor="reserved" className="text-info font-medium">Reserved</Label>
+                                 </div>
                               </RadioGroup>
                             </FormControl>
                             <FormMessage />

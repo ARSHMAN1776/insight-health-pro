@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
+import { dataManager } from '../../lib/dataManager';
+import PaymentsList from '../payments/PaymentsList';
 import { 
   Form, 
   FormControl, 
@@ -59,7 +61,19 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
 
   const onSubmit = async (data: PaymentFormData) => {
     try {
-      console.log('Payment data:', data);
+      // Map form data to database schema
+      const paymentData = {
+        patient_id: data.patientId, // This should ideally be a UUID from patient selection
+        amount: parseFloat(data.amount),
+        payment_method: data.paymentMethod as 'cash' | 'credit_card' | 'debit_card' | 'check' | 'insurance' | 'bank_transfer',
+        payment_status: data.paymentStatus as 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded',
+        description: `${data.serviceType} - ${data.notes || 'Payment processed'}`,
+        payment_date: data.billingDate,
+        invoice_number: `INV-${Date.now()}`, // Generate invoice number
+        transaction_id: `TXN-${Date.now()}`, // Generate transaction ID
+      };
+
+      await dataManager.createPayment(paymentData);
       
       toast({
         title: 'Success',
@@ -69,6 +83,7 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
       form.reset();
       onClose();
     } catch (error) {
+      console.error('Payment creation error:', error);
       toast({
         title: 'Error',
         description: 'Failed to save payment record',
@@ -299,6 +314,14 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
             </div>
           </form>
         </Form>
+        
+        {/* Add Recent Payments List */}
+        <div className="mt-6 pt-6 border-t">
+          <h3 className="text-lg font-semibold mb-4 text-medical-blue">Recent Payments</h3>
+          <div className="max-h-60 overflow-y-auto">
+            <PaymentsList />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
