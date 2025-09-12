@@ -20,15 +20,26 @@ import { useAuth } from '../../contexts/AuthContext';
 import { dataManager } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     loadDashboardData();
+  }, []);
+
+  // Real-time clock for Pakistan/Islamabad timezone
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
@@ -149,8 +160,13 @@ const AdminDashboard: React.FC = () => {
               {loading ? 'Loading...' : 'Refresh Data'}
             </Button>
             <div className="text-right">
-              <p className="text-sm text-primary-foreground/80">Current Time</p>
-              <p className="text-lg font-semibold">{new Date().toLocaleTimeString()}</p>
+              <p className="text-sm text-primary-foreground/80">Pakistan Time</p>
+              <p className="text-lg font-semibold">
+                {formatInTimeZone(currentTime, 'Asia/Karachi', 'HH:mm:ss')}
+              </p>
+              <p className="text-xs text-primary-foreground/60">
+                {formatInTimeZone(currentTime, 'Asia/Karachi', 'MMM dd, yyyy')}
+              </p>
             </div>
             <Heart className="w-12 h-12 text-primary-foreground/80" />
           </div>
