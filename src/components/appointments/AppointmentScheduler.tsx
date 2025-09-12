@@ -353,23 +353,23 @@ const AppointmentScheduler: React.FC = () => {
                   Schedule Appointment
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto scroll-smooth">
                 <DialogHeader>
                   <DialogTitle>
                     {selectedAppointment ? 'Edit Appointment' : 'Schedule New Appointment'}
                   </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto scroll-smooth px-1">
                     <FormField
                       control={form.control}
                       name="patientId"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Patient</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value} onOpenChange={() => { setTimeout(() => { const el = document.querySelector('[data-field="patientId"]') as HTMLElement | null; el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger data-field="patientId">
                                 <SelectValue placeholder="Select a patient" />
                               </SelectTrigger>
                             </FormControl>
@@ -391,9 +391,9 @@ const AppointmentScheduler: React.FC = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Doctor</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value} onOpenChange={() => { setTimeout(() => { const el = document.querySelector('[data-field="doctorId"]') as HTMLElement | null; el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger data-field="doctorId">
                                 <SelectValue placeholder="Select a doctor" />
                               </SelectTrigger>
                             </FormControl>
@@ -417,7 +417,7 @@ const AppointmentScheduler: React.FC = () => {
                           <FormItem>
                             <FormLabel>Date</FormLabel>
                             <FormControl>
-                              <Input type="date" {...field} />
+                              <Input type="date" {...field} onFocus={(e) => { setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -430,7 +430,7 @@ const AppointmentScheduler: React.FC = () => {
                           <FormItem>
                             <FormLabel>Time</FormLabel>
                             <FormControl>
-                              <Input type="time" {...field} />
+                              <Input type="time" {...field} onFocus={(e) => { setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -449,6 +449,7 @@ const AppointmentScheduler: React.FC = () => {
                                 type="number"
                                 {...field}
                                 onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                onFocus={(e) => { setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}
                               />
                             </FormControl>
                             <FormMessage />
@@ -461,9 +462,9 @@ const AppointmentScheduler: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Type</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value} onOpenChange={() => { setTimeout(() => { const el = document.querySelector('[data-field="type"]') as HTMLElement | null; el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}>
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger data-field="type">
                                   <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                               </FormControl>
@@ -487,7 +488,7 @@ const AppointmentScheduler: React.FC = () => {
                         <FormItem>
                           <FormLabel>Symptoms/Reason</FormLabel>
                           <FormControl>
-                            <Textarea placeholder="Describe symptoms or reason for visit" {...field} />
+                            <Textarea placeholder="Describe symptoms or reason for visit" {...field} onFocus={(e) => { setTimeout(() => { (e.target as HTMLTextAreaElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -500,7 +501,7 @@ const AppointmentScheduler: React.FC = () => {
                         <FormItem>
                           <FormLabel>Notes (Optional)</FormLabel>
                           <FormControl>
-                            <Textarea placeholder="Additional notes" {...field} />
+                            <Textarea placeholder="Additional notes" {...field} onFocus={(e) => { setTimeout(() => { (e.target as HTMLTextAreaElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
