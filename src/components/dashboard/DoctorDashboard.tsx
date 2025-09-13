@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { 
   Calendar, 
@@ -16,115 +16,101 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { dataManager, Appointment, Patient, MedicalRecord, Prescription } from '../../lib/dataManager';
+import { useToast } from '../../hooks/use-toast';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [appointmentsData, patientsData, recordsData, prescriptionsData] = await Promise.all([
+          dataManager.getAppointments(),
+          dataManager.getPatients(),
+          dataManager.getMedicalRecords(),
+          dataManager.getPrescriptions()
+        ]);
+        
+        setAppointments(appointmentsData.slice(0, 4)); // Show only first 4
+        setPatients(patientsData.slice(0, 3)); // Show only first 3
+        setMedicalRecords(recordsData);
+        setPrescriptions(prescriptionsData);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
+
+  const todayAppointments = appointments.filter(apt => 
+    new Date(apt.appointment_date).toDateString() === new Date().toDateString()
+  );
 
   const todayStats = [
     {
       title: 'Today\'s Appointments',
-      value: '12',
+      value: loading ? '...' : todayAppointments.length.toString(),
       icon: Calendar,
       color: 'bg-medical-blue'
     },
     {
-      title: 'Patients Seen',
-      value: '8',
+      title: 'Total Patients',
+      value: loading ? '...' : patients.length.toString(),
       icon: Users,
       color: 'bg-medical-green'
     },
     {
-      title: 'Pending Reports',
-      value: '3',
+      title: 'Medical Records',
+      value: loading ? '...' : medicalRecords.length.toString(),
       icon: FileText,
       color: 'bg-medical-orange'
     },
     {
       title: 'Prescriptions',
-      value: '15',
+      value: loading ? '...' : prescriptions.length.toString(),
       icon: Pill,
       color: 'bg-medical-purple'
     }
   ];
 
-  const upcomingAppointments = [
-    {
-      id: 1,
-      patient: 'John Smith',
-      time: '10:00 AM',
-      type: 'Follow-up',
-      status: 'confirmed',
-      duration: '30 min'
-    },
-    {
-      id: 2,
-      patient: 'Sarah Johnson',
-      time: '10:30 AM',
-      type: 'Consultation',
-      status: 'waiting',
-      duration: '45 min'
-    },
-    {
-      id: 3,
-      patient: 'Michael Brown',
-      time: '11:15 AM',
-      type: 'Emergency',
-      status: 'urgent',
-      duration: '60 min'
-    },
-    {
-      id: 4,
-      patient: 'Emma Davis',
-      time: '2:00 PM',
-      type: 'Check-up',
-      status: 'confirmed',
-      duration: '30 min'
-    }
-  ];
+  const getPatientName = (patientId: string) => {
+    const patient = patients.find(p => p.id === patientId);
+    return patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown Patient';
+  };
 
-  const recentPatients = [
-    {
-      id: 1,
-      name: 'Alice Wilson',
-      age: 45,
-      diagnosis: 'Hypertension',
-      lastVisit: '2 days ago',
-      status: 'stable'
-    },
-    {
-      id: 2,
-      name: 'Robert Miller',
-      age: 62,
-      diagnosis: 'Diabetes Type 2',
-      lastVisit: '1 week ago',
-      status: 'monitoring'
-    },
-    {
-      id: 3,
-      name: 'Lisa Anderson',
-      age: 38,
-      diagnosis: 'Migraine',
-      lastVisit: '3 days ago',
-      status: 'improving'
-    }
-  ];
+  const recentPatients = patients.slice(0, 3);
 
   const pendingTasks = [
     {
       id: 1,
-      task: 'Review lab results for John Smith',
+      task: `Review lab results for next patient`,
       priority: 'high',
       dueTime: '11:00 AM'
     },
     {
       id: 2,
-      task: 'Complete discharge summary for Patient #1234',
-      priority: 'medium',
+      task: 'Complete discharge summaries',
+      priority: 'medium', 
       dueTime: '2:00 PM'
     },
     {
       id: 3,
-      task: 'Update prescription for Sarah Johnson',
+      task: 'Update prescriptions',
       priority: 'low',
       dueTime: '4:00 PM'
     }
@@ -155,12 +141,17 @@ const DoctorDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Good morning, Dr. {user?.lastName}!</h1>
-            <p className="text-blue-100">You have 12 appointments scheduled for today.</p>
+            <p className="text-blue-100">You have {todayAppointments.length} appointments scheduled for today.</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-blue-100">Next Patient</p>
-              <p className="text-lg font-semibold">John Smith - 10:00 AM</p>
+              <p className="text-lg font-semibold">
+                {todayAppointments.length > 0 
+                  ? `${getPatientName(todayAppointments[0].patient_id)} - ${todayAppointments[0].appointment_time}` 
+                  : 'No appointments today'
+                }
+              </p>
             </div>
             <Stethoscope className="w-12 h-12 text-blue-200" />
           </div>
@@ -201,56 +192,38 @@ const DoctorDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {upcomingAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 bg-accent/50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback>{appointment.patient.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-medium text-foreground">{appointment.patient}</h4>
-                      <p className="text-sm text-muted-foreground">{appointment.type}</p>
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading appointments...</p>
+                </div>
+              ) : todayAppointments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No appointments scheduled for today</p>
+                </div>
+              ) : (
+                todayAppointments.map((appointment) => (
+                  <div key={appointment.id} className="flex items-center justify-between p-4 bg-accent/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback>{getPatientName(appointment.patient_id).split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="font-medium text-foreground">{getPatientName(appointment.patient_id)}</h4>
+                        <p className="text-sm text-muted-foreground">{appointment.type}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{appointment.appointment_time}</span>
+                      </div>
+                      <Badge variant="outline" className={getStatusColor(appointment.status)}>
+                        {appointment.status}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">{appointment.time}</span>
-                    </div>
-                    <Badge variant="outline" className={getStatusColor(appointment.status)}>
-                      {appointment.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pending Tasks */}
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-medical-orange" />
-              <span>Pending Tasks</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {pendingTasks.map((task) => (
-                <div key={task.id} className="p-3 bg-accent/50 rounded-lg">
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-sm font-medium text-foreground">{task.task}</p>
-                    <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Due: {task.dueTime}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -266,34 +239,46 @@ const DoctorDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentPatients.map((patient) => (
-              <div key={patient.id} className="p-4 bg-accent/50 rounded-lg">
-                <div className="flex items-center space-x-3 mb-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarFallback>{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h4 className="font-medium text-foreground">{patient.name}</h4>
-                    <p className="text-sm text-muted-foreground">Age: {patient.age}</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Heart className="w-4 h-4 text-medical-red" />
-                    <span className="text-sm">{patient.diagnosis}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{patient.lastVisit}</span>
-                    <Badge variant="outline" className={getStatusColor(patient.status)}>
-                      {patient.status}
-                    </Badge>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="w-full mt-3">
-                  View Details
-                </Button>
+            {loading ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-muted-foreground">Loading patients...</p>
               </div>
-            ))}
+            ) : recentPatients.length === 0 ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-muted-foreground">No patients found</p>
+              </div>
+            ) : (
+              recentPatients.map((patient) => (
+                <div key={patient.id} className="p-4 bg-accent/50 rounded-lg">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarFallback>{patient.first_name[0]}{patient.last_name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="font-medium text-foreground">{patient.first_name} {patient.last_name}</h4>
+                      <p className="text-sm text-muted-foreground">Age: {new Date().getFullYear() - new Date(patient.date_of_birth).getFullYear()}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Heart className="w-4 h-4 text-medical-red" />
+                      <span className="text-sm">{patient.medical_history || 'No medical history'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        Blood Type: {patient.blood_type || 'Unknown'}
+                      </span>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success">
+                        {patient.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full mt-3">
+                    View Details
+                  </Button>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

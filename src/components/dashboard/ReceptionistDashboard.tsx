@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Users, Calendar, DollarSign, Phone, UserPlus, Clock, Edit, FileText, UserCheck, Stethoscope } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -10,9 +10,14 @@ import DoctorRegistrationForm from '../forms/DoctorRegistrationForm';
 import NurseRegistrationForm from '../forms/NurseRegistrationForm';
 import PaymentManagementForm from '../forms/PaymentManagementForm';
 import RecordUpdateForm from '../forms/RecordUpdateForm';
+import { dataManager } from '../../lib/dataManager';
+import { useToast } from '../../hooks/use-toast';
 
 const ReceptionistDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ patients: 0, appointments: 0, payments: 0, totalRevenue: 0 });
   const [openModals, setOpenModals] = useState({
     patientRegistration: false,
     doctorRegistration: false,
@@ -20,6 +25,31 @@ const ReceptionistDashboard: React.FC = () => {
     paymentManagement: false,
     recordUpdate: false,
   });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const dashboardStats = await dataManager.getDashboardStats();
+        setStats({
+          patients: dashboardStats.totalPatients,
+          appointments: dashboardStats.todayAppointments,
+          payments: dashboardStats.pendingPayments,
+          totalRevenue: dashboardStats.totalRevenue
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard statistics",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [toast]);
 
   const handleModalClose = (modalName: keyof typeof openModals) => {
     setOpenModals(prev => ({ ...prev, [modalName]: false }));
@@ -30,10 +60,10 @@ const ReceptionistDashboard: React.FC = () => {
   };
 
   const todayStats = [
-    { title: 'Check-ins Today', value: '45', icon: Users, color: 'bg-medical-blue' },
-    { title: 'Appointments', value: '67', icon: Calendar, color: 'bg-medical-green' },
-    { title: 'Payments', value: '$12,450', icon: DollarSign, color: 'bg-medical-purple' },
-    { title: 'Calls', value: '89', icon: Phone, color: 'bg-medical-orange' }
+    { title: 'Total Patients', value: loading ? '...' : stats.patients.toString(), icon: Users, color: 'bg-medical-blue' },
+    { title: 'Total Appointments', value: loading ? '...' : stats.appointments.toString(), icon: Calendar, color: 'bg-medical-green' },
+    { title: 'Total Revenue', value: loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-medical-purple' },
+    { title: 'Total Payments', value: loading ? '...' : stats.payments.toString(), icon: Phone, color: 'bg-medical-orange' }
   ];
 
   return (

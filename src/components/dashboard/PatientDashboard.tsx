@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { 
   Calendar, 
@@ -16,9 +16,46 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { dataManager, Appointment, MedicalRecord, Prescription, LabTest } from '../../lib/dataManager';
+import { useToast } from '../../hooks/use-toast';
 
 const PatientDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [labTests, setLabTests] = useState<LabTest[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
+          dataManager.getAppointments(),
+          dataManager.getMedicalRecords(),
+          dataManager.getPrescriptions(),
+          dataManager.getLabTests()
+        ]);
+        
+        setAppointments(appointmentsData.slice(0, 3)); // Show only first 3
+        setMedicalRecords(recordsData.slice(0, 3));
+        setPrescriptions(prescriptionsData.slice(0, 2));
+        setLabTests(labTestsData.slice(0, 3));
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
 
   const patientInfo = {
     patientId: 'P001234',
@@ -31,110 +68,6 @@ const PatientDashboard: React.FC = () => {
       phone: '+1-555-0123'
     }
   };
-
-  const upcomingAppointments = [
-    {
-      id: 1,
-      date: '2024-01-20',
-      time: '10:00 AM',
-      doctor: 'Dr. Sarah Johnson',
-      department: 'Cardiology',
-      type: 'Follow-up',
-      status: 'confirmed'
-    },
-    {
-      id: 2,
-      date: '2024-01-25',
-      time: '2:30 PM',
-      doctor: 'Dr. Michael Brown',
-      department: 'General Practice',
-      type: 'Check-up',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      date: '2024-02-01',
-      time: '11:15 AM',
-      doctor: 'Dr. Lisa Anderson',
-      department: 'Dermatology',
-      type: 'Consultation',
-      status: 'scheduled'
-    }
-  ];
-
-  const recentRecords = [
-    {
-      id: 1,
-      date: '2024-01-10',
-      type: 'Consultation',
-      doctor: 'Dr. Sarah Johnson',
-      diagnosis: 'Hypertension monitoring',
-      notes: 'Blood pressure stable, continue current medication'
-    },
-    {
-      id: 2,
-      date: '2024-01-05',
-      type: 'Lab Results',
-      doctor: 'Dr. Michael Brown',
-      diagnosis: 'Blood work results',
-      notes: 'All values within normal range'
-    },
-    {
-      id: 3,
-      date: '2023-12-28',
-      type: 'Prescription',
-      doctor: 'Dr. Sarah Johnson',
-      diagnosis: 'Medication adjustment',
-      notes: 'Increased dosage of blood pressure medication'
-    }
-  ];
-
-  const currentPrescriptions = [
-    {
-      id: 1,
-      medication: 'Lisinopril',
-      dosage: '10mg',
-      frequency: 'Once daily',
-      prescribedBy: 'Dr. Sarah Johnson',
-      startDate: '2024-01-01',
-      endDate: '2024-03-01',
-      refillsLeft: 2
-    },
-    {
-      id: 2,
-      medication: 'Metformin',
-      dosage: '500mg',
-      frequency: 'Twice daily',
-      prescribedBy: 'Dr. Michael Brown',
-      startDate: '2023-12-15',
-      endDate: '2024-06-15',
-      refillsLeft: 4
-    }
-  ];
-
-  const labResults = [
-    {
-      id: 1,
-      test: 'Complete Blood Count',
-      date: '2024-01-05',
-      status: 'Normal',
-      doctor: 'Dr. Michael Brown'
-    },
-    {
-      id: 2,
-      test: 'Cholesterol Panel',
-      date: '2024-01-05',
-      status: 'Normal',
-      doctor: 'Dr. Sarah Johnson'
-    },
-    {
-      id: 3,
-      test: 'Blood Glucose',
-      date: '2024-01-05',
-      status: 'Normal',
-      doctor: 'Dr. Michael Brown'
-    }
-  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -158,7 +91,9 @@ const PatientDashboard: React.FC = () => {
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-blue-100">Next Appointment</p>
-              <p className="text-lg font-semibold">Jan 20, 10:00 AM</p>
+              <p className="text-lg font-semibold">
+                {appointments.length > 0 ? `${appointments[0].appointment_date}` : 'No upcoming appointments'}
+              </p>
             </div>
             <Heart className="w-12 h-12 text-blue-200" />
           </div>
@@ -178,7 +113,7 @@ const PatientDashboard: React.FC = () => {
             <div className="flex items-center space-x-3">
               <Avatar className="w-16 h-16">
                 <AvatarFallback className="text-lg">
-                  {user?.firstName.charAt(0)}{user?.lastName.charAt(0)}
+                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -235,34 +170,44 @@ const PatientDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {upcomingAppointments.map((appointment) => (
-                <div key={appointment.id} className="p-4 bg-accent/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h4 className="font-medium text-foreground">{appointment.doctor}</h4>
-                      <p className="text-sm text-muted-foreground">{appointment.department}</p>
-                    </div>
-                    <Badge variant="outline" className={getStatusColor(appointment.status)}>
-                      {appointment.status}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>{appointment.date}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{appointment.time}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <Button variant="outline" size="sm">
-                      View Details
-                    </Button>
-                  </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading appointments...</p>
                 </div>
-              ))}
+              ) : appointments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No upcoming appointments</p>
+                </div>
+              ) : (
+                appointments.map((appointment) => (
+                  <div key={appointment.id} className="p-4 bg-accent/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium text-foreground">Appointment #{appointment.id.slice(0, 8)}</h4>
+                        <p className="text-sm text-muted-foreground">{appointment.type}</p>
+                      </div>
+                      <Badge variant="outline" className={getStatusColor(appointment.status)}>
+                        {appointment.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{appointment.appointment_date}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{appointment.appointment_time}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -277,19 +222,29 @@ const PatientDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentRecords.map((record) => (
-                <div key={record.id} className="p-4 bg-accent/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h4 className="font-medium text-foreground">{record.type}</h4>
-                      <p className="text-sm text-muted-foreground">{record.doctor}</p>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{record.date}</span>
-                  </div>
-                  <p className="text-sm text-foreground mb-1">{record.diagnosis}</p>
-                  <p className="text-xs text-muted-foreground">{record.notes}</p>
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading records...</p>
                 </div>
-              ))}
+              ) : medicalRecords.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No medical records found</p>
+                </div>
+              ) : (
+                medicalRecords.map((record) => (
+                  <div key={record.id} className="p-4 bg-accent/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium text-foreground">Medical Record</h4>
+                        <p className="text-sm text-muted-foreground">Visit #{record.id.slice(0, 8)}</p>
+                      </div>
+                      <span className="text-sm text-muted-foreground">{record.visit_date}</span>
+                    </div>
+                    <p className="text-sm text-foreground mb-1">{record.diagnosis}</p>
+                    <p className="text-xs text-muted-foreground">{record.notes}</p>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -307,23 +262,33 @@ const PatientDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {currentPrescriptions.map((prescription) => (
-                <div key={prescription.id} className="p-4 bg-accent/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h4 className="font-medium text-foreground">{prescription.medication}</h4>
-                      <p className="text-sm text-muted-foreground">{prescription.dosage} • {prescription.frequency}</p>
-                    </div>
-                    <Badge variant="outline" className="bg-success/10 text-success border-success">
-                      {prescription.refillsLeft} refills left
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    <p>Prescribed by: {prescription.prescribedBy}</p>
-                    <p>Duration: {prescription.startDate} - {prescription.endDate}</p>
-                  </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading prescriptions...</p>
                 </div>
-              ))}
+              ) : prescriptions.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No active prescriptions</p>
+                </div>
+              ) : (
+                prescriptions.map((prescription) => (
+                  <div key={prescription.id} className="p-4 bg-accent/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium text-foreground">{prescription.medication_name}</h4>
+                        <p className="text-sm text-muted-foreground">{prescription.dosage} • {prescription.frequency}</p>
+                      </div>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success">
+                        {prescription.status}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Duration: {prescription.duration}</p>
+                      <p>Prescribed: {prescription.date_prescribed}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -338,25 +303,35 @@ const PatientDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {labResults.map((result) => (
-                <div key={result.id} className="p-4 bg-accent/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h4 className="font-medium text-foreground">{result.test}</h4>
-                      <p className="text-sm text-muted-foreground">{result.doctor}</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="outline" className="bg-success/10 text-success border-success">
-                        {result.status}
-                      </Badge>
-                      <p className="text-xs text-muted-foreground mt-1">{result.date}</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    View Report
-                  </Button>
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading lab results...</p>
                 </div>
-              ))}
+              ) : labTests.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No lab results available</p>
+                </div>
+              ) : (
+                labTests.map((result) => (
+                  <div key={result.id} className="p-4 bg-accent/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium text-foreground">{result.test_name}</h4>
+                        <p className="text-sm text-muted-foreground">{result.test_type}</p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="outline" className="bg-success/10 text-success border-success">
+                          {result.status}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground mt-1">{result.test_date}</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      View Report
+                    </Button>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
