@@ -247,6 +247,17 @@ class DataManager {
     return (data || []) as Patient[];
   }
 
+  async getPatientByEmail(email: string): Promise<Patient | null> {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error) return null;
+    return data as Patient;
+  }
+
   // Doctor Management
   async createDoctor(doctorData: Omit<Doctor, 'id' | 'created_at' | 'updated_at'>): Promise<Doctor> {
     const { data, error } = await supabase

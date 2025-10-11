@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { dataManager, Appointment, MedicalRecord, Prescription, LabTest } from '../../lib/dataManager';
+import { dataManager, Appointment, MedicalRecord, Prescription, LabTest, Patient } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
 import PatientPortalNav from '../patient-portal/PatientPortalNav';
 import PersonalInfoSection from '../patient-portal/PersonalInfoSection';
@@ -21,22 +21,34 @@ const PatientDashboard: React.FC = () => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [labTests, setLabTests] = useState<LabTest[]>([]);
+  const [patientData, setPatientData] = useState<Patient | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
-          dataManager.getAppointments(),
-          dataManager.getMedicalRecords(),
-          dataManager.getPrescriptions(),
-          dataManager.getLabTests()
-        ]);
         
-        setAppointments(appointmentsData);
-        setMedicalRecords(recordsData);
-        setPrescriptions(prescriptionsData);
-        setLabTests(labTestsData);
+        // Fetch patient data by email if available
+        let patient = null;
+        if (user?.email) {
+          patient = await dataManager.getPatientByEmail(user.email);
+          setPatientData(patient);
+          
+          // If patient found, fetch their specific data
+          if (patient) {
+            const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
+              dataManager.getAppointmentsByPatient(patient.id),
+              dataManager.getMedicalRecordsByPatient(patient.id),
+              dataManager.getPrescriptionsByPatient(patient.id),
+              dataManager.getLabTestsByPatient(patient.id)
+            ]);
+            
+            setAppointments(appointmentsData);
+            setMedicalRecords(recordsData);
+            setPrescriptions(prescriptionsData);
+            setLabTests(labTestsData);
+          }
+        }
       } catch (error) {
         toast({
           title: "Error",
@@ -49,22 +61,51 @@ const PatientDashboard: React.FC = () => {
     };
 
     fetchData();
-  }, [toast]);
+  }, [toast, user?.email]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const patientInfo = {
-    patientId: 'P001234',
-    age: 35,
-    bloodType: 'O+',
-    allergies: ['Penicillin', 'Shellfish'],
+  // Calculate age from date of birth
+  const calculateAge = (dateOfBirth: string): number => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Parse allergies from text field
+  const parseAllergies = (allergiesText?: string): string[] => {
+    if (!allergiesText) return [];
+    return allergiesText.split(',').map(a => a.trim()).filter(a => a.length > 0);
+  };
+
+  // Build patient info from real database data
+  const patientInfo = patientData ? {
+    patientId: patientData.id.slice(0, 8).toUpperCase(),
+    age: calculateAge(patientData.date_of_birth),
+    bloodType: patientData.blood_type || 'N/A',
+    allergies: parseAllergies(patientData.allergies),
     emergencyContact: {
-      name: 'Jane Smith',
-      relationship: 'Spouse',
-      phone: '+1-555-0123'
+      name: patientData.emergency_contact_name || 'Not provided',
+      relationship: 'Emergency Contact',
+      phone: patientData.emergency_contact_phone || 'Not provided'
+    }
+  } : {
+    patientId: 'N/A',
+    age: 0,
+    bloodType: 'N/A',
+    allergies: [],
+    emergencyContact: {
+      name: 'Not provided',
+      relationship: 'Emergency Contact',
+      phone: 'Not provided'
     }
   };
 
@@ -84,7 +125,9 @@ const PatientDashboard: React.FC = () => {
         
         <div className="relative flex items-center justify-between">
           <div className="flex-1">
-            <h1 className="text-4xl md:text-5xl font-bold mb-3">Welcome back, {user?.firstName}!</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-3">
+              Welcome back, {patientData?.first_name || user?.firstName || 'Patient'}!
+            </h1>
             <p className="text-primary-foreground/90 text-lg md:text-xl mb-6">
               Your health journey at a glance
             </p>
@@ -241,7 +284,15 @@ const PatientDashboard: React.FC = () => {
                 Complete overview of your medical history, prescriptions, and lab results
               </p>
             </div>
-            <PersonalInfoSection user={user} patientInfo={patientInfo} />
+            <PersonalInfoSection 
+              user={{
+                firstName: patientData?.first_name || user?.firstName,
+                lastName: patientData?.last_name || user?.lastName,
+                email: patientData?.email || user?.email,
+                phone: patientData?.phone || user?.phone
+              }} 
+              patientInfo={patientInfo} 
+            />
             <div className="mt-8">
               <MedicalRecordsView 
                 medicalRecords={medicalRecords}
