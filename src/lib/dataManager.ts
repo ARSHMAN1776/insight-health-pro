@@ -252,7 +252,7 @@ class DataManager {
       .from('patients')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (error) return null;
     return data as Patient;
