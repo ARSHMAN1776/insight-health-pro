@@ -28,14 +28,18 @@ const PatientDashboard: React.FC = () => {
       try {
         setLoading(true);
         
+        console.log('Fetching patient data for email:', user?.email);
+        
         // Fetch patient data by email if available
         let patient = null;
         if (user?.email) {
           patient = await dataManager.getPatientByEmail(user.email);
+          console.log('Patient record found:', patient);
           setPatientData(patient);
           
           // If patient found, fetch their specific data
           if (patient) {
+            console.log('Fetching patient-specific data for patient ID:', patient.id);
             const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
               dataManager.getAppointmentsByPatient(patient.id),
               dataManager.getMedicalRecordsByPatient(patient.id),
@@ -43,13 +47,28 @@ const PatientDashboard: React.FC = () => {
               dataManager.getLabTestsByPatient(patient.id)
             ]);
             
+            console.log('Fetched data:', {
+              appointments: appointmentsData.length,
+              records: recordsData.length,
+              prescriptions: prescriptionsData.length,
+              labTests: labTestsData.length
+            });
+            
             setAppointments(appointmentsData);
             setMedicalRecords(recordsData);
             setPrescriptions(prescriptionsData);
             setLabTests(labTestsData);
+          } else {
+            console.warn('No patient record found for email:', user?.email);
+            toast({
+              title: "Patient Record Not Found",
+              description: "Please contact reception to set up your patient profile.",
+              variant: "destructive"
+            });
           }
         }
       } catch (error) {
+        console.error('Error loading dashboard data:', error);
         toast({
           title: "Error",
           description: "Failed to load dashboard data",
@@ -264,6 +283,52 @@ const PatientDashboard: React.FC = () => {
       </div>
     </div>
   );
+
+  // Show message if no patient record exists
+  if (!loading && !patientData) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PatientPortalNav 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          onLogout={handleLogout}
+        />
+        
+        <main className="container-elegant py-12">
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="p-12 text-center">
+              <div className="w-20 h-20 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Shield className="w-10 h-10 text-warning" />
+              </div>
+              <h2 className="text-3xl font-bold text-foreground mb-4">Patient Profile Not Found</h2>
+              <p className="text-muted-foreground text-lg mb-6">
+                We couldn't find a patient record associated with your account (<strong>{user?.email}</strong>).
+              </p>
+              <div className="bg-accent/50 rounded-lg p-6 space-y-3 text-left">
+                <p className="text-sm text-foreground font-semibold">To access your patient portal:</p>
+                <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                  <li>Contact our reception desk</li>
+                  <li>Request them to create your patient profile</li>
+                  <li>Ensure your email (<strong>{user?.email}</strong>) is added to your patient record</li>
+                  <li>Refresh this page after your profile is created</li>
+                </ol>
+              </div>
+              <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="text-sm text-muted-foreground">
+                  <Phone className="w-4 h-4 inline mr-2" />
+                  +92 (123) 456-7890
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <Mail className="w-4 h-4 inline mr-2" />
+                  info@hospital.com
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
