@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../integrations/supabase/client';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 // User roles in the hospital system
 export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'receptionist' | 'pharmacist';
@@ -25,9 +23,7 @@ export interface User {
 // Authentication context interface
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
@@ -169,124 +165,60 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        if (session?.user) {
-          // Map Supabase user to our User interface
-          const mappedUser: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: session.user.user_metadata?.first_name || '',
-            lastName: session.user.user_metadata?.last_name || '',
-            role: (session.user.user_metadata?.role as UserRole) || 'patient',
-            department: session.user.user_metadata?.department,
-            specialization: session.user.user_metadata?.specialization,
-            licenseNumber: session.user.user_metadata?.license_number,
-            phone: session.user.user_metadata?.phone,
-            createdAt: new Date(session.user.created_at),
-            lastLogin: new Date(),
-            isActive: true
-          };
-          setUser(mappedUser);
-        } else {
-          setUser(null);
-        }
-        setIsLoading(false);
+    // Check for existing session on mount
+    const storedUser = localStorage.getItem('hms_user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        localStorage.removeItem('hms_user');
       }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        const mappedUser: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: session.user.user_metadata?.first_name || '',
-          lastName: session.user.user_metadata?.last_name || '',
-          role: (session.user.user_metadata?.role as UserRole) || 'patient',
-          department: session.user.user_metadata?.department,
-          specialization: session.user.user_metadata?.specialization,
-          licenseNumber: session.user.user_metadata?.license_number,
-          phone: session.user.user_metadata?.phone,
-          createdAt: new Date(session.user.created_at),
-          lastLogin: new Date(),
-          isActive: true
-        };
-        setUser(mappedUser);
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      // User state will be updated by onAuthStateChange listener
-    } catch (error: any) {
-      throw new Error(error.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<void> => {
-    setIsLoading(true);
-    
-    try {
-      const redirectUrl = `${window.location.origin}/`;
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            role: 'patient' // Default role for new signups
-          }
-        }
-      });
-
-      if (error) {
-        throw error;
+      // Find user by email (demo implementation)
+      const foundUser = demoUsers.find(u => u.email === email);
+      
+      if (!foundUser) {
+        throw new Error('User not found');
       }
-
-      // User state will be updated by onAuthStateChange listener
-    } catch (error: any) {
-      throw new Error(error.message || 'Signup failed');
+      
+      // In a real app, you would verify the password here
+      if (password !== 'password123') {
+        throw new Error('Invalid password');
+      }
+      
+      // Update last login
+      const userWithLastLogin = {
+        ...foundUser,
+        lastLogin: new Date()
+      };
+      
+      setUser(userWithLastLogin);
+      localStorage.setItem('hms_user', JSON.stringify(userWithLastLogin));
+    } catch (error) {
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = async (): Promise<void> => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const logout = (): void => {
+    setUser(null);
+    localStorage.removeItem('hms_user');
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -302,9 +234,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
-    session,
     login,
-    signup,
     logout,
     isLoading,
     hasPermission,
