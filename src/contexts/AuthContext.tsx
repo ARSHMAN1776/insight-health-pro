@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 // User roles in the hospital system
 export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'receptionist' | 'pharmacist';
@@ -23,93 +25,26 @@ export interface User {
 // Authentication context interface
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, userData: SignupData) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
   isRole: (role: UserRole) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface SignupData {
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  phone?: string;
+  department?: string;
+  specialization?: string;
+  licenseNumber?: string;
+}
 
-// Demo users for testing
-const demoUsers: User[] = [
-  {
-    id: '1',
-    email: 'admin@hospital.com',
-    firstName: 'John',
-    lastName: 'Administrator',
-    role: 'admin',
-    department: 'Administration',
-    phone: '+1234567890',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '2',
-    email: 'doctor@hospital.com',
-    firstName: 'Dr. Sarah',
-    lastName: 'Johnson',
-    role: 'doctor',
-    department: 'Cardiology',
-    specialization: 'Cardiology',
-    licenseNumber: 'MD123456',
-    phone: '+1234567891',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '3',
-    email: 'nurse@hospital.com',
-    firstName: 'Emily',
-    lastName: 'Davis',
-    role: 'nurse',
-    department: 'Emergency',
-    licenseNumber: 'RN789012',
-    phone: '+1234567892',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '4',
-    email: 'patient@hospital.com',
-    firstName: 'Michael',
-    lastName: 'Smith',
-    role: 'patient',
-    phone: '+1234567893',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '5',
-    email: 'receptionist@hospital.com',
-    firstName: 'Lisa',
-    lastName: 'Brown',
-    role: 'receptionist',
-    department: 'Front Desk',
-    phone: '+1234567894',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '6',
-    email: 'pharmacist@hospital.com',
-    firstName: 'David',
-    lastName: 'Wilson',
-    role: 'pharmacist',
-    department: 'Pharmacy',
-    licenseNumber: 'PH345678',
-    phone: '+1234567895',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  }
-];
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Role-based permissions
 const rolePermissions: Record<UserRole, string[]> = {
@@ -165,50 +100,95 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount
-    const storedUser = localStorage.getItem('hms_user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('hms_user');
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Defer profile and role fetching
+          setTimeout(() => {
+            fetchUserProfile(session.user);
+          }, 0);
+        } else {
+          setUser(null);
+        }
       }
-    }
-    setIsLoading(false);
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        fetchUserProfile(session.user);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
+    try {
+      // Fetch profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabaseUser.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Fetch role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', supabaseUser.id)
+        .single();
+
+      if (roleError) throw roleError;
+
+      const userData: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        firstName: profile.first_name,
+        lastName: profile.last_name,
+        role: roleData.role as UserRole,
+        phone: profile.phone,
+        department: profile.department,
+        specialization: profile.specialization,
+        licenseNumber: profile.license_number,
+        createdAt: new Date(supabaseUser.created_at),
+        lastLogin: new Date(),
+        isActive: true
+      };
+
+      setUser(userData);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // Find user by email (demo implementation)
-      const foundUser = demoUsers.find(u => u.email === email);
+      if (error) throw error;
       
-      if (!foundUser) {
-        throw new Error('User not found');
-      }
-      
-      // In a real app, you would verify the password here
-      if (password !== 'password123') {
-        throw new Error('Invalid password');
-      }
-      
-      // Update last login
-      const userWithLastLogin = {
-        ...foundUser,
-        lastLogin: new Date()
-      };
-      
-      setUser(userWithLastLogin);
-      localStorage.setItem('hms_user', JSON.stringify(userWithLastLogin));
+      // User profile will be fetched automatically by onAuthStateChange
     } catch (error) {
       throw error;
     } finally {
@@ -216,9 +196,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = (): void => {
+  const signup = async (email: string, password: string, userData: SignupData): Promise<void> => {
+    setIsLoading(true);
+    
+    try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            role: userData.role,
+            phone: userData.phone,
+            department: userData.department,
+            specialization: userData.specialization,
+            license_number: userData.licenseNumber
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      // User profile will be created automatically by database trigger
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('hms_user');
+    setSession(null);
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -234,7 +248,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    session,
     login,
+    signup,
     logout,
     isLoading,
     hasPermission,
