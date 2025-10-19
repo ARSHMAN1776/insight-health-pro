@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Clock,
   Heart,
-  CheckCircle
+  CheckCircle,
+  UserPlus
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -21,6 +22,7 @@ import { dataManager } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { formatInTimeZone } from 'date-fns-tz';
+import StaffRegistrationForm from '../forms/StaffRegistrationForm';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -28,6 +30,7 @@ const AdminDashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showStaffRegistration, setShowStaffRegistration] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -153,6 +156,15 @@ const AdminDashboard: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setShowStaffRegistration(true)}
+              className="text-primary-foreground hover:bg-primary-foreground/10 flex items-center gap-2"
+            >
+              <UserPlus className="w-4 h-4" />
+              Register Staff
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={loadDashboardData}
               className="text-primary-foreground hover:bg-primary-foreground/10"
               disabled={loading}
@@ -172,6 +184,13 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Staff Registration Dialog */}
+      <StaffRegistrationForm
+        open={showStaffRegistration}
+        onOpenChange={setShowStaffRegistration}
+        onSuccess={loadDashboardData}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
