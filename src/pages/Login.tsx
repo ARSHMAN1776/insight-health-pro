@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth, UserRole } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Heart, Eye, EyeOff, Users, Stethoscope, Shield, UserCheck, Pill, Activity, ArrowRight, Lock } from 'lucide-react';
+import { Heart, Eye, EyeOff, Users, Stethoscope, Shield, UserCheck, Pill, Activity, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const Login: React.FC = () => {
+  const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('login');
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const { user, login, signup, isLoading } = useAuth();
+  const { login, signup, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,6 +34,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
+    // Basic validation
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
@@ -48,11 +48,10 @@ const Login: React.FC = () => {
       });
       navigate('/dashboard');
     } catch (err: any) {
-      const errorMessage = err?.message || 'Login failed';
-      setError(errorMessage);
+      setError(err.message || 'Login failed');
       toast({
         title: 'Login Failed',
-        description: errorMessage,
+        description: err.message || 'Invalid credentials',
         variant: 'destructive'
       });
     }
@@ -62,13 +61,9 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
+    // Validation
     if (!email || !password || !firstName || !lastName) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Please fill in all fields');
       return;
     }
 
@@ -77,44 +72,33 @@ const Login: React.FC = () => {
       return;
     }
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
-      await signup(email, password, {
-        firstName,
-        lastName,
-        role: 'patient' // New signups default to patient role
-      });
-      
+      await signup(email, password, firstName, lastName);
       toast({
         title: 'Account Created',
-        description: 'Welcome! Please check your email to verify your account.',
+        description: 'Please check your email to verify your account',
       });
-      
-      setActiveTab('login');
+      setIsSignup(false);
+      setEmail('');
+      setPassword('');
       setFirstName('');
       setLastName('');
       setConfirmPassword('');
     } catch (err: any) {
-      const errorMessage = err?.message || 'Signup failed';
-      setError(errorMessage);
+      setError(err.message || 'Signup failed');
       toast({
         title: 'Signup Failed',
-        description: errorMessage,
+        description: err.message || 'Could not create account',
         variant: 'destructive'
       });
     }
   };
 
-  const handleStaffLogin = (role: UserRole) => {
-    setSelectedRole(role);
-  };
-
-  const staffRoles = [
-    { role: 'admin' as UserRole, label: 'Administrator', icon: Shield, color: 'text-medical-purple' },
-    { role: 'doctor' as UserRole, label: 'Doctor', icon: Stethoscope, color: 'text-medical-blue' },
-    { role: 'nurse' as UserRole, label: 'Nurse', icon: Heart, color: 'text-medical-green' },
-    { role: 'receptionist' as UserRole, label: 'Receptionist', icon: UserCheck, color: 'text-medical-orange' },
-    { role: 'pharmacist' as UserRole, label: 'Pharmacist', icon: Pill, color: 'text-medical-red' }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-medical-blue-light via-background to-medical-green-light flex items-center justify-center p-4">
@@ -159,283 +143,150 @@ const Login: React.FC = () => {
           <Card className="card-gradient">
             <CardHeader>
               <CardTitle className="text-2xl text-center">
-                {selectedRole ? `${staffRoles.find(r => r.role === selectedRole)?.label} Login` : 'Welcome'}
+                {isSignup ? 'Create Account' : 'Sign In'}
               </CardTitle>
               <CardDescription className="text-center">
-                {selectedRole ? 'Sign in with your staff credentials' : 'Sign in or create a patient account'}
+                {isSignup 
+                  ? 'Register for a new patient account'
+                  : 'Enter your credentials to access the system'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {selectedRole ? (
-                // Staff Login Form
-                <>
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <div className="relative">
+              <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
+                {isSignup && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name</Label>
                         <Input
-                          id="password"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Enter your password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          id="firstName"
+                          type="text"
+                          placeholder="John"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
                           required
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input
+                          id="lastName"
+                          type="text"
+                          placeholder="Doe"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          required
+                        />
                       </div>
                     </div>
+                  </>
+                )}
 
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder={isSignup ? 'Min. 6 characters' : 'Enter your password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
                     <Button
-                      type="submit"
-                      className="w-full btn-primary"
-                      disabled={isLoading}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      {isLoading ? 'Signing in...' : 'Sign In'}
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </Button>
-                  </form>
-
-                  <Button
-                    variant="ghost"
-                    className="w-full mt-4"
-                    onClick={() => {
-                      setSelectedRole(null);
-                      setEmail('');
-                      setPassword('');
-                      setError('');
-                    }}
-                  >
-                    ← Back to Login Options
-                  </Button>
-                </>
-              ) : (
-                // Patient Login/Signup Tabs
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="login">Login</TabsTrigger>
-                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="login" className="space-y-4">
-                    <form onSubmit={handleLogin} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="login-email">Email</Label>
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="Enter your email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="login-password">Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="login-password"
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <Button
-                        type="submit"
-                        className="w-full btn-primary"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? 'Signing in...' : 'Sign In'}
-                      </Button>
-                    </form>
-                  </TabsContent>
-                  
-                  <TabsContent value="signup" className="space-y-4">
-                    <form onSubmit={handleSignup} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="firstName">First Name</Label>
-                          <Input
-                            id="firstName"
-                            type="text"
-                            placeholder="John"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lastName">Last Name</Label>
-                          <Input
-                            id="lastName"
-                            type="text"
-                            placeholder="Doe"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-email">Email</Label>
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="john.doe@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-password">Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="signup-password"
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="At least 6 characters"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
-                        <Input
-                          id="confirmPassword"
-                          type="password"
-                          placeholder="Confirm your password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <Button
-                        type="submit"
-                        className="w-full btn-primary"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? 'Creating Account...' : 'Create Patient Account'}
-                      </Button>
-
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-                        <Lock className="w-4 h-4" />
-                        <p>Your information is secure and will be used for medical records only.</p>
-                      </div>
-                    </form>
-                  </TabsContent>
-                </Tabs>
-              )}
-
-              {!selectedRole && (
-                <>
-                  {/* Staff Login Options */}
-                  <div className="mt-8">
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-border"></div>
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">Staff Login</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      {staffRoles.map((staffRole) => {
-                        const Icon = staffRole.icon;
-                        return (
-                          <Button
-                            key={staffRole.role}
-                            variant="outline"
-                            size="sm"
-                            className="justify-start text-xs"
-                            onClick={() => handleStaffLogin(staffRole.role)}
-                          >
-                            <Icon className={`w-3 h-3 mr-1 ${staffRole.color}`} />
-                            {staffRole.label}
-                          </Button>
-                        );
-                      })}
-                    </div>
                   </div>
-                </>
-              )}
+                </div>
+
+                {isSignup && (
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full btn-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (isSignup ? 'Creating Account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </form>
+
+              {/* Toggle between Login and Signup */}
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">or</span>
+                  </div>
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full mt-4"
+                  onClick={() => {
+                    setIsSignup(!isSignup);
+                    setError('');
+                  }}
+                >
+                  {isSignup 
+                    ? 'Already have an account? Sign in'
+                    : 'New patient? Create an account'}
+                </Button>
+              </div>
+
+              {/* Security Notice */}
+              <div className="mt-6 p-4 bg-accent/50 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Shield className="w-5 h-5 text-success mt-0.5" />
+                  <div className="text-xs text-muted-foreground">
+                    <p className="font-semibold text-foreground mb-1">Your data is secure</p>
+                    <p>We use industry-standard encryption to protect your health information.</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

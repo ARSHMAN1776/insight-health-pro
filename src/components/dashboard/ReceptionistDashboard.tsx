@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Users, Calendar, DollarSign, Phone, Clock, Edit, FileText, UserCheck, Stethoscope } from 'lucide-react';
+import { Users, Calendar, DollarSign, Phone, UserPlus, Clock, Edit, FileText, UserCheck, Stethoscope } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import { useAuth } from '../../contexts/AuthContext';
+import PatientRegistrationForm from '../forms/PatientRegistrationForm';
 import DoctorRegistrationForm from '../forms/DoctorRegistrationForm';
 import NurseRegistrationForm from '../forms/NurseRegistrationForm';
 import PaymentManagementForm from '../forms/PaymentManagementForm';
@@ -18,6 +19,7 @@ const ReceptionistDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ patients: 0, appointments: 0, payments: 0, totalRevenue: 0 });
   const [openModals, setOpenModals] = useState({
+    patientRegistration: false,
     doctorRegistration: false,
     nurseRegistration: false,
     paymentManagement: false,
@@ -94,10 +96,22 @@ const ReceptionistDashboard: React.FC = () => {
 
       <Card className="card-gradient">
         <CardHeader>
-          <CardTitle>Staff Registration</CardTitle>
+          <CardTitle>Patient Registration</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Dialog open={openModals.patientRegistration} onOpenChange={(open) => setOpenModals(prev => ({ ...prev, patientRegistration: open }))}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+                  <UserPlus className="w-6 h-6" />
+                  <span className="text-sm">Register Patient</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
+                <PatientRegistrationForm onClose={() => handleModalClose('patientRegistration')} />
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={openModals.doctorRegistration} onOpenChange={(open) => setOpenModals(prev => ({ ...prev, doctorRegistration: open }))}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
@@ -122,9 +136,6 @@ const ReceptionistDashboard: React.FC = () => {
               </DialogContent>
             </Dialog>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Note: Patients can now create their own accounts through the signup page.
-          </p>
         </CardContent>
       </Card>
 
