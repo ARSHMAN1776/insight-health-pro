@@ -181,13 +181,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Defer async database queries to avoid blocking auth state changes
           setTimeout(async () => {
             try {
-              const { data: profile } = await supabase
+              // Use type assertion since types haven't regenerated yet
+              const { data: profile } = await (supabase as any)
                 .from('profiles')
                 .select('*')
                 .eq('id', session.user.id)
                 .maybeSingle();
               
-              const { data: userRole } = await supabase
+              const { data: userRole } = await (supabase as any)
                 .from('user_roles')
                 .select('role')
                 .eq('user_id', session.user.id)
@@ -196,13 +197,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               const mappedUser: User = {
                 id: session.user.id,
                 email: session.user.email || '',
-                firstName: (profile as any)?.first_name || '',
-                lastName: (profile as any)?.last_name || '',
-                role: ((userRole as any)?.role as UserRole) || 'patient',
-                department: (profile as any)?.department,
-                specialization: (profile as any)?.specialization,
-                licenseNumber: (profile as any)?.license_number,
-                phone: (profile as any)?.phone,
+                firstName: profile?.first_name || '',
+                lastName: profile?.last_name || '',
+                role: (userRole?.role as UserRole) || 'patient',
+                department: profile?.department,
+                specialization: profile?.specialization,
+                licenseNumber: profile?.license_number,
+                phone: profile?.phone,
                 createdAt: new Date(session.user.created_at),
                 lastLogin: new Date(),
                 isActive: true
@@ -224,13 +225,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSession(session);
       if (session?.user) {
         try {
-          const { data: profile } = await supabase
+          // Use type assertion since types haven't regenerated yet
+          const { data: profile } = await (supabase as any)
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .maybeSingle();
           
-          const { data: userRole } = await supabase
+          const { data: userRole } = await (supabase as any)
             .from('user_roles')
             .select('role')
             .eq('user_id', session.user.id)
@@ -239,13 +241,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const mappedUser: User = {
             id: session.user.id,
             email: session.user.email || '',
-            firstName: (profile as any)?.first_name || '',
-            lastName: (profile as any)?.last_name || '',
-            role: ((userRole as any)?.role as UserRole) || 'patient',
-            department: (profile as any)?.department,
-            specialization: (profile as any)?.specialization,
-            licenseNumber: (profile as any)?.license_number,
-            phone: (profile as any)?.phone,
+            firstName: profile?.first_name || '',
+            lastName: profile?.last_name || '',
+            role: (userRole?.role as UserRole) || 'patient',
+            department: profile?.department,
+            specialization: profile?.specialization,
+            licenseNumber: profile?.license_number,
+            phone: profile?.phone,
             createdAt: new Date(session.user.created_at),
             lastLogin: new Date(),
             isActive: true
