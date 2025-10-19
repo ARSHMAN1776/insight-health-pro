@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, UserRole } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -11,6 +11,7 @@ import { useToast } from '../hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const Login: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'patient' | 'staff'>('patient');
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,9 +20,19 @@ const Login: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
   const { login, signup, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Staff roles with demo accounts
+  const staffRoles = [
+    { role: 'admin' as UserRole, label: 'Administrator', icon: Shield, email: 'admin@hospital.com' },
+    { role: 'doctor' as UserRole, label: 'Doctor', icon: Stethoscope, email: 'doctor@hospital.com' },
+    { role: 'nurse' as UserRole, label: 'Nurse', icon: UserCheck, email: 'nurse@hospital.com' },
+    { role: 'receptionist' as UserRole, label: 'Receptionist', icon: Users, email: 'receptionist@hospital.com' },
+    { role: 'pharmacist' as UserRole, label: 'Pharmacist', icon: Pill, email: 'pharmacist@hospital.com' }
+  ];
 
   // Redirect if already logged in
   useEffect(() => {
@@ -30,18 +41,21 @@ const Login: React.FC = () => {
     }
   }, [user, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent, demoEmail?: string) => {
     e.preventDefault();
     setError('');
 
+    const loginEmail = demoEmail || email;
+    const loginPassword = demoEmail ? 'demo123' : password;
+
     // Basic validation
-    if (!email || !password) {
+    if (!loginEmail || !loginPassword) {
       setError('Please fill in all fields');
       return;
     }
 
     try {
-      await login(email, password);
+      await login(loginEmail, loginPassword);
       toast({
         title: 'Login Successful',
         description: 'Welcome back to Hospital Management System',
@@ -78,7 +92,7 @@ const Login: React.FC = () => {
     }
 
     try {
-      await signup(email, password, firstName, lastName);
+      await signup(email, password, firstName, lastName, selectedRole);
       toast({
         title: 'Account Created',
         description: 'Please check your email to verify your account',
@@ -147,12 +161,20 @@ const Login: React.FC = () => {
               </CardTitle>
               <CardDescription className="text-center">
                 {isSignup 
-                  ? 'Register for a new patient account'
-                  : 'Enter your credentials to access the system'}
+                  ? 'Register for a new account'
+                  : 'Enter your credentials or use demo accounts'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'patient' | 'staff')} className="mb-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="patient">Patient</TabsTrigger>
+                  <TabsTrigger value="staff">Staff</TabsTrigger>
+                </TabsList>
+
+                {/* Patient Tab */}
+                <TabsContent value="patient">
+                  <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
                 {isSignup && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
@@ -241,41 +263,66 @@ const Login: React.FC = () => {
                   </Alert>
                 )}
 
-                <Button
-                  type="submit"
-                  className="w-full btn-primary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (isSignup ? 'Creating Account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </form>
+                    <Button
+                      type="submit"
+                      className="w-full btn-primary"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (isSignup ? 'Creating Account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </form>
 
-              {/* Toggle between Login and Signup */}
-              <div className="mt-6">
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border"></div>
+                  {/* Toggle between Login and Signup */}
+                  <div className="mt-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-border"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">or</span>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full mt-4"
+                      onClick={() => {
+                        setIsSignup(!isSignup);
+                        setError('');
+                      }}
+                    >
+                      {isSignup 
+                        ? 'Already have an account? Sign in'
+                        : 'New patient? Create an account'}
+                    </Button>
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">or</span>
+                </TabsContent>
+
+                {/* Staff Tab */}
+                <TabsContent value="staff">
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground text-center mb-4">
+                      Click to login with demo account (password: demo123)
+                    </p>
+                    {staffRoles.map(({ role, label, icon: Icon, email }) => (
+                      <Button
+                        key={role}
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={(e) => handleLogin(e, email)}
+                        disabled={isLoading}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        <span className="flex-1 text-left">{label}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    ))}
                   </div>
-                </div>
-                
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full mt-4"
-                  onClick={() => {
-                    setIsSignup(!isSignup);
-                    setError('');
-                  }}
-                >
-                  {isSignup 
-                    ? 'Already have an account? Sign in'
-                    : 'New patient? Create an account'}
-                </Button>
-              </div>
+                </TabsContent>
+              </Tabs>
 
               {/* Security Notice */}
               <div className="mt-6 p-4 bg-accent/50 rounded-lg">

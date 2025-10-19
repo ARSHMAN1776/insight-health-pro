@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../integrations/supabase/client';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 
 // User roles in the hospital system
 export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'receptionist' | 'pharmacist';
@@ -27,8 +27,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
-  logout: () => void;
+  signup: (email: string, password: string, firstName: string, lastName: string, role?: UserRole) => Promise<void>;
+  logout: () => Promise<void>;
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
   isRole: (role: UserRole) => boolean;
@@ -178,22 +178,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       (event, session) => {
         setSession(session);
         if (session?.user) {
-          // Map Supabase user to our User interface
-          const mappedUser: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: session.user.user_metadata?.first_name || '',
-            lastName: session.user.user_metadata?.last_name || '',
-            role: (session.user.user_metadata?.role as UserRole) || 'patient',
-            department: session.user.user_metadata?.department,
-            specialization: session.user.user_metadata?.specialization,
-            licenseNumber: session.user.user_metadata?.license_number,
-            phone: session.user.user_metadata?.phone,
-            createdAt: new Date(session.user.created_at),
-            lastLogin: new Date(),
-            isActive: true
-          };
-          setUser(mappedUser);
+          // Defer async database queries to avoid blocking auth state changes
+          setTimeout(async () => {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+              
+              const { data: userRole } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+
+              const mappedUser: User = {
+                id: session.user.id,
+                email: session.user.email || '',
+                firstName: (profile as any)?.first_name || '',
+                lastName: (profile as any)?.last_name || '',
+                role: ((userRole as any)?.role as UserRole) || 'patient',
+                department: (profile as any)?.department,
+                specialization: (profile as any)?.specialization,
+                licenseNumber: (profile as any)?.license_number,
+                phone: (profile as any)?.phone,
+                createdAt: new Date(session.user.created_at),
+                lastLogin: new Date(),
+                isActive: true
+              };
+              setUser(mappedUser);
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
+            }
+          }, 0);
         } else {
           setUser(null);
         }
@@ -202,24 +220,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        const mappedUser: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: session.user.user_metadata?.first_name || '',
-          lastName: session.user.user_metadata?.last_name || '',
-          role: (session.user.user_metadata?.role as UserRole) || 'patient',
-          department: session.user.user_metadata?.department,
-          specialization: session.user.user_metadata?.specialization,
-          licenseNumber: session.user.user_metadata?.license_number,
-          phone: session.user.user_metadata?.phone,
-          createdAt: new Date(session.user.created_at),
-          lastLogin: new Date(),
-          isActive: true
-        };
-        setUser(mappedUser);
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          const { data: userRole } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          const mappedUser: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            firstName: (profile as any)?.first_name || '',
+            lastName: (profile as any)?.last_name || '',
+            role: ((userRole as any)?.role as UserRole) || 'patient',
+            department: (profile as any)?.department,
+            specialization: (profile as any)?.specialization,
+            licenseNumber: (profile as any)?.license_number,
+            phone: (profile as any)?.phone,
+            createdAt: new Date(session.user.created_at),
+            lastLogin: new Date(),
+            isActive: true
+          };
+          setUser(mappedUser);
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
       }
       setIsLoading(false);
     });
@@ -231,6 +265,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     
     try {
+      // Check if using demo account
+      const demoUser = demoUsers.find(u => u.email === email);
+      if (demoUser && password === 'demo123') {
+        setUser(demoUser);
+        setIsLoading(false);
+        return;
+      }
+
+      // Real Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -248,7 +291,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<void> => {
+  const signup = async (email: string, password: string, firstName: string, lastName: string, role: UserRole = 'patient'): Promise<void> => {
     setIsLoading(true);
     
     try {
@@ -262,7 +305,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: 'patient' // Default role for new signups
+            role: role
           }
         }
       });
@@ -281,6 +324,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async (): Promise<void> => {
     try {
+      // Check if it's a demo user (no session)
+      if (!session) {
+        setUser(null);
+        return;
+      }
+      
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
