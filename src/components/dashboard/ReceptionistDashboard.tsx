@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Users, Calendar, DollarSign, Phone, Clock, Edit, FileText, UserCheck, Stethoscope } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -15,6 +16,7 @@ import { useToast } from '../../hooks/use-toast';
 const ReceptionistDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ patients: 0, appointments: 0, payments: 0, totalRevenue: 0 });
   const [openModals, setOpenModals] = useState({
@@ -173,7 +175,7 @@ const ReceptionistDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => window.location.href = '/appointments'}
+              onClick={() => navigate('/appointments')}
             >
               <Calendar className="w-6 h-6" />
               <span className="text-sm">Appointments</span>
@@ -181,7 +183,7 @@ const ReceptionistDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => window.location.href = '/medical-records'}
+              onClick={() => navigate('/medical-records')}
             >
               <FileText className="w-6 h-6" />
               <span className="text-sm">Medical Records</span>
@@ -189,7 +191,7 @@ const ReceptionistDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => window.location.href = '/patients'}
+              onClick={() => navigate('/patients')}
             >
               <Users className="w-6 h-6" />
               <span className="text-sm">Patient List</span>
@@ -197,7 +199,7 @@ const ReceptionistDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => window.location.href = '/inventory'}
+              onClick={() => navigate('/inventory')}
             >
               <Phone className="w-6 h-6" />
               <span className="text-sm">Inventory</span>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { 
   Calendar, 
@@ -22,6 +23,7 @@ import { useToast } from '../../hooks/use-toast';
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -293,19 +295,35 @@ const DoctorDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/patients')}
+            >
               <Users className="w-6 h-6" />
               <span className="text-sm">New Patient</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/appointments')}
+            >
               <Calendar className="w-6 h-6" />
               <span className="text-sm">Schedule</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/prescriptions')}
+            >
               <Pill className="w-6 h-6" />
               <span className="text-sm">Prescribe</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/lab-tests')}
+            >
               <TestTube className="w-6 h-6" />
               <span className="text-sm">Order Lab</span>
             </Button>

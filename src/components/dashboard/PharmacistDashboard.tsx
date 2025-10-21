@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Pill, Package, AlertTriangle, Clock, Activity, Users } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -10,6 +11,7 @@ import { useToast } from '../../hooks/use-toast';
 const PharmacistDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [inventory, setInventory] = useState<Inventory[]>([]);
@@ -83,19 +85,35 @@ const PharmacistDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/prescriptions')}
+            >
               <Pill className="w-6 h-6" />
               <span className="text-sm">Dispense</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/inventory')}
+            >
               <Package className="w-6 h-6" />
               <span className="text-sm">Inventory</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/inventory')}
+            >
               <Activity className="w-6 h-6" />
               <span className="text-sm">Stock Check</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/patients')}
+            >
               <Users className="w-6 h-6" />
               <span className="text-sm">Consultations</span>
             </Button>

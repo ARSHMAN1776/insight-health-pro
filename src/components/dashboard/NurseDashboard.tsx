@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { 
   Users, 
@@ -23,6 +24,7 @@ import { useToast } from '../../hooks/use-toast';
 const NurseDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
@@ -331,19 +333,41 @@ const NurseDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/medical-records')}
+            >
               <Activity className="w-6 h-6" />
               <span className="text-sm">Vital Signs</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/prescriptions')}
+            >
               <Pill className="w-6 h-6" />
               <span className="text-sm">Medications</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/rooms')}
+            >
               <Bed className="w-6 h-6" />
               <span className="text-sm">Rounds</span>
             </Button>
-            <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => {
+                toast({
+                  title: "Emergency Protocol",
+                  description: "Emergency procedures activated. Please contact supervisor.",
+                  variant: "destructive"
+                });
+              }}
+            >
               <Shield className="w-6 h-6" />
               <span className="text-sm">Emergency</span>
             </Button>
