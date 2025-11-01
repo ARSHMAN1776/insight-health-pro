@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -9,30 +9,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Mail, Phone, MapPin } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/hooks/useSettings';
+import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Mail, Phone, Loader2 } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { loading, hospitalSettings: dbHospitalSettings, userSettings: dbUserSettings, saveHospitalSetting, saveUserSetting } = useSettings();
   
-  const [hospitalSettings, setHospitalSettings] = useState({
-    name: 'City General Hospital',
-    address: '123 Medical Center Drive, Healthcare City, HC 12345',
-    phone: '+1 (555) 123-4567',
-    email: 'info@citygeneralhospital.com',
-    website: 'www.citygeneralhospital.com',
-    license: 'LIC-2024-CGH-001',
-    accreditation: 'Joint Commission Accredited',
+  const [hospitalInfo, setHospitalInfo] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    license: '',
+    accreditation: ''
+  });
+
+  const [regionalSettings, setRegionalSettings] = useState({
     timezone: 'America/New_York',
     language: 'en',
     currency: 'USD'
   });
 
-  const [userSettings, setUserSettings] = useState({
+  const [securitySettings, setSecuritySettings] = useState({
     autoLogout: 30,
     sessionTimeout: 60,
     maxLoginAttempts: 3,
     passwordExpiry: 90,
-    requireMFA: true,
+    requireMFA: false,
     allowRemoteAccess: true
   });
 
@@ -46,7 +53,7 @@ const Settings: React.FC = () => {
     criticalAlerts: true
   });
 
-  const [systemSettings, setSystemSettings] = useState({
+  const [systemConfig, setSystemConfig] = useState({
     backupFrequency: 'daily',
     dataRetention: 365,
     auditLogging: true,
@@ -55,22 +62,76 @@ const Settings: React.FC = () => {
     maintenanceMode: false
   });
 
-  const handleSaveHospitalSettings = () => {
-    // In a real app, this would save to backend
-    toast({ title: 'Success', description: 'Hospital settings saved successfully' });
+  // Load settings from database
+  useEffect(() => {
+    if (!loading) {
+      // Load hospital settings (admin only)
+      if (dbHospitalSettings.hospital_info) {
+        setHospitalInfo(dbHospitalSettings.hospital_info);
+      }
+      if (dbHospitalSettings.regional_settings) {
+        setRegionalSettings(dbHospitalSettings.regional_settings);
+      }
+      if (dbHospitalSettings.security_settings) {
+        setSecuritySettings(dbHospitalSettings.security_settings);
+      }
+      if (dbHospitalSettings.notification_defaults) {
+        setNotificationSettings(dbHospitalSettings.notification_defaults);
+      }
+      if (dbHospitalSettings.system_config) {
+        setSystemConfig(dbHospitalSettings.system_config);
+      }
+
+      // Load user-specific settings
+      if (dbUserSettings.notifications) {
+        setNotificationSettings(dbUserSettings.notifications);
+      }
+    }
+  }, [loading, dbHospitalSettings, dbUserSettings]);
+
+  const handleSaveHospitalSettings = async () => {
+    const success = await saveHospitalSetting('hospital_info', hospitalInfo, 'hospital');
+    if (success) {
+      toast({ title: 'Success', description: 'Hospital information saved successfully' });
+    }
   };
 
-  const handleSaveUserSettings = () => {
-    toast({ title: 'Success', description: 'User settings saved successfully' });
+  const handleSaveRegionalSettings = async () => {
+    const success = await saveHospitalSetting('regional_settings', regionalSettings, 'hospital');
+    if (success) {
+      toast({ title: 'Success', description: 'Regional settings saved successfully' });
+    }
   };
 
-  const handleSaveNotificationSettings = () => {
-    toast({ title: 'Success', description: 'Notification settings saved successfully' });
+  const handleSaveSecuritySettings = async () => {
+    const success = await saveHospitalSetting('security_settings', securitySettings, 'security');
+    if (success) {
+      toast({ title: 'Success', description: 'Security settings saved successfully' });
+    }
   };
 
-  const handleSaveSystemSettings = () => {
-    toast({ title: 'Success', description: 'System settings saved successfully' });
+  const handleSaveNotificationSettings = async () => {
+    // User-specific notification preferences
+    const success = await saveUserSetting('notifications', notificationSettings);
+    if (success) {
+      toast({ title: 'Success', description: 'Notification preferences saved successfully' });
+    }
   };
+
+  const handleSaveSystemSettings = async () => {
+    const success = await saveHospitalSetting('system_config', systemConfig, 'system');
+    if (success) {
+      toast({ title: 'Success', description: 'System configuration saved successfully' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,23 +146,27 @@ const Settings: React.FC = () => {
         </Badge>
       </div>
 
-      <Tabs defaultValue="hospital" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="hospital" className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
-            Hospital
-          </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Users
-          </TabsTrigger>
+      <Tabs defaultValue={user?.role === 'admin' ? 'hospital' : 'notifications'} className="space-y-6">
+        <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-1'}`}>
+          {user?.role === 'admin' && (
+            <>
+              <TabsTrigger value="hospital" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Hospital
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Security
+              </TabsTrigger>
+              <TabsTrigger value="system" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                System
+              </TabsTrigger>
+            </>
+          )}
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             Notifications
-          </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            System
           </TabsTrigger>
         </TabsList>
 
@@ -119,16 +184,16 @@ const Settings: React.FC = () => {
                   <Label htmlFor="hospitalName">Hospital Name</Label>
                   <Input
                     id="hospitalName"
-                    value={hospitalSettings.name}
-                    onChange={(e) => setHospitalSettings({...hospitalSettings, name: e.target.value})}
+                    value={hospitalInfo.name}
+                    onChange={(e) => setHospitalInfo({...hospitalInfo, name: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="license">License Number</Label>
                   <Input
                     id="license"
-                    value={hospitalSettings.license}
-                    onChange={(e) => setHospitalSettings({...hospitalSettings, license: e.target.value})}
+                    value={hospitalInfo.license}
+                    onChange={(e) => setHospitalInfo({...hospitalInfo, license: e.target.value})}
                   />
                 </div>
               </div>
@@ -137,8 +202,8 @@ const Settings: React.FC = () => {
                 <Label htmlFor="address">Address</Label>
                 <Textarea
                   id="address"
-                  value={hospitalSettings.address}
-                  onChange={(e) => setHospitalSettings({...hospitalSettings, address: e.target.value})}
+                  value={hospitalInfo.address}
+                  onChange={(e) => setHospitalInfo({...hospitalInfo, address: e.target.value})}
                   rows={3}
                 />
               </div>
@@ -151,8 +216,8 @@ const Settings: React.FC = () => {
                   </Label>
                   <Input
                     id="phone"
-                    value={hospitalSettings.phone}
-                    onChange={(e) => setHospitalSettings({...hospitalSettings, phone: e.target.value})}
+                    value={hospitalInfo.phone}
+                    onChange={(e) => setHospitalInfo({...hospitalInfo, phone: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
@@ -163,16 +228,16 @@ const Settings: React.FC = () => {
                   <Input
                     id="email"
                     type="email"
-                    value={hospitalSettings.email}
-                    onChange={(e) => setHospitalSettings({...hospitalSettings, email: e.target.value})}
+                    value={hospitalInfo.email}
+                    onChange={(e) => setHospitalInfo({...hospitalInfo, email: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
                   <Input
                     id="website"
-                    value={hospitalSettings.website}
-                    onChange={(e) => setHospitalSettings({...hospitalSettings, website: e.target.value})}
+                    value={hospitalInfo.website}
+                    onChange={(e) => setHospitalInfo({...hospitalInfo, website: e.target.value})}
                   />
                 </div>
               </div>
@@ -180,7 +245,7 @@ const Settings: React.FC = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Select value={hospitalSettings.timezone} onValueChange={(value) => setHospitalSettings({...hospitalSettings, timezone: value})}>
+                  <Select value={regionalSettings.timezone} onValueChange={(value) => setRegionalSettings({...regionalSettings, timezone: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -194,7 +259,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>
-                  <Select value={hospitalSettings.language} onValueChange={(value) => setHospitalSettings({...hospitalSettings, language: value})}>
+                  <Select value={regionalSettings.language} onValueChange={(value) => setRegionalSettings({...regionalSettings, language: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -207,7 +272,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
-                  <Select value={hospitalSettings.currency} onValueChange={(value) => setHospitalSettings({...hospitalSettings, currency: value})}>
+                  <Select value={regionalSettings.currency} onValueChange={(value) => setRegionalSettings({...regionalSettings, currency: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -220,16 +285,11 @@ const Settings: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-4">
-                <Button onClick={handleSaveHospitalSettings}>
-                  Save Hospital Settings
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="users" className="space-y-6">
+        <TabsContent value="security" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -244,8 +304,8 @@ const Settings: React.FC = () => {
                   <Input
                     id="autoLogout"
                     type="number"
-                    value={userSettings.autoLogout}
-                    onChange={(e) => setUserSettings({...userSettings, autoLogout: parseInt(e.target.value)})}
+                    value={securitySettings.autoLogout}
+                    onChange={(e) => setSecuritySettings({...securitySettings, autoLogout: parseInt(e.target.value)})}
                   />
                 </div>
                 <div className="space-y-2">
@@ -253,8 +313,8 @@ const Settings: React.FC = () => {
                   <Input
                     id="sessionTimeout"
                     type="number"
-                    value={userSettings.sessionTimeout}
-                    onChange={(e) => setUserSettings({...userSettings, sessionTimeout: parseInt(e.target.value)})}
+                    value={securitySettings.sessionTimeout}
+                    onChange={(e) => setSecuritySettings({...securitySettings, sessionTimeout: parseInt(e.target.value)})}
                   />
                 </div>
               </div>
@@ -265,8 +325,8 @@ const Settings: React.FC = () => {
                   <Input
                     id="maxLoginAttempts"
                     type="number"
-                    value={userSettings.maxLoginAttempts}
-                    onChange={(e) => setUserSettings({...userSettings, maxLoginAttempts: parseInt(e.target.value)})}
+                    value={securitySettings.maxLoginAttempts}
+                    onChange={(e) => setSecuritySettings({...securitySettings, maxLoginAttempts: parseInt(e.target.value)})}
                   />
                 </div>
                 <div className="space-y-2">
@@ -274,8 +334,8 @@ const Settings: React.FC = () => {
                   <Input
                     id="passwordExpiry"
                     type="number"
-                    value={userSettings.passwordExpiry}
-                    onChange={(e) => setUserSettings({...userSettings, passwordExpiry: parseInt(e.target.value)})}
+                    value={securitySettings.passwordExpiry}
+                    onChange={(e) => setSecuritySettings({...securitySettings, passwordExpiry: parseInt(e.target.value)})}
                   />
                 </div>
               </div>
@@ -287,8 +347,8 @@ const Settings: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Require MFA for all user accounts</p>
                   </div>
                   <Switch
-                    checked={userSettings.requireMFA}
-                    onCheckedChange={(checked) => setUserSettings({...userSettings, requireMFA: checked})}
+                    checked={securitySettings.requireMFA}
+                    onCheckedChange={(checked) => setSecuritySettings({...securitySettings, requireMFA: checked})}
                   />
                 </div>
 
@@ -298,15 +358,15 @@ const Settings: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Allow users to access from outside network</p>
                   </div>
                   <Switch
-                    checked={userSettings.allowRemoteAccess}
-                    onCheckedChange={(checked) => setUserSettings({...userSettings, allowRemoteAccess: checked})}
+                    checked={securitySettings.allowRemoteAccess}
+                    onCheckedChange={(checked) => setSecuritySettings({...securitySettings, allowRemoteAccess: checked})}
                   />
                 </div>
               </div>
 
               <div className="pt-4">
-                <Button onClick={handleSaveUserSettings}>
-                  Save User Settings
+                <Button onClick={handleSaveSecuritySettings}>
+                  Save Security Settings
                 </Button>
               </div>
             </CardContent>
@@ -422,7 +482,7 @@ const Settings: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="backupFrequency">Backup Frequency</Label>
-                  <Select value={systemSettings.backupFrequency} onValueChange={(value) => setSystemSettings({...systemSettings, backupFrequency: value})}>
+                  <Select value={systemConfig.backupFrequency} onValueChange={(value) => setSystemConfig({...systemConfig, backupFrequency: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -430,18 +490,16 @@ const Settings: React.FC = () => {
                       <SelectItem value="hourly">Hourly</SelectItem>
                       <SelectItem value="daily">Daily</SelectItem>
                       <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="dataRetention">Data Retention (days)</Label>
                   <Input
                     id="dataRetention"
                     type="number"
-                    value={systemSettings.dataRetention}
-                    onChange={(e) => setSystemSettings({...systemSettings, dataRetention: parseInt(e.target.value)})}
+                    value={systemConfig.dataRetention}
+                    onChange={(e) => setSystemConfig({...systemConfig, dataRetention: parseInt(e.target.value)})}
                   />
                 </div>
               </div>
@@ -453,8 +511,8 @@ const Settings: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Enable comprehensive audit logging</p>
                   </div>
                   <Switch
-                    checked={systemSettings.auditLogging}
-                    onCheckedChange={(checked) => setSystemSettings({...systemSettings, auditLogging: checked})}
+                    checked={systemConfig.auditLogging}
+                    onCheckedChange={(checked) => setSystemConfig({...systemConfig, auditLogging: checked})}
                   />
                 </div>
 
@@ -464,8 +522,8 @@ const Settings: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Enable data encryption at rest</p>
                   </div>
                   <Switch
-                    checked={systemSettings.encryptionEnabled}
-                    onCheckedChange={(checked) => setSystemSettings({...systemSettings, encryptionEnabled: checked})}
+                    checked={systemConfig.encryptionEnabled}
+                    onCheckedChange={(checked) => setSystemConfig({...systemConfig, encryptionEnabled: checked})}
                   />
                 </div>
 
@@ -475,8 +533,8 @@ const Settings: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Enable automatic system updates</p>
                   </div>
                   <Switch
-                    checked={systemSettings.autoUpdates}
-                    onCheckedChange={(checked) => setSystemSettings({...systemSettings, autoUpdates: checked})}
+                    checked={systemConfig.autoUpdates}
+                    onCheckedChange={(checked) => setSystemConfig({...systemConfig, autoUpdates: checked})}
                   />
                 </div>
 
@@ -486,8 +544,8 @@ const Settings: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Enable maintenance mode</p>
                   </div>
                   <Switch
-                    checked={systemSettings.maintenanceMode}
-                    onCheckedChange={(checked) => setSystemSettings({...systemSettings, maintenanceMode: checked})}
+                    checked={systemConfig.maintenanceMode}
+                    onCheckedChange={(checked) => setSystemConfig({...systemConfig, maintenanceMode: checked})}
                   />
                 </div>
               </div>
