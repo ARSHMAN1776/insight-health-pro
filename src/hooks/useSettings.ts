@@ -18,15 +18,71 @@ interface UserSetting {
 }
 
 export const useSettings = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [hospitalSettings, setHospitalSettings] = useState<Record<string, any>>({});
   const [userSettings, setUserSettings] = useState<Record<string, any>>({});
 
+  // Check if user is a real authenticated user (not demo)
+  const isAuthenticatedUser = () => {
+    return session !== null && user?.id && user.id.includes('-'); // UUIDs contain dashes
+  };
+
+  // Load from localStorage for demo users
+  const loadFromLocalStorage = () => {
+    if (!user?.id) return;
+    
+    const storageKey = `user_settings_${user.id}`;
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        setUserSettings(JSON.parse(stored));
+      } catch (e) {
+        console.error('Error parsing stored settings:', e);
+      }
+    }
+
+    if (user.role === 'admin') {
+      const hospitalStorageKey = 'hospital_settings';
+      const storedHospital = localStorage.getItem(hospitalStorageKey);
+      if (storedHospital) {
+        try {
+          setHospitalSettings(JSON.parse(storedHospital));
+        } catch (e) {
+          console.error('Error parsing stored hospital settings:', e);
+        }
+      }
+    }
+  };
+
+  // Save to localStorage for demo users
+  const saveToLocalStorage = (key: string, value: any, isHospital: boolean = false) => {
+    if (!user?.id && !isHospital) return;
+    
+    if (isHospital) {
+      const hospitalStorageKey = 'hospital_settings';
+      const current = localStorage.getItem(hospitalStorageKey);
+      const settings = current ? JSON.parse(current) : {};
+      settings[key] = value;
+      localStorage.setItem(hospitalStorageKey, JSON.stringify(settings));
+    } else {
+      const storageKey = `user_settings_${user.id}`;
+      const current = localStorage.getItem(storageKey);
+      const settings = current ? JSON.parse(current) : {};
+      settings[key] = value;
+      localStorage.setItem(storageKey, JSON.stringify(settings));
+    }
+  };
+
   // Load hospital settings (admin only)
   const loadHospitalSettings = async () => {
     if (!user || user.role !== 'admin') return;
+
+    // For demo users, use localStorage
+    if (!isAuthenticatedUser()) {
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -54,6 +110,11 @@ export const useSettings = () => {
   // Load user-specific settings
   const loadUserSettings = async () => {
     if (!user?.id) return;
+
+    // For demo users, use localStorage
+    if (!isAuthenticatedUser()) {
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -83,6 +144,13 @@ export const useSettings = () => {
         variant: 'destructive',
       });
       return false;
+    }
+
+    // For demo users, use localStorage
+    if (!isAuthenticatedUser()) {
+      saveToLocalStorage(key, value, true);
+      setHospitalSettings(prev => ({ ...prev, [key]: value }));
+      return true;
     }
 
     try {
@@ -115,6 +183,13 @@ export const useSettings = () => {
   // Save user setting
   const saveUserSetting = async (key: string, value: any) => {
     if (!user?.id) return false;
+
+    // For demo users, use localStorage
+    if (!isAuthenticatedUser()) {
+      saveToLocalStorage(key, value, false);
+      setUserSettings(prev => ({ ...prev, [key]: value }));
+      return true;
+    }
 
     try {
       const { error } = await supabase
@@ -153,6 +228,15 @@ export const useSettings = () => {
   useEffect(() => {
     const initialize = async () => {
       setLoading(true);
+      
+      // Load from localStorage for demo users
+      if (!isAuthenticatedUser()) {
+        loadFromLocalStorage();
+        setLoading(false);
+        return;
+      }
+
+      // Load from Supabase for authenticated users
       await Promise.all([
         loadHospitalSettings(),
         loadUserSettings(),
@@ -162,8 +246,10 @@ export const useSettings = () => {
 
     if (user) {
       initialize();
+    } else {
+      setLoading(false);
     }
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.role, session]);
 
   return {
     loading,

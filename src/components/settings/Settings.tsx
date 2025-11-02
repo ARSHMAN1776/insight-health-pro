@@ -403,6 +403,14 @@ const Settings: React.FC = () => {
                 </div>
               </div>
 
+              <div className="pt-4 flex gap-3">
+                <Button onClick={handleSaveHospitalSettings}>
+                  Save Hospital Information
+                </Button>
+                <Button onClick={handleSaveRegionalSettings} variant="outline">
+                  Save Regional Settings
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
