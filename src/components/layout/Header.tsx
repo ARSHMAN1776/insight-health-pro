@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Bell, Search, Sun, Moon, Monitor } from 'lucide-react';
+import { Menu, Search, Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useTheme } from '../theme-provider';
@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Badge } from '../ui/badge';
+import NotificationCenter from '../notifications/NotificationCenter';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -72,15 +72,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         </DropdownMenu>
 
         {/* Notifications */}
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="w-4 h-4" />
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs p-0"
-          >
-            3
-          </Badge>
-        </Button>
+        <NotificationCenter />
 
         {/* Emergency Button */}
         <Button variant="destructive" size="sm">

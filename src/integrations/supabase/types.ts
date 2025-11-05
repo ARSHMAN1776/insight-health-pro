@@ -338,6 +338,60 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          priority: string
+          read: boolean
+          sent_via_email: boolean | null
+          sent_via_push: boolean | null
+          sent_via_sms: boolean | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          priority?: string
+          read?: boolean
+          sent_via_email?: boolean | null
+          sent_via_push?: boolean | null
+          sent_via_sms?: boolean | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          priority?: string
+          read?: boolean
+          sent_via_email?: boolean | null
+          sent_via_push?: boolean | null
+          sent_via_sms?: boolean | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       nurses: {
         Row: {
           created_at: string | null
@@ -601,6 +655,54 @@ export type Database = {
           phone?: string | null
           specialization?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          recurring: boolean | null
+          recurring_pattern: string | null
+          related_id: string | null
+          related_table: string | null
+          reminder_time: string
+          reminder_type: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          recurring?: boolean | null
+          recurring_pattern?: string | null
+          related_id?: string | null
+          related_table?: string | null
+          reminder_time: string
+          reminder_type: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          recurring?: boolean | null
+          recurring_pattern?: string | null
+          related_id?: string | null
+          related_table?: string | null
+          reminder_time?: string
+          reminder_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
