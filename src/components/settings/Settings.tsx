@@ -16,7 +16,7 @@ import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Mail
 const Settings: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { loading, hospitalSettings: dbHospitalSettings, userSettings: dbUserSettings, saveHospitalSetting, saveUserSetting } = useSettings();
+  const { loading, hospitalSettings: dbHospitalSettings, userSettings: dbUserSettings, saveHospitalSetting, saveUserSetting, refreshSettings } = useSettings();
   
   const [hospitalInfo, setHospitalInfo] = useState({
     name: '',
@@ -164,6 +164,7 @@ const Settings: React.FC = () => {
     const success = await saveHospitalSetting('hospital_info', hospitalInfo, 'hospital');
     if (success) {
       toast({ title: 'Success', description: 'Hospital information saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -171,6 +172,7 @@ const Settings: React.FC = () => {
     const success = await saveHospitalSetting('regional_settings', regionalSettings, 'hospital');
     if (success) {
       toast({ title: 'Success', description: 'Regional settings saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -178,6 +180,7 @@ const Settings: React.FC = () => {
     const success = await saveHospitalSetting('security_settings', securitySettings, 'security');
     if (success) {
       toast({ title: 'Success', description: 'Security settings saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -186,6 +189,7 @@ const Settings: React.FC = () => {
     const success = await saveUserSetting('notifications', notificationSettings);
     if (success) {
       toast({ title: 'Success', description: 'Notification preferences saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -193,6 +197,7 @@ const Settings: React.FC = () => {
     const success = await saveHospitalSetting('system_config', systemConfig, 'system');
     if (success) {
       toast({ title: 'Success', description: 'System configuration saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -200,6 +205,7 @@ const Settings: React.FC = () => {
     const success = await saveUserSetting('doctor_preferences', doctorSettings);
     if (success) {
       toast({ title: 'Success', description: 'Doctor preferences saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -207,6 +213,7 @@ const Settings: React.FC = () => {
     const success = await saveUserSetting('nurse_preferences', nurseSettings);
     if (success) {
       toast({ title: 'Success', description: 'Nurse preferences saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -214,6 +221,7 @@ const Settings: React.FC = () => {
     const success = await saveUserSetting('patient_preferences', patientSettings);
     if (success) {
       toast({ title: 'Success', description: 'Patient preferences saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -221,6 +229,7 @@ const Settings: React.FC = () => {
     const success = await saveUserSetting('pharmacist_preferences', pharmacistSettings);
     if (success) {
       toast({ title: 'Success', description: 'Pharmacist preferences saved successfully' });
+      await refreshSettings();
     }
   };
 
@@ -228,6 +237,7 @@ const Settings: React.FC = () => {
     const success = await saveUserSetting('receptionist_preferences', receptionistSettings);
     if (success) {
       toast({ title: 'Success', description: 'Receptionist preferences saved successfully' });
+      await refreshSettings();
     }
   };
 
