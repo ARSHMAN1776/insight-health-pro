@@ -94,8 +94,8 @@ const Login: React.FC = () => {
     try {
       await signup(email, password, firstName, lastName, selectedRole);
       toast({
-        title: 'Account Created',
-        description: 'Please check your email to verify your account',
+        title: 'Account Created Successfully! ✓',
+        description: 'You can now sign in with your credentials. Email confirmation has been disabled for testing.',
       });
       setIsSignup(false);
       setEmail('');

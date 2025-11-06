@@ -282,6 +282,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (error) {
+        // Provide helpful message for email confirmation
+        if (error.message.includes('Email not confirmed')) {
+          throw new Error('Please verify your email address. Check your inbox for the confirmation link.');
+        }
         throw error;
       }
 
