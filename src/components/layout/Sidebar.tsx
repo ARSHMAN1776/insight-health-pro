@@ -47,6 +47,12 @@ const sidebarItems: SidebarItem[] = [
     roles: ['admin', 'doctor', 'nurse', 'receptionist']
   },
   {
+    label: 'Patient Registry',
+    icon: ClipboardList,
+    path: '/patient-registry',
+    roles: ['admin']
+  },
+  {
     label: 'Appointments',
     icon: Calendar,
     path: '/appointments',

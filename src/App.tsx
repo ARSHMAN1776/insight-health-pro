@@ -19,6 +19,7 @@ const PrescriptionManagement = React.lazy(() => import('./components/prescriptio
 const LabTestManagement = React.lazy(() => import('./components/lab-tests/LabTestManagement'));
 const RoomManagement = React.lazy(() => import('./components/rooms/RoomManagement'));
 const PatientManagement = React.lazy(() => import('./components/patients/PatientManagement'));
+const PatientRegistry = React.lazy(() => import('./pages/PatientRegistry'));
 const Reports = React.lazy(() => import('./pages/Reports'));
 const Settings = React.lazy(() => import('./components/settings/Settings'));
 
@@ -122,6 +123,15 @@ const App = () => (
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <PatientManagement />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/patient-registry" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <PatientRegistry />
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
