@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import MainLayout from "./components/layout/MainLayout";
 import NotFound from "./pages/NotFound";
 
+import Index from './pages/Index';
+
 // Lazy load components
 const AppointmentScheduler = React.lazy(() => import('./components/appointments/AppointmentScheduler'));
 const MedicalRecords = React.lazy(() => import('./components/medical/MedicalRecords'));
@@ -55,11 +57,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Navigate to="/dashboard" />
-                </ProtectedRoute>
-              } />
+              <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <MainLayout>
