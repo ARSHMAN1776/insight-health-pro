@@ -22,6 +22,9 @@ const PatientManagement = React.lazy(() => import('./components/patients/Patient
 const PatientRegistry = React.lazy(() => import('./pages/PatientRegistry'));
 const Reports = React.lazy(() => import('./pages/Reports'));
 const Settings = React.lazy(() => import('./components/settings/Settings'));
+const Billing = React.lazy(() => import('./pages/Billing'));
+const Pharmacy = React.lazy(() => import('./pages/Pharmacy'));
+const Staff = React.lazy(() => import('./pages/Staff'));
 
 const queryClient = new QueryClient();
 
@@ -150,6 +153,33 @@ const App = () => (
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <Settings />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/billing" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <Billing />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/pharmacy" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <Pharmacy />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/staff" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <Staff />
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
