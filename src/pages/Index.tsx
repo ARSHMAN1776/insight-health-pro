@@ -84,6 +84,13 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-3">
               <Button 
+                variant="ghost" 
+                onClick={() => navigate('/about')}
+                className="hidden md:flex"
+              >
+                About Us
+              </Button>
+              <Button 
                 variant="outline" 
                 onClick={() => navigate('/login')}
                 className="hidden sm:flex"
@@ -294,7 +301,7 @@ const Index = () => {
             <div>
               <h3 className="font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
+                <li><button onClick={() => navigate('/about')} className="hover:text-primary transition-colors">About Us</button></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Services</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Departments</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
