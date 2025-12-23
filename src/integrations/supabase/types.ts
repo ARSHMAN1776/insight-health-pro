@@ -440,6 +440,39 @@ export type Database = {
         }
         Relationships: []
       }
+      operation_theatres: {
+        Row: {
+          created_at: string | null
+          equipment: string[] | null
+          floor: number | null
+          id: string
+          notes: string | null
+          ot_name: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          equipment?: string[] | null
+          floor?: number | null
+          id?: string
+          notes?: string | null
+          ot_name: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          equipment?: string[] | null
+          floor?: number | null
+          id?: string
+          notes?: string | null
+          ot_name?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           address: string | null
@@ -549,6 +582,53 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_operation: {
+        Row: {
+          complications: string | null
+          created_at: string | null
+          discharge_status: string
+          follow_up_date: string | null
+          id: string
+          medication_notes: string | null
+          recovery_notes: string | null
+          surgery_id: string
+          updated_at: string | null
+          vital_signs: Json | null
+        }
+        Insert: {
+          complications?: string | null
+          created_at?: string | null
+          discharge_status?: string
+          follow_up_date?: string | null
+          id?: string
+          medication_notes?: string | null
+          recovery_notes?: string | null
+          surgery_id: string
+          updated_at?: string | null
+          vital_signs?: Json | null
+        }
+        Update: {
+          complications?: string | null
+          created_at?: string | null
+          discharge_status?: string
+          follow_up_date?: string | null
+          id?: string
+          medication_notes?: string | null
+          recovery_notes?: string | null
+          surgery_id?: string
+          updated_at?: string | null
+          vital_signs?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_operation_surgery_id_fkey"
+            columns: ["surgery_id"]
+            isOneToOne: false
+            referencedRelation: "surgeries"
             referencedColumns: ["id"]
           },
         ]
@@ -753,6 +833,111 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      surgeries: {
+        Row: {
+          created_at: string | null
+          doctor_id: string
+          end_time: string
+          id: string
+          notes: string | null
+          ot_id: string
+          patient_id: string
+          priority: string | null
+          start_time: string
+          status: string
+          surgery_date: string
+          surgery_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          doctor_id: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          ot_id: string
+          patient_id: string
+          priority?: string | null
+          start_time: string
+          status?: string
+          surgery_date: string
+          surgery_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          doctor_id?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          ot_id?: string
+          patient_id?: string
+          priority?: string | null
+          start_time?: string
+          status?: string
+          surgery_date?: string
+          surgery_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surgeries_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surgeries_ot_id_fkey"
+            columns: ["ot_id"]
+            isOneToOne: false
+            referencedRelation: "operation_theatres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surgeries_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surgery_team: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          role: string
+          staff_name: string
+          surgery_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          role: string
+          staff_name: string
+          surgery_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          role?: string
+          staff_name?: string
+          surgery_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surgery_team_surgery_id_fkey"
+            columns: ["surgery_id"]
+            isOneToOne: false
+            referencedRelation: "surgeries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
