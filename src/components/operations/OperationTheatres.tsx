@@ -386,11 +386,12 @@ const OperationTheatres: React.FC = () => {
 
         {/* Delete Confirmation */}
         <ConfirmDialog
-          isOpen={deleteConfirmOpen}
-          onClose={() => setDeleteConfirmOpen(false)}
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
           onConfirm={handleDelete}
           title="Delete Operation Theatre"
-          message="Are you sure you want to delete this operation theatre? This action cannot be undone."
+          description="Are you sure you want to delete this operation theatre? This action cannot be undone."
+          confirmText="Delete"
         />
       </CardContent>
     </Card>
