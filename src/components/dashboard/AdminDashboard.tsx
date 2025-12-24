@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { 
   Users, 
@@ -12,7 +13,9 @@ import {
   Clock,
   Heart,
   CheckCircle,
-  UserPlus
+  UserPlus,
+  Scissors,
+  AlertCircle
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -20,6 +23,7 @@ import { Progress } from '../ui/progress';
 import { useAuth } from '../../contexts/AuthContext';
 import { dataManager } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
+import { supabase } from '../../integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { formatInTimeZone } from 'date-fns-tz';
 import StaffRegistrationForm from '../forms/StaffRegistrationForm';
@@ -27,13 +31,22 @@ import StaffRegistrationForm from '../forms/StaffRegistrationForm';
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showStaffRegistration, setShowStaffRegistration] = useState(false);
+  const [otStats, setOtStats] = useState({
+    todaySurgeries: [] as any[],
+    availableOTs: 0,
+    totalOTs: 0,
+    pendingPostOps: 0,
+    inProgressSurgeries: 0
+  });
 
   useEffect(() => {
     loadDashboardData();
+    loadOTStats();
   }, []);
 
   // Real-time clock for Pakistan/Islamabad timezone
@@ -58,6 +71,55 @@ const AdminDashboard: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOTStats = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get today's surgeries with patient and doctor info
+      const { data: surgeries } = await supabase
+        .from('surgeries')
+        .select(`
+          *,
+          patients:patient_id(first_name, last_name),
+          doctors:doctor_id(first_name, last_name),
+          operation_theatres:ot_id(ot_name)
+        `)
+        .eq('surgery_date', today)
+        .order('start_time');
+
+      // Get all OTs
+      const { data: ots } = await supabase
+        .from('operation_theatres')
+        .select('*');
+
+      // Get surgeries without post-op records
+      const { data: allSurgeries } = await supabase
+        .from('surgeries')
+        .select('id')
+        .eq('status', 'completed');
+
+      const { data: postOps } = await supabase
+        .from('post_operation')
+        .select('surgery_id');
+
+      const postOpSurgeryIds = new Set(postOps?.map(p => p.surgery_id) || []);
+      const pendingPostOps = (allSurgeries || []).filter(s => !postOpSurgeryIds.has(s.id)).length;
+
+      const availableOTs = ots?.filter(ot => ot.status === 'available').length || 0;
+      const inProgress = surgeries?.filter(s => s.status === 'in_progress').length || 0;
+
+      setOtStats({
+        todaySurgeries: surgeries || [],
+        availableOTs,
+        totalOTs: ots?.length || 0,
+        pendingPostOps,
+        inProgressSurgeries: inProgress
+      });
+    } catch (error) {
+      console.error('Error loading OT stats:', error);
     }
   };
 
@@ -371,6 +433,121 @@ const AdminDashboard: React.FC = () => {
                   Normal
                 </Badge>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Operation Department Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Today's Surgeries */}
+        <Card className="card-gradient lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center space-x-2">
+                <Scissors className="w-5 h-5 text-medical-purple" />
+                <span>Today's Surgeries</span>
+              </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/operation-department')}
+              >
+                View All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {otStats.todaySurgeries.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No surgeries scheduled for today
+                </div>
+              ) : (
+                otStats.todaySurgeries.slice(0, 5).map((surgery) => (
+                  <div key={surgery.id} className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-medical-purple/20 rounded-full flex items-center justify-center">
+                        <Scissors className="w-5 h-5 text-medical-purple" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {surgery.patients?.first_name} {surgery.patients?.last_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{surgery.surgery_type}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{surgery.start_time} - {surgery.end_time}</p>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-muted-foreground">{surgery.operation_theatres?.ot_name}</span>
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            surgery.status === 'completed' ? 'bg-success/10 text-success border-success' :
+                            surgery.status === 'in_progress' ? 'bg-warning/10 text-warning border-warning' :
+                            'bg-muted/10 text-muted-foreground border-muted'
+                          }
+                        >
+                          {surgery.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* OT Status Widget */}
+        <Card className="card-gradient">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="w-5 h-5 text-medical-green" />
+              <span>Operation Theatre Status</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-success/10 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="w-8 h-8 text-success" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Available OTs</p>
+                    <p className="text-2xl font-bold text-foreground">{otStats.availableOTs}/{otStats.totalOTs}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-warning/10 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Clock className="w-8 h-8 text-warning" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">In Progress</p>
+                    <p className="text-2xl font-bold text-foreground">{otStats.inProgressSurgeries}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-destructive/10 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <AlertCircle className="w-8 h-8 text-destructive" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pending Post-Op Records</p>
+                    <p className="text-2xl font-bold text-foreground">{otStats.pendingPostOps}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => navigate('/operation-department')}
+              >
+                <Scissors className="w-4 h-4 mr-2" />
+                Go to Operation Department
+              </Button>
             </div>
           </CardContent>
         </Card>
