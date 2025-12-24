@@ -11,13 +11,17 @@ import {
   Stethoscope,
   Heart,
   Pill,
-  TestTube
+  TestTube,
+  Scissors,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { dataManager, Appointment, Patient, MedicalRecord, Prescription } from '../../lib/dataManager';
+import { supabase } from '../../integrations/supabase/client';
 import { useToast } from '../../hooks/use-toast';
 
 const DoctorDashboard: React.FC = () => {
@@ -29,7 +33,11 @@ const DoctorDashboard: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-
+  const [surgeryStats, setSurgeryStats] = useState({
+    todaySurgeries: [] as any[],
+    mySurgeries: [] as any[],
+    pendingPostOps: 0
+  });
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -45,6 +53,9 @@ const DoctorDashboard: React.FC = () => {
         setPatients(patientsData.slice(0, 3)); // Show only first 3
         setMedicalRecords(recordsData);
         setPrescriptions(prescriptionsData);
+
+        // Load surgery stats
+        await loadSurgeryStats();
       } catch (error) {
         toast({
           title: "Error",
@@ -58,6 +69,44 @@ const DoctorDashboard: React.FC = () => {
 
     fetchData();
   }, [toast]);
+
+  const loadSurgeryStats = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get today's surgeries
+      const { data: surgeries } = await supabase
+        .from('surgeries')
+        .select(`
+          *,
+          patients:patient_id(first_name, last_name),
+          operation_theatres:ot_id(ot_name)
+        `)
+        .eq('surgery_date', today)
+        .order('start_time');
+
+      // Get completed surgeries without post-op
+      const { data: completedSurgeries } = await supabase
+        .from('surgeries')
+        .select('id')
+        .eq('status', 'completed');
+
+      const { data: postOps } = await supabase
+        .from('post_operation')
+        .select('surgery_id');
+
+      const postOpIds = new Set(postOps?.map(p => p.surgery_id) || []);
+      const pending = (completedSurgeries || []).filter(s => !postOpIds.has(s.id)).length;
+
+      setSurgeryStats({
+        todaySurgeries: surgeries || [],
+        mySurgeries: surgeries || [],
+        pendingPostOps: pending
+      });
+    } catch (error) {
+      console.error('Error loading surgery stats:', error);
+    }
+  };
 
   const todayAppointments = appointments.filter(apt => 
     new Date(apt.appointment_date).toDateString() === new Date().toDateString()
@@ -285,6 +334,84 @@ const DoctorDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Operation Department Widget */}
+      <Card className="card-gradient">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Scissors className="w-5 h-5 text-medical-purple" />
+              <span>Today's Surgeries</span>
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/operation-department')}
+            >
+              View All
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 bg-medical-purple/10 rounded-lg">
+                <p className="text-2xl font-bold text-foreground">{surgeryStats.todaySurgeries.length}</p>
+                <p className="text-xs text-muted-foreground">Total Today</p>
+              </div>
+              <div className="text-center p-3 bg-warning/10 rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
+                  {surgeryStats.todaySurgeries.filter(s => s.status === 'in_progress').length}
+                </p>
+                <p className="text-xs text-muted-foreground">In Progress</p>
+              </div>
+              <div className="text-center p-3 bg-destructive/10 rounded-lg">
+                <p className="text-2xl font-bold text-foreground">{surgeryStats.pendingPostOps}</p>
+                <p className="text-xs text-muted-foreground">Pending Post-Op</p>
+              </div>
+            </div>
+
+            {/* Surgery List */}
+            <div className="space-y-2">
+              {surgeryStats.todaySurgeries.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  No surgeries scheduled for today
+                </div>
+              ) : (
+                surgeryStats.todaySurgeries.slice(0, 3).map((surgery) => (
+                  <div key={surgery.id} className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-medical-purple/20 rounded-full flex items-center justify-center">
+                        <Scissors className="w-4 h-4 text-medical-purple" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {surgery.patients?.first_name} {surgery.patients?.last_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{surgery.surgery_type}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">{surgery.start_time}</p>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          surgery.status === 'completed' ? 'bg-success/10 text-success border-success' :
+                          surgery.status === 'in_progress' ? 'bg-warning/10 text-warning border-warning' :
+                          'bg-muted/10 text-muted-foreground border-muted'
+                        }
+                      >
+                        {surgery.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <Card className="card-gradient">
         <CardHeader>
@@ -294,7 +421,7 @@ const DoctorDashboard: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
@@ -326,6 +453,14 @@ const DoctorDashboard: React.FC = () => {
             >
               <TestTube className="w-6 h-6" />
               <span className="text-sm">Order Lab</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/operation-department')}
+            >
+              <Scissors className="w-6 h-6" />
+              <span className="text-sm">Surgeries</span>
             </Button>
           </div>
         </CardContent>
