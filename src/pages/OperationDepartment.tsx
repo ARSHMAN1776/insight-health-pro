@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Scissors, Building, ClipboardList, HeartPulse, Calendar, Activity } from 'lucide-react';
+import { Scissors, Building, ClipboardList, HeartPulse, Calendar, Activity, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import OperationTheatres from '@/components/operations/OperationTheatres';
 import SurgeryScheduler from '@/components/operations/SurgeryScheduler';
 import SurgeryList from '@/components/operations/SurgeryList';
 import PostOperation from '@/components/operations/PostOperation';
+import SurgicalConsentForm from '@/components/operations/SurgicalConsentForm';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -142,7 +143,7 @@ const OperationDepartment: React.FC = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="surgeries" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="surgeries" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
             <span className="hidden sm:inline">Surgeries</span>
@@ -154,6 +155,10 @@ const OperationDepartment: React.FC = () => {
           <TabsTrigger value="post-op" className="flex items-center gap-2">
             <HeartPulse className="h-4 w-4" />
             <span className="hidden sm:inline">Post-Op</span>
+          </TabsTrigger>
+          <TabsTrigger value="consent" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Consent Form</span>
           </TabsTrigger>
         </TabsList>
 
@@ -167,6 +172,10 @@ const OperationDepartment: React.FC = () => {
 
         <TabsContent value="post-op" className="mt-6">
           <PostOperation />
+        </TabsContent>
+
+        <TabsContent value="consent" className="mt-6">
+          <SurgicalConsentForm />
         </TabsContent>
       </Tabs>
     </div>
