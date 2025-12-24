@@ -29,6 +29,7 @@ const Settings = React.lazy(() => import('./components/settings/Settings'));
 const Billing = React.lazy(() => import('./pages/Billing'));
 const Pharmacy = React.lazy(() => import('./pages/Pharmacy'));
 const Staff = React.lazy(() => import('./pages/Staff'));
+const OperationDepartment = React.lazy(() => import('./pages/OperationDepartment'));
 
 const queryClient = new QueryClient();
 
@@ -182,6 +183,15 @@ const App = () => (
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <Staff />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/operation-department" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <OperationDepartment />
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>

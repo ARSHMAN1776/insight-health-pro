@@ -19,7 +19,8 @@ import {
   ClipboardList,
   Building,
   Bell,
-  BarChart
+  BarChart,
+  Scissors
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -99,6 +100,12 @@ const sidebarItems: SidebarItem[] = [
     icon: Stethoscope,
     path: '/staff',
     roles: ['admin']
+  },
+  {
+    label: 'Operation Department',
+    icon: Scissors,
+    path: '/operation-department',
+    roles: ['admin', 'doctor', 'nurse', 'receptionist']
   },
   {
     label: 'Reports',
