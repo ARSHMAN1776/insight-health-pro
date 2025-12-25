@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
@@ -28,9 +29,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Plus, Pencil, Power, Building2, Search, User, PowerOff } from 'lucide-react';
+import { 
+  Plus, 
+  Pencil, 
+  Building2, 
+  Search, 
+  User, 
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  XCircle
+} from 'lucide-react';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 interface Department {
@@ -65,8 +78,9 @@ const DepartmentManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ dept: Department; newStatus: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     department_name: '',
@@ -81,11 +95,10 @@ const DepartmentManagement: React.FC = () => {
   }, []);
 
   const fetchDepartments = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('departments', {
+      const { data, error } = await supabase.functions.invoke('departments?action=list', {
         method: 'GET',
-        body: null,
-        headers: { 'Content-Type': 'application/json' },
       });
 
       if (error) throw error;
@@ -183,60 +196,60 @@ const DepartmentManagement: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleDeactivate = async () => {
-    if (!selectedDepartment) return;
-
-    setSubmitting(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        `departments?action=deactivate&id=${selectedDepartment.department_id}`,
-        { method: 'PUT' }
-      );
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success(data.message);
-        setDeactivateDialogOpen(false);
-        setSelectedDepartment(null);
-        fetchDepartments();
-      } else {
-        toast.error(data?.message || 'Failed to deactivate department');
-      }
-    } catch (error: any) {
-      console.error('Deactivate error:', error);
-      toast.error(error.message || 'Failed to deactivate department');
-    } finally {
-      setSubmitting(false);
-    }
+  const initiateStatusChange = (dept: Department) => {
+    const newStatus = dept.status === 'Active' ? 'Inactive' : 'Active';
+    setPendingStatusChange({ dept, newStatus });
+    setStatusDialogOpen(true);
   };
 
-  const handleReactivate = async (department: Department) => {
+  const handleStatusChange = async () => {
+    if (!pendingStatusChange) return;
+
+    const { dept, newStatus } = pendingStatusChange;
     setSubmitting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke(
-        `departments?action=update&id=${department.department_id}`,
-        { 
-          method: 'PUT',
-          body: { status: 'Active' }
+      if (newStatus === 'Inactive') {
+        // Use deactivate endpoint for validation
+        const { data, error } = await supabase.functions.invoke(
+          `departments?action=deactivate&id=${dept.department_id}`,
+          { method: 'PUT' }
+        );
+
+        if (error) throw error;
+
+        if (data?.success) {
+          toast.success('Department deactivated successfully');
+          fetchDepartments();
+        } else {
+          toast.error(data?.message || 'Failed to deactivate department');
         }
-      );
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success('Department reactivated successfully');
-        fetchDepartments();
       } else {
-        toast.error(data?.message || 'Failed to reactivate department');
+        // Reactivate
+        const { data, error } = await supabase.functions.invoke(
+          `departments?action=update&id=${dept.department_id}`,
+          { 
+            method: 'PUT',
+            body: { status: 'Active' }
+          }
+        );
+
+        if (error) throw error;
+
+        if (data?.success) {
+          toast.success('Department activated successfully');
+          fetchDepartments();
+        } else {
+          toast.error(data?.message || 'Failed to activate department');
+        }
       }
     } catch (error: any) {
-      console.error('Reactivate error:', error);
-      toast.error(error.message || 'Failed to reactivate department');
+      console.error('Status change error:', error);
+      toast.error(error.message || 'Failed to update status');
     } finally {
       setSubmitting(false);
+      setStatusDialogOpen(false);
+      setPendingStatusChange(null);
     }
   };
 
@@ -260,37 +273,52 @@ const DepartmentManagement: React.FC = () => {
   };
 
   const filteredDepartments = departments.filter((dept) =>
-    dept.department_name.toLowerCase().includes(searchTerm.toLowerCase())
+    dept.department_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dept.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const activeDepartments = departments.filter((d) => d.status === 'Active').length;
+  const inactiveDepartments = departments.filter((d) => d.status === 'Inactive').length;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center p-8 min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading departments...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Department Management</h1>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Building2 className="h-7 w-7 text-primary" />
+            Department Management
+          </h1>
           <p className="text-muted-foreground">
-            {isAdmin ? 'Manage hospital departments' : 'View hospital departments'}
+            {isAdmin ? 'Create, edit, and manage hospital departments' : 'View hospital departments'}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <div className="relative flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search departments..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-card"
             />
           </div>
+
+          <Button variant="outline" size="icon" onClick={fetchDepartments} title="Refresh">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
 
           {isAdmin && (
             <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -298,20 +326,31 @@ const DepartmentManagement: React.FC = () => {
               if (!open) resetForm();
             }}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
                   Add Department
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
                     {selectedDepartment ? 'Edit Department' : 'Add New Department'}
                   </DialogTitle>
+                  <DialogDescription>
+                    {selectedDepartment 
+                      ? 'Update the department information below.' 
+                      : 'Fill in the details to create a new department.'}
+                  </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                
+                <Separator />
+                
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="department_name">Department Name *</Label>
+                    <Label htmlFor="department_name" className="text-sm font-medium">
+                      Department Name <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="department_name"
                       value={formData.department_name}
@@ -319,64 +358,101 @@ const DepartmentManagement: React.FC = () => {
                       placeholder="e.g., Cardiology"
                       maxLength={255}
                       required
+                      className="bg-card"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description" className="text-sm font-medium">
+                      Description
+                    </Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Brief description of the department"
+                      placeholder="Brief description of the department and its services..."
                       rows={3}
                       maxLength={1000}
+                      className="bg-card resize-none"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.description.length}/1000 characters
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="department_head">Department Head</Label>
-                      <Select
-                        value={formData.department_head}
-                        onValueChange={(value) => setFormData({ ...formData, department_head: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select head doctor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">None</SelectItem>
-                          {doctors.map((doctor) => (
-                            <SelectItem key={doctor.id} value={doctor.id}>
+                  <div className="space-y-2">
+                    <Label htmlFor="department_head" className="text-sm font-medium">
+                      Department Head
+                    </Label>
+                    <Select
+                      value={formData.department_head}
+                      onValueChange={(value) => setFormData({ ...formData, department_head: value })}
+                    >
+                      <SelectTrigger className="bg-card">
+                        <SelectValue placeholder="Select department head (optional)" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="">None</SelectItem>
+                        {doctors.map((doctor) => (
+                          <SelectItem key={doctor.id} value={doctor.id}>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
                               Dr. {doctor.first_name} {doctor.last_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                              <span className="text-xs text-muted-foreground">
+                                ({doctor.specialization})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="status_toggle" className="text-sm font-medium cursor-pointer">
+                        Department Status
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.status === 'Active' 
+                          ? 'Department is visible and available' 
+                          : 'Department is hidden from users'}
+                      </p>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(value) => setFormData({ ...formData, status: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={formData.status === 'Active' ? 'default' : 'secondary'}>
+                        {formData.status}
+                      </Badge>
+                      <Switch
+                        id="status_toggle"
+                        checked={formData.status === 'Active'}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, status: checked ? 'Active' : 'Inactive' })
+                        }
+                      />
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
+                  <Separator />
+
+                  <div className="flex justify-end gap-3">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setDialogOpen(false)} 
+                      disabled={submitting}
+                    >
                       Cancel
                     </Button>
                     <Button type="submit" disabled={submitting}>
-                      {submitting ? 'Saving...' : (selectedDepartment ? 'Update' : 'Create')} Department
+                      {submitting ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        selectedDepartment ? 'Update Department' : 'Create Department'
+                      )}
                     </Button>
                   </div>
                 </form>
@@ -387,128 +463,175 @@ const DepartmentManagement: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Departments</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Departments</CardTitle>
+            <Building2 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{departments.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">All registered departments</p>
           </CardContent>
         </Card>
-        <Card>
+        
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Departments</CardTitle>
-            <Building2 className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{departments.filter((d) => d.status === 'Active').length}</div>
+            <div className="text-2xl font-bold text-green-600">{activeDepartments}</div>
+            <p className="text-xs text-muted-foreground mt-1">Currently operational</p>
           </CardContent>
         </Card>
-        <Card>
+        
+        <Card className="border-l-4 border-l-orange-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">With Department Head</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Inactive</CardTitle>
+            <XCircle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-orange-600">{inactiveDepartments}</div>
+            <p className="text-xs text-muted-foreground mt-1">Temporarily disabled</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">With Head</CardTitle>
+            <User className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
               {departments.filter((d) => d.department_head).length}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">Have assigned head</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Departments Table */}
       <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Department List</CardTitle>
+          <CardDescription>
+            {filteredDepartments.length} department{filteredDepartments.length !== 1 ? 's' : ''} found
+          </CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Department Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Department Head</TableHead>
-                <TableHead>Status</TableHead>
-                {isAdmin && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDepartments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-muted-foreground">
-                    {searchTerm ? 'No departments match your search' : 'No departments found'}
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold">Department Name</TableHead>
+                  <TableHead className="font-semibold">Description</TableHead>
+                  <TableHead className="font-semibold">Department Head</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  {isAdmin && <TableHead className="font-semibold text-right">Actions</TableHead>}
                 </TableRow>
-              ) : (
-                filteredDepartments.map((dept) => (
-                  <TableRow key={dept.department_id}>
-                    <TableCell>
-                      <div className="font-medium">{dept.department_name}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground truncate max-w-[250px]">
-                        {dept.description || '-'}
+              </TableHeader>
+              <TableBody>
+                {filteredDepartments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-12">
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <AlertCircle className="h-12 w-12 opacity-50" />
+                        <div>
+                          <p className="font-medium">No departments found</p>
+                          <p className="text-sm">
+                            {searchTerm 
+                              ? 'Try adjusting your search terms' 
+                              : 'Get started by adding your first department'}
+                          </p>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{getDoctorName(dept)}</TableCell>
-                    <TableCell>
-                      <Badge variant={dept.status === 'Active' ? 'default' : 'secondary'}>
-                        {dept.status}
-                      </Badge>
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(dept)}
-                            title="Edit department"
+                  </TableRow>
+                ) : (
+                  filteredDepartments.map((dept) => (
+                    <TableRow key={dept.department_id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Building2 className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="font-medium">{dept.department_name}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground max-w-[300px] truncate">
+                          {dept.description || <span className="italic">No description</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className={dept.department_head ? '' : 'text-muted-foreground italic'}>
+                            {getDoctorName(dept)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Badge 
+                            variant={dept.status === 'Active' ? 'default' : 'secondary'}
+                            className={dept.status === 'Active' 
+                              ? 'bg-green-100 text-green-700 hover:bg-green-100' 
+                              : 'bg-orange-100 text-orange-700 hover:bg-orange-100'}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {dept.status === 'Active' ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedDepartment(dept);
-                                setDeactivateDialogOpen(true);
-                              }}
-                              title="Deactivate department"
-                            >
-                              <PowerOff className="h-4 w-4 text-destructive" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleReactivate(dept)}
+                            {dept.status === 'Active' ? (
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                            ) : (
+                              <XCircle className="h-3 w-3 mr-1" />
+                            )}
+                            {dept.status}
+                          </Badge>
+                          {isAdmin && (
+                            <Switch
+                              checked={dept.status === 'Active'}
+                              onCheckedChange={() => initiateStatusChange(dept)}
                               disabled={submitting}
-                              title="Reactivate department"
-                            >
-                              <Power className="h-4 w-4 text-green-500" />
-                            </Button>
+                              className="data-[state=checked]:bg-green-500"
+                            />
                           )}
                         </div>
                       </TableCell>
-                    )}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      {isAdmin && (
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(dept)}
+                            className="gap-2"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
+      {/* Status Change Confirmation Dialog */}
       <ConfirmDialog
-        open={deactivateDialogOpen}
-        onOpenChange={setDeactivateDialogOpen}
-        title="Deactivate Department"
-        description={`Are you sure you want to deactivate "${selectedDepartment?.department_name}"? This will soft-delete the department and it won't be visible to patients during appointment booking.`}
-        onConfirm={handleDeactivate}
-        confirmText={submitting ? 'Deactivating...' : 'Deactivate'}
-        variant="destructive"
+        open={statusDialogOpen}
+        onOpenChange={setStatusDialogOpen}
+        title={pendingStatusChange?.newStatus === 'Inactive' ? 'Deactivate Department' : 'Activate Department'}
+        description={
+          pendingStatusChange?.newStatus === 'Inactive'
+            ? `Are you sure you want to deactivate "${pendingStatusChange?.dept.department_name}"? This will hide the department from patients during appointment booking. Deactivation will be blocked if doctors or patients are currently assigned.`
+            : `Are you sure you want to activate "${pendingStatusChange?.dept.department_name}"? This will make the department visible to all users.`
+        }
+        onConfirm={handleStatusChange}
+        confirmText={submitting ? 'Processing...' : (pendingStatusChange?.newStatus === 'Inactive' ? 'Deactivate' : 'Activate')}
+        variant={pendingStatusChange?.newStatus === 'Inactive' ? 'destructive' : 'default'}
       />
     </div>
   );
