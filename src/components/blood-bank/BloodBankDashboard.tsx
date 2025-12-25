@@ -1,27 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { 
   Droplets, 
   Users, 
   Package, 
-  ClipboardList, 
-  Activity,
   AlertTriangle,
-  Clock,
-  Settings2,
   Database,
-  FileOutput
+  FileOutput,
+  BarChart3,
+  ChevronRight
 } from 'lucide-react';
-import BloodInventory from './BloodInventory';
 import DonorManagement from './DonorManagement';
-import DonationRecords from './DonationRecords';
-import BloodRequests from './BloodRequests';
-import TransfusionRecords from './TransfusionRecords';
-import BloodGroupsManagement from './BloodGroupsManagement';
 import BloodStockManagement from './BloodStockManagement';
 import BloodIssue from './BloodIssue';
-import { useAuth } from '@/contexts/AuthContext';
+import BloodBankReports from './BloodBankReports';
 import { supabase } from '@/integrations/supabase/client';
 
 interface BloodBankStats {
@@ -30,17 +26,48 @@ interface BloodBankStats {
   activeDonors: number;
 }
 
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+}
+
+const navItems: NavItem[] = [
+  {
+    id: 'stock',
+    label: 'Blood Stock',
+    icon: Database,
+    description: 'Manage blood inventory'
+  },
+  {
+    id: 'donors',
+    label: 'Donors',
+    icon: Users,
+    description: 'Manage donor records'
+  },
+  {
+    id: 'issue',
+    label: 'Issue Blood',
+    icon: FileOutput,
+    description: 'Issue blood to patients'
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: BarChart3,
+    description: 'View analytics & reports'
+  }
+];
+
 const BloodBankDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('stock');
+  const [activeSection, setActiveSection] = useState('stock');
   const [stats, setStats] = useState<BloodBankStats>({ totalStock: 0, criticalGroups: 0, activeDonors: 0 });
   const [loading, setLoading] = useState(true);
-  const { isRole } = useAuth();
-  const isAdmin = isRole('admin');
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch total stock
         const { data: stockData } = await supabase
           .from('blood_stock')
           .select('total_units');
@@ -48,7 +75,6 @@ const BloodBankDashboard: React.FC = () => {
         const totalStock = stockData?.reduce((sum, s) => sum + s.total_units, 0) || 0;
         const criticalGroups = stockData?.filter(s => s.total_units < 5).length || 0;
 
-        // Fetch active donors
         const { count: donorCount } = await supabase
           .from('donors')
           .select('*', { count: 'exact', head: true })
@@ -68,7 +94,6 @@ const BloodBankDashboard: React.FC = () => {
 
     fetchStats();
 
-    // Real-time subscription for stock updates
     const channel = supabase
       .channel('dashboard-stock-changes')
       .on(
@@ -83,120 +108,138 @@ const BloodBankDashboard: React.FC = () => {
     };
   }, []);
 
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'stock':
+        return <BloodStockManagement />;
+      case 'donors':
+        return <DonorManagement />;
+      case 'issue':
+        return <BloodIssue />;
+      case 'reports':
+        return <BloodBankReports />;
+      default:
+        return <BloodStockManagement />;
+    }
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Droplets className="h-7 w-7 text-red-500" />
-          Blood Bank Management
-        </h1>
-        <p className="text-muted-foreground">
-          Manage blood stock, donors, and transfusions
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Total Blood Stock
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              {loading ? '...' : stats.totalStock}
+    <div className="flex h-[calc(100vh-4rem)]">
+      {/* Sidebar */}
+      <aside className="w-64 border-r border-border bg-card flex-shrink-0 hidden md:flex flex-col">
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+              <Droplets className="h-5 w-5 text-red-500" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Units across all blood groups</p>
-          </CardContent>
-        </Card>
+            <div>
+              <h2 className="font-semibold text-foreground">Blood Bank</h2>
+              <p className="text-xs text-muted-foreground">Management System</p>
+            </div>
+          </div>
+        </div>
 
-        <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Critical Stock
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+        {/* Stats Summary */}
+        <div className="p-4 border-b border-border space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Total Stock</span>
+            <span className="font-semibold">{loading ? '...' : stats.totalStock}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Critical</span>
+            <Badge 
+              variant={stats.criticalGroups > 0 ? 'destructive' : 'secondary'}
+              className="text-xs"
+            >
               {loading ? '...' : stats.criticalGroups}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Blood groups below 5 units</p>
-          </CardContent>
-        </Card>
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Donors</span>
+            <span className="font-semibold text-green-600">{loading ? '...' : stats.activeDonors}</span>
+          </div>
+        </div>
 
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Eligible Donors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              {loading ? '...' : stats.activeDonors}
+        {/* Navigation */}
+        <ScrollArea className="flex-1 py-2">
+          <nav className="px-2 space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.id;
+              
+              return (
+                <Button
+                  key={item.id}
+                  variant="ghost"
+                  onClick={() => setActiveSection(item.id)}
+                  className={cn(
+                    'w-full justify-start h-auto py-3 px-3',
+                    isActive && 'bg-primary/10 text-primary hover:bg-primary/15'
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5 mr-3', isActive ? 'text-primary' : 'text-muted-foreground')} />
+                  <div className="flex-1 text-left">
+                    <div className={cn('text-sm font-medium', !isActive && 'text-foreground')}>
+                      {item.label}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{item.description}</div>
+                  </div>
+                  {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
+                </Button>
+              );
+            })}
+          </nav>
+        </ScrollArea>
+
+        {/* Low Stock Warning */}
+        {stats.criticalGroups > 0 && (
+          <div className="p-4 border-t border-border">
+            <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm font-medium">Low Stock Alert</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.criticalGroups} blood group(s) below threshold
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Registered donors</p>
-          </CardContent>
-        </Card>
+          </div>
+        )}
+      </aside>
+
+      {/* Mobile Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
+        <div className="flex justify-around py-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.id;
+            
+            return (
+              <Button
+                key={item.id}
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveSection(item.id)}
+                className={cn(
+                  'flex-col h-auto py-2 px-3 gap-1',
+                  isActive && 'text-primary'
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-xs">{item.label}</span>
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="stock" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">Stock</span>
-          </TabsTrigger>
-          <TabsTrigger value="donors" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Donors</span>
-          </TabsTrigger>
-          <TabsTrigger value="donations" className="flex items-center gap-2">
-            <Droplets className="h-4 w-4" />
-            <span className="hidden sm:inline">Donations</span>
-          </TabsTrigger>
-          <TabsTrigger value="issue" className="flex items-center gap-2">
-            <FileOutput className="h-4 w-4" />
-            <span className="hidden sm:inline">Issue Blood</span>
-          </TabsTrigger>
-          <TabsTrigger value="transfusions" className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4" />
-            <span className="hidden sm:inline">Transfusions</span>
-          </TabsTrigger>
-          <TabsTrigger value="blood-groups" className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Blood Groups</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="stock">
-          <BloodStockManagement />
-        </TabsContent>
-
-        <TabsContent value="donors">
-          <DonorManagement />
-        </TabsContent>
-
-        <TabsContent value="donations">
-          <DonationRecords />
-        </TabsContent>
-
-        <TabsContent value="issue">
-          <BloodIssue />
-        </TabsContent>
-
-        <TabsContent value="transfusions">
-          <TransfusionRecords />
-        </TabsContent>
-
-        <TabsContent value="blood-groups">
-          <BloodGroupsManagement />
-        </TabsContent>
-      </Tabs>
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">
+        <div className="p-6 pb-20 md:pb-6">
+          {renderContent()}
+        </div>
+      </main>
     </div>
   );
 };

@@ -20,7 +20,8 @@ import {
   Building,
   Bell,
   BarChart,
-  Scissors
+  Scissors,
+  Droplets
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -82,6 +83,12 @@ const sidebarItems: SidebarItem[] = [
     icon: TestTube,
     path: '/lab-tests',
     roles: ['admin', 'doctor', 'nurse', 'patient']
+  },
+  {
+    label: 'Blood Bank',
+    icon: Droplets,
+    path: '/blood-bank',
+    roles: ['admin', 'doctor', 'nurse']
   },
   {
     label: 'Rooms & Beds',
