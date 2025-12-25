@@ -43,8 +43,7 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle2,
-  XCircle,
-  ShieldAlert
+  XCircle
 } from 'lucide-react';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
@@ -67,8 +66,6 @@ const departmentSchema = z.object({
   department_head: z.string().optional(),
   status: z.enum(['Active', 'Inactive']).default('Active'),
 });
-
-type DepartmentFormData = z.infer<typeof departmentSchema>;
 
 interface Department {
   department_id: string;
