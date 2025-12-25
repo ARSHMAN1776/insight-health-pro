@@ -118,6 +118,7 @@ export interface LabTest {
   cost?: number;
   lab_technician?: string;
   notes?: string;
+  report_image_url?: string;
   created_at: string;
   updated_at: string;
 }

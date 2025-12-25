@@ -220,6 +220,7 @@ export type Database = {
           notes: string | null
           patient_id: string
           priority: string | null
+          report_image_url: string | null
           results: string | null
           status: string | null
           test_date: string | null
@@ -237,6 +238,7 @@ export type Database = {
           notes?: string | null
           patient_id: string
           priority?: string | null
+          report_image_url?: string | null
           results?: string | null
           status?: string | null
           test_date?: string | null
@@ -254,6 +256,7 @@ export type Database = {
           notes?: string | null
           patient_id?: string
           priority?: string | null
+          report_image_url?: string | null
           results?: string | null
           status?: string | null
           test_date?: string | null
