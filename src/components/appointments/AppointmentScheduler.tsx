@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { Calendar, Clock, User, Stethoscope, Plus } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, Plus, Building2, Filter } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogDescription 
 } from '../ui/dialog';
 import { 
   Select, 
@@ -19,16 +19,26 @@ import {
   SelectValue 
 } from '../ui/select';
 import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
+import { Separator } from '../ui/separator';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { useToast } from '../../hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { dataManager, Appointment, Patient, Doctor } from '../../lib/dataManager';
 import DataTable, { Column } from '../shared/DataTable';
 
+interface Department {
+  department_id: string;
+  department_name: string;
+  status: string;
+}
+
 const appointmentSchema = z.object({
   patientId: z.string().min(1, 'Patient is required'),
+  departmentId: z.string().min(1, 'Department is required'),
   doctorId: z.string().min(1, 'Doctor is required'),
   date: z.string().min(1, 'Date is required'),
   time: z.string().min(1, 'Time is required'),
@@ -44,9 +54,12 @@ const AppointmentScheduler: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -58,9 +71,19 @@ const AppointmentScheduler: React.FC = () => {
           dataManager.getPatients(),
           dataManager.getDoctors()
         ]);
+        
+        // Fetch departments
+        const { data: deptData } = await supabase
+          .from('departments')
+          .select('department_id, department_name, status')
+          .eq('status', 'Active')
+          .order('department_name');
+        
         setAppointments(appointmentsData);
         setPatients(patientsData);
         setDoctors(doctorsData);
+        setFilteredDoctors(doctorsData);
+        setDepartments(deptData || []);
       } catch (error) {
         console.error('Error loading data:', error);
         toast({
@@ -79,6 +102,7 @@ const AppointmentScheduler: React.FC = () => {
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
       patientId: '',
+      departmentId: '',
       doctorId: '',
       date: '',
       time: '',
@@ -88,6 +112,21 @@ const AppointmentScheduler: React.FC = () => {
       notes: '',
     },
   });
+
+  // Watch department selection to filter doctors
+  const selectedDepartmentId = form.watch('departmentId');
+
+  useEffect(() => {
+    if (selectedDepartmentId) {
+      // Filter doctors by department_id
+      const filtered = doctors.filter(d => d.department_id === selectedDepartmentId);
+      setFilteredDoctors(filtered);
+      // Reset doctor selection when department changes
+      form.setValue('doctorId', '');
+    } else {
+      setFilteredDoctors(doctors);
+    }
+  }, [selectedDepartmentId, doctors, form]);
 
   const onSubmit = async (data: AppointmentFormData) => {
     try {
@@ -102,22 +141,36 @@ const AppointmentScheduler: React.FC = () => {
           symptoms: data.symptoms,
           notes: data.notes,
         });
+        
+        // Update department_id in appointments table
+        await supabase
+          .from('appointments')
+          .update({ department_id: data.departmentId })
+          .eq('id', selectedAppointment.id);
+        
         toast({
           title: 'Success',
           description: 'Appointment updated successfully',
         });
       } else {
-        await dataManager.createAppointment({
-          patient_id: data.patientId,
-          doctor_id: data.doctorId,
-          appointment_date: data.date,
-          appointment_time: data.time,
-          duration: data.duration,
-          type: data.type,
-          symptoms: data.symptoms,
-          notes: data.notes,
-          status: 'scheduled',
-        });
+        // Create appointment with department_id
+        const { error } = await supabase
+          .from('appointments')
+          .insert([{
+            patient_id: data.patientId,
+            doctor_id: data.doctorId,
+            department_id: data.departmentId,
+            appointment_date: data.date,
+            appointment_time: data.time,
+            duration: data.duration,
+            type: data.type,
+            symptoms: data.symptoms,
+            notes: data.notes,
+            status: 'scheduled',
+          }]);
+        
+        if (error) throw error;
+        
         toast({
           title: 'Success',
           description: 'Appointment scheduled successfully',
@@ -144,8 +197,14 @@ const AppointmentScheduler: React.FC = () => {
 
   const handleEdit = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
+    
+    // Find department from doctor
+    const doctor = doctors.find(d => d.id === appointment.doctor_id);
+    const deptId = doctor?.department_id || '';
+    
     form.reset({
       patientId: appointment.patient_id,
+      departmentId: deptId,
       doctorId: appointment.doctor_id,
       date: appointment.appointment_date,
       time: appointment.appointment_time,
@@ -195,28 +254,27 @@ const AppointmentScheduler: React.FC = () => {
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'scheduled':
-        return 'default';
-      case 'confirmed':
-        return 'secondary';
-      case 'in_progress':
-        return 'outline';
-      case 'completed':
-        return 'default';
-      case 'cancelled':
-        return 'destructive';
-      case 'no_show':
-        return 'destructive';
-      default:
-        return 'default';
+  // Get department name for a doctor
+  const getDepartmentName = (doctorId: string) => {
+    const doctor = doctors.find(d => d.id === doctorId);
+    if (doctor?.department_id) {
+      const dept = departments.find(d => d.department_id === doctor.department_id);
+      return dept?.department_name || doctor.department || '-';
     }
+    return doctor?.department || '-';
   };
+
+  // Filter appointments by department
+  const filteredAppointments = selectedDepartmentFilter === 'all' 
+    ? appointments 
+    : appointments.filter(a => {
+        const doctor = doctors.find(d => d.id === a.doctor_id);
+        return doctor?.department_id === selectedDepartmentFilter;
+      });
 
   // Calculate stats
   const today = new Date().toISOString().split('T')[0];
-  const todayAppointments = appointments.filter(a => a.appointment_date === today);
+  const todayAppointments = filteredAppointments.filter(a => a.appointment_date === today);
   const confirmedToday = todayAppointments.filter(a => a.status === 'confirmed');
   const inProgressToday = todayAppointments.filter(a => a.status === 'in_progress');
   const completedToday = todayAppointments.filter(a => a.status === 'completed');
@@ -235,6 +293,16 @@ const AppointmentScheduler: React.FC = () => {
         const patient = patients.find(p => p.id === appointment.patient_id);
         return patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown Patient';
       },
+    },
+    {
+      key: 'department',
+      label: 'Department',
+      render: (_, appointment) => (
+        <Badge variant="outline" className="flex items-center gap-1 w-fit">
+          <Building2 className="h-3 w-3" />
+          {getDepartmentName(appointment.doctor_id)}
+        </Badge>
+      ),
     },
     {
       key: 'doctor_id',
@@ -256,11 +324,6 @@ const AppointmentScheduler: React.FC = () => {
       render: (_, appointment) => appointment.appointment_time,
     },
     {
-      key: 'duration',
-      label: 'Duration',
-      render: (_, appointment) => `${appointment.duration} min`,
-    },
-    {
       key: 'type',
       label: 'Type',
       render: (_, appointment) => (
@@ -278,7 +341,7 @@ const AppointmentScheduler: React.FC = () => {
           <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover z-50">
             <SelectItem value="scheduled">Scheduled</SelectItem>
             <SelectItem value="confirmed">Confirmed</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
@@ -294,7 +357,10 @@ const AppointmentScheduler: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading appointments...</div>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading appointments...</p>
+        </div>
       </div>
     );
   }
@@ -344,199 +410,265 @@ const AppointmentScheduler: React.FC = () => {
       {/* Appointments Table */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Appointments</CardTitle>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Schedule Appointment
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto scroll-smooth">
-                <DialogHeader>
-                  <DialogTitle>
-                    {selectedAppointment ? 'Edit Appointment' : 'Schedule New Appointment'}
-                  </DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto scroll-smooth px-1">
-                    <FormField
-                      control={form.control}
-                      name="patientId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Patient</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value} onOpenChange={() => { setTimeout(() => { const el = document.querySelector('[data-field="patientId"]') as HTMLElement | null; el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}>
-                            <FormControl>
-                              <SelectTrigger data-field="patientId">
-                                <SelectValue placeholder="Select a patient" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {patients.map((patient) => (
-                                <SelectItem key={patient.id} value={patient.id}>
-                                  {patient.first_name} {patient.last_name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="doctorId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Doctor</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value} onOpenChange={() => { setTimeout(() => { const el = document.querySelector('[data-field="doctorId"]') as HTMLElement | null; el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}>
-                            <FormControl>
-                              <SelectTrigger data-field="doctorId">
-                                <SelectValue placeholder="Select a doctor" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {doctors.map((doctor) => (
-                                <SelectItem key={doctor.id} value={doctor.id}>
-                                  Dr. {doctor.first_name} {doctor.last_name} - {doctor.specialization}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle>Appointments</CardTitle>
+              <CardDescription>Manage and schedule patient appointments</CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* Department Filter */}
+              <Select value={selectedDepartmentFilter} onValueChange={setSelectedDepartmentFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter by department" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.department_id} value={dept.department_id}>
+                      {dept.department_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Schedule Appointment
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto scroll-smooth">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedAppointment ? 'Edit Appointment' : 'Schedule New Appointment'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Select a department first to see available doctors.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <Separator />
+                  
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="date"
+                        name="patientId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} onFocus={(e) => { setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="time"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Time</FormLabel>
-                            <FormControl>
-                              <Input type="time" {...field} onFocus={(e) => { setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="duration"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Duration (minutes)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value))}
-                                onFocus={(e) => { setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Type</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} onOpenChange={() => { setTimeout(() => { const el = document.querySelector('[data-field="type"]') as HTMLElement | null; el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}>
+                            <FormLabel>Patient</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger data-field="type">
-                                  <SelectValue placeholder="Select type" />
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a patient" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="consultation">Consultation</SelectItem>
-                                <SelectItem value="follow-up">Follow-up</SelectItem>
-                                <SelectItem value="emergency">Emergency</SelectItem>
-                                <SelectItem value="surgery">Surgery</SelectItem>
-                                <SelectItem value="checkup">Checkup</SelectItem>
+                              <SelectContent className="bg-popover z-50">
+                                {patients.map((patient) => (
+                                  <SelectItem key={patient.id} value={patient.id}>
+                                    {patient.first_name} {patient.last_name}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="symptoms"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Symptoms/Reason</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Describe symptoms or reason for visit" {...field} onFocus={(e) => { setTimeout(() => { (e.target as HTMLTextAreaElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Notes (Optional)</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Additional notes" {...field} onFocus={(e) => { setTimeout(() => { (e.target as HTMLTextAreaElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsDialogOpen(false);
-                          setSelectedAppointment(null);
+                      
+                      {/* Department Selection - First */}
+                      <FormField
+                        control={form.control}
+                        name="departmentId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4" />
+                              Department <span className="text-destructive">*</span>
+                            </FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select department first" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="bg-popover z-50">
+                                {departments.map((dept) => (
+                                  <SelectItem key={dept.department_id} value={dept.department_id}>
+                                    {dept.department_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* Doctor Selection - Filtered by Department */}
+                      <FormField
+                        control={form.control}
+                        name="doctorId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Doctor</FormLabel>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              value={field.value}
+                              disabled={!selectedDepartmentId}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={
+                                    selectedDepartmentId 
+                                      ? (filteredDoctors.length > 0 ? "Select a doctor" : "No doctors in this department")
+                                      : "Select department first"
+                                  } />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="bg-popover z-50">
+                                {filteredDoctors.map((doctor) => (
+                                  <SelectItem key={doctor.id} value={doctor.id}>
+                                    Dr. {doctor.first_name} {doctor.last_name} - {doctor.specialization}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="date"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="time"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Time</FormLabel>
+                              <FormControl>
+                                <Input type="time" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="duration"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Duration (minutes)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Type</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="bg-popover z-50">
+                                  <SelectItem value="consultation">Consultation</SelectItem>
+                                  <SelectItem value="follow_up">Follow-up</SelectItem>
+                                  <SelectItem value="checkup">Check-up</SelectItem>
+                                  <SelectItem value="emergency">Emergency</SelectItem>
+                                  <SelectItem value="procedure">Procedure</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="symptoms"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Symptoms/Reason</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Describe symptoms or reason for visit" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Additional Notes</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Any additional notes..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="flex gap-2 pt-4">
+                        <Button type="submit" className="flex-1">
+                          {selectedAppointment ? 'Update Appointment' : 'Schedule Appointment'}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => {
                           form.reset();
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        {selectedAppointment ? 'Update' : 'Schedule'}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+                          setSelectedAppointment(null);
+                          setIsDialogOpen(false);
+                        }}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-        <DataTable
-          title="Appointments"
-          data={appointments}
-          columns={columns}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+          <DataTable
+            title="Appointments"
+            data={filteredAppointments}
+            columns={columns}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         </CardContent>
       </Card>
     </div>
