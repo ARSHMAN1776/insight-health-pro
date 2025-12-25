@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Building2, Search, User } from 'lucide-react';
+import { Plus, Pencil, Power, Building2, Search, User, PowerOff } from 'lucide-react';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 interface Department {
@@ -41,6 +41,12 @@ interface Department {
   status: string;
   created_at: string;
   updated_at: string;
+  head_doctor?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    specialization: string;
+  } | null;
 }
 
 interface Doctor {
@@ -59,8 +65,9 @@ const DepartmentManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     department_name: '',
     description: '',
@@ -75,16 +82,32 @@ const DepartmentManagement: React.FC = () => {
 
   const fetchDepartments = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase.functions.invoke('departments', {
+        method: 'GET',
+        body: null,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setDepartments(data.data || []);
+      } else {
+        throw new Error(data?.message || 'Failed to fetch departments');
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch departments:', error);
+      // Fallback to direct query
+      const { data, error: dbError } = await supabase
         .from('departments')
         .select('*')
         .order('department_name');
-
-      if (error) throw error;
-      setDepartments(data || []);
-    } catch (error: any) {
-      toast.error('Failed to fetch departments');
-      console.error(error);
+      
+      if (!dbError && data) {
+        setDepartments(data);
+      } else {
+        toast.error('Failed to fetch departments');
+      }
     } finally {
       setLoading(false);
     }
@@ -113,37 +136,39 @@ const DepartmentManagement: React.FC = () => {
       return;
     }
 
+    setSubmitting(true);
+
     try {
-      const departmentData = {
-        department_name: formData.department_name.trim(),
-        description: formData.description.trim() || null,
-        department_head: formData.department_head || null,
-        status: formData.status,
-      };
+      const action = selectedDepartment ? 'update' : 'add';
+      const queryParams = selectedDepartment 
+        ? `?action=${action}&id=${selectedDepartment.department_id}` 
+        : `?action=${action}`;
 
-      if (selectedDepartment) {
-        const { error } = await supabase
-          .from('departments')
-          .update(departmentData)
-          .eq('department_id', selectedDepartment.department_id);
+      const { data, error } = await supabase.functions.invoke(`departments${queryParams}`, {
+        method: selectedDepartment ? 'PUT' : 'POST',
+        body: {
+          department_name: formData.department_name.trim(),
+          description: formData.description.trim() || null,
+          department_head: formData.department_head || null,
+          status: formData.status,
+        },
+      });
 
-        if (error) throw error;
-        toast.success('Department updated successfully');
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(data.message);
+        setDialogOpen(false);
+        resetForm();
+        fetchDepartments();
       } else {
-        const { error } = await supabase
-          .from('departments')
-          .insert([departmentData]);
-
-        if (error) throw error;
-        toast.success('Department created successfully');
+        toast.error(data?.message || 'Operation failed');
       }
-
-      setDialogOpen(false);
-      resetForm();
-      fetchDepartments();
     } catch (error: any) {
+      console.error('Submit error:', error);
       toast.error(error.message || 'Failed to save department');
-      console.error(error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -158,23 +183,60 @@ const DepartmentManagement: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async () => {
+  const handleDeactivate = async () => {
     if (!selectedDepartment) return;
 
+    setSubmitting(true);
+
     try {
-      const { error } = await supabase
-        .from('departments')
-        .delete()
-        .eq('department_id', selectedDepartment.department_id);
+      const { data, error } = await supabase.functions.invoke(
+        `departments?action=deactivate&id=${selectedDepartment.department_id}`,
+        { method: 'PUT' }
+      );
 
       if (error) throw error;
-      toast.success('Department deleted successfully');
-      setDeleteDialogOpen(false);
-      setSelectedDepartment(null);
-      fetchDepartments();
+
+      if (data?.success) {
+        toast.success(data.message);
+        setDeactivateDialogOpen(false);
+        setSelectedDepartment(null);
+        fetchDepartments();
+      } else {
+        toast.error(data?.message || 'Failed to deactivate department');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete department');
-      console.error(error);
+      console.error('Deactivate error:', error);
+      toast.error(error.message || 'Failed to deactivate department');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReactivate = async (department: Department) => {
+    setSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        `departments?action=update&id=${department.department_id}`,
+        { 
+          method: 'PUT',
+          body: { status: 'Active' }
+        }
+      );
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Department reactivated successfully');
+        fetchDepartments();
+      } else {
+        toast.error(data?.message || 'Failed to reactivate department');
+      }
+    } catch (error: any) {
+      console.error('Reactivate error:', error);
+      toast.error(error.message || 'Failed to reactivate department');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -184,13 +246,16 @@ const DepartmentManagement: React.FC = () => {
       department_name: '',
       description: '',
       department_head: '',
-    status: 'Active',
+      status: 'Active',
     });
   };
 
-  const getDoctorName = (doctorId: string | null) => {
-    if (!doctorId) return 'Not assigned';
-    const doctor = doctors.find((d) => d.id === doctorId);
+  const getDoctorName = (department: Department) => {
+    if (department.head_doctor) {
+      return `Dr. ${department.head_doctor.first_name} ${department.head_doctor.last_name}`;
+    }
+    if (!department.department_head) return 'Not assigned';
+    const doctor = doctors.find((d) => d.id === department.department_head);
     return doctor ? `Dr. ${doctor.first_name} ${doctor.last_name}` : 'Unknown';
   };
 
@@ -252,6 +317,7 @@ const DepartmentManagement: React.FC = () => {
                       value={formData.department_name}
                       onChange={(e) => setFormData({ ...formData, department_name: e.target.value })}
                       placeholder="e.g., Cardiology"
+                      maxLength={255}
                       required
                     />
                   </div>
@@ -264,6 +330,7 @@ const DepartmentManagement: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Brief description of the department"
                       rows={3}
+                      maxLength={1000}
                     />
                   </div>
 
@@ -305,11 +372,11 @@ const DepartmentManagement: React.FC = () => {
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
                       Cancel
                     </Button>
-                    <Button type="submit">
-                      {selectedDepartment ? 'Update' : 'Create'} Department
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? 'Saving...' : (selectedDepartment ? 'Update' : 'Create')} Department
                     </Button>
                   </div>
                 </form>
@@ -383,7 +450,7 @@ const DepartmentManagement: React.FC = () => {
                         {dept.description || '-'}
                       </div>
                     </TableCell>
-                    <TableCell>{getDoctorName(dept.department_head)}</TableCell>
+                    <TableCell>{getDoctorName(dept)}</TableCell>
                     <TableCell>
                       <Badge variant={dept.status === 'Active' ? 'default' : 'secondary'}>
                         {dept.status}
@@ -396,19 +463,33 @@ const DepartmentManagement: React.FC = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEdit(dept)}
+                            title="Edit department"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedDepartment(dept);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {dept.status === 'Active' ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedDepartment(dept);
+                                setDeactivateDialogOpen(true);
+                              }}
+                              title="Deactivate department"
+                            >
+                              <PowerOff className="h-4 w-4 text-destructive" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleReactivate(dept)}
+                              disabled={submitting}
+                              title="Reactivate department"
+                            >
+                              <Power className="h-4 w-4 text-green-500" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     )}
@@ -421,12 +502,12 @@ const DepartmentManagement: React.FC = () => {
       </Card>
 
       <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title="Delete Department"
-        description={`Are you sure you want to delete "${selectedDepartment?.department_name}"? This action cannot be undone.`}
-        onConfirm={handleDelete}
-        confirmText="Delete"
+        open={deactivateDialogOpen}
+        onOpenChange={setDeactivateDialogOpen}
+        title="Deactivate Department"
+        description={`Are you sure you want to deactivate "${selectedDepartment?.department_name}"? This will soft-delete the department and it won't be visible to patients during appointment booking.`}
+        onConfirm={handleDeactivate}
+        confirmText={submitting ? 'Deactivating...' : 'Deactivate'}
         variant="destructive"
       />
     </div>
