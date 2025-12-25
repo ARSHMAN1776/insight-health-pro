@@ -1,1 +1,4 @@
 project_id = "fdllddffiihycbtgawbr"
+
+[functions.departments]
+verify_jwt = false
