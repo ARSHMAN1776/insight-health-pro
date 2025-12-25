@@ -3,49 +3,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { Separator } from '../ui/separator';
-import { FileText, Printer, User, Calendar, Phone, MapPin, Heart, AlertTriangle } from 'lucide-react';
+import { FileText, Printer, User, Calendar, Heart, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { supabase } from '../../integrations/supabase/client';
 import { format } from 'date-fns';
+import SignaturePad from '../shared/SignaturePad';
 
 interface ConsentFormData {
-  // Patient Info
   patientName: string;
   patientId: string;
   dateOfBirth: string;
   gender: string;
   phone: string;
-  address: string;
   bloodType: string;
   allergies: string;
-  
-  // Surgery Info
   surgeryType: string;
   surgeryDate: string;
   surgeonName: string;
-  anesthetistName: string;
   operationTheatre: string;
-  
-  // Consent Details
   procedureExplained: boolean;
   risksExplained: boolean;
   alternativesExplained: boolean;
   questionsAnswered: boolean;
   consentVoluntary: boolean;
-  
-  // Signatures
   patientSignature: string;
   witnessName: string;
   witnessRelation: string;
   witnessSignature: string;
-  witnessPhone: string;
-  
-  // Additional Notes
-  additionalNotes: string;
 }
 
 interface Patient {
@@ -55,7 +42,6 @@ interface Patient {
   date_of_birth: string;
   gender: string;
   phone: string | null;
-  address: string | null;
   blood_type: string | null;
   allergies: string | null;
 }
@@ -65,7 +51,6 @@ const SurgicalConsentForm: React.FC = () => {
   const printRef = useRef<HTMLDivElement>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState<ConsentFormData>({
     patientName: '',
@@ -73,13 +58,11 @@ const SurgicalConsentForm: React.FC = () => {
     dateOfBirth: '',
     gender: '',
     phone: '',
-    address: '',
     bloodType: '',
     allergies: '',
     surgeryType: '',
     surgeryDate: format(new Date(), 'yyyy-MM-dd'),
     surgeonName: '',
-    anesthetistName: '',
     operationTheatre: '',
     procedureExplained: false,
     risksExplained: false,
@@ -89,12 +72,9 @@ const SurgicalConsentForm: React.FC = () => {
     patientSignature: '',
     witnessName: '',
     witnessRelation: '',
-    witnessSignature: '',
-    witnessPhone: '',
-    additionalNotes: ''
+    witnessSignature: ''
   });
 
-  // Fetch patients on mount
   React.useEffect(() => {
     const fetchPatients = async () => {
       const { data } = await supabase
@@ -118,7 +98,6 @@ const SurgicalConsentForm: React.FC = () => {
         dateOfBirth: patient.date_of_birth,
         gender: patient.gender,
         phone: patient.phone || '',
-        address: patient.address || '',
         bloodType: patient.blood_type || '',
         allergies: patient.allergies || ''
       }));
@@ -130,9 +109,6 @@ const SurgicalConsentForm: React.FC = () => {
   };
 
   const handlePrint = () => {
-    const printContent = printRef.current;
-    if (!printContent) return;
-
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast({
@@ -149,252 +125,189 @@ const SurgicalConsentForm: React.FC = () => {
         <head>
           <title>Surgical Consent Form - ${formData.patientName}</title>
           <style>
+            @page { size: A4; margin: 10mm; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { 
-              font-family: 'Times New Roman', Times, serif; 
-              padding: 20px; 
-              max-width: 800px; 
-              margin: 0 auto;
-              line-height: 1.6;
+              font-family: Arial, sans-serif; 
+              font-size: 10px;
+              line-height: 1.3;
+              padding: 5mm;
             }
             .header { 
               text-align: center; 
-              border-bottom: 3px double #000; 
-              padding-bottom: 20px; 
-              margin-bottom: 20px; 
+              border-bottom: 2px solid #000; 
+              padding-bottom: 8px; 
+              margin-bottom: 10px; 
             }
-            .header h1 { font-size: 24px; margin-bottom: 5px; }
-            .header h2 { font-size: 18px; color: #333; font-weight: normal; }
-            .header p { font-size: 12px; color: #666; }
-            .section { margin-bottom: 20px; }
+            .header h1 { font-size: 16px; margin-bottom: 2px; }
+            .header h2 { font-size: 12px; font-weight: normal; }
+            .section { margin-bottom: 8px; }
             .section-title { 
-              font-size: 14px; 
+              font-size: 10px; 
               font-weight: bold; 
-              background: #f0f0f0; 
-              padding: 8px 12px; 
-              margin-bottom: 10px;
-              border-left: 4px solid #333;
+              background: #e0e0e0; 
+              padding: 3px 6px; 
+              margin-bottom: 5px;
             }
-            .form-row { 
-              display: flex; 
-              margin-bottom: 8px; 
-              padding: 4px 0;
-              border-bottom: 1px dotted #ccc;
+            .info-grid { 
+              display: grid; 
+              grid-template-columns: 1fr 1fr 1fr; 
+              gap: 3px 10px;
             }
-            .form-label { 
-              width: 180px; 
-              font-weight: bold; 
-              font-size: 12px;
-            }
-            .form-value { 
-              flex: 1; 
-              font-size: 12px;
-            }
-            .consent-item {
-              display: flex;
-              align-items: flex-start;
+            .info-item { display: flex; font-size: 9px; }
+            .info-label { font-weight: bold; min-width: 70px; }
+            .terms { 
+              font-size: 8px; 
+              padding: 5px; 
+              border: 1px solid #ccc; 
+              background: #fafafa;
               margin-bottom: 8px;
-              font-size: 12px;
             }
-            .consent-checkbox {
-              width: 16px;
-              height: 16px;
-              border: 1px solid #000;
-              margin-right: 10px;
-              display: flex;
-              align-items: center;
+            .terms p { margin-bottom: 3px; }
+            .consent-grid { 
+              display: grid; 
+              grid-template-columns: 1fr 1fr; 
+              gap: 2px 15px;
+              font-size: 8px;
+            }
+            .consent-item { display: flex; align-items: flex-start; gap: 4px; }
+            .checkbox { 
+              width: 10px; 
+              height: 10px; 
+              border: 1px solid #000; 
+              display: inline-flex; 
+              align-items: center; 
               justify-content: center;
               flex-shrink: 0;
+              font-size: 8px;
             }
-            .checked::after { content: "✓"; font-weight: bold; }
-            .terms-text {
-              font-size: 11px;
-              line-height: 1.5;
-              text-align: justify;
-              padding: 10px;
-              border: 1px solid #ddd;
-              background: #fafafa;
-              margin-bottom: 15px;
+            .signature-section { 
+              display: flex; 
+              gap: 20px; 
+              margin-top: 10px;
             }
-            .signature-section {
-              display: flex;
-              gap: 40px;
-              margin-top: 30px;
-            }
-            .signature-box {
-              flex: 1;
+            .signature-box { 
+              flex: 1; 
               text-align: center;
             }
-            .signature-line {
+            .signature-image {
+              height: 50px;
               border-bottom: 1px solid #000;
-              height: 60px;
-              margin-bottom: 5px;
-              font-style: italic;
-              padding-top: 40px;
+              margin-bottom: 3px;
+              display: flex;
+              align-items: flex-end;
+              justify-content: center;
             }
-            .signature-label { font-size: 11px; }
-            .footer {
-              margin-top: 30px;
-              padding-top: 15px;
-              border-top: 1px solid #000;
-              font-size: 10px;
-              text-align: center;
-              color: #666;
+            .signature-image img { max-height: 45px; max-width: 100%; }
+            .signature-label { font-size: 8px; }
+            .footer { 
+              margin-top: 8px; 
+              padding-top: 5px; 
+              border-top: 1px solid #000; 
+              font-size: 7px; 
+              text-align: center; 
             }
-            .date-time {
-              text-align: right;
-              font-size: 11px;
-              margin-bottom: 15px;
+            .date-line { 
+              text-align: right; 
+              font-size: 9px; 
+              margin-bottom: 8px; 
             }
             @media print {
-              body { padding: 0; }
-              .no-print { display: none; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
           </style>
         </head>
         <body>
           <div class="header">
-            <h1>🏥 HOSPITAL MANAGEMENT SYSTEM</h1>
+            <h1>HOSPITAL MANAGEMENT SYSTEM</h1>
             <h2>SURGICAL CONSENT FORM</h2>
-            <p>Informed Consent for Surgical Procedure</p>
           </div>
           
-          <div class="date-time">
-            <strong>Date:</strong> ${format(new Date(), 'PPP')} | 
-            <strong>Time:</strong> ${format(new Date(), 'HH:mm')}
+          <div class="date-line">
+            <strong>Date:</strong> ${format(new Date(), 'dd/MM/yyyy')} | <strong>Time:</strong> ${format(new Date(), 'HH:mm')}
           </div>
 
           <div class="section">
             <div class="section-title">PATIENT INFORMATION</div>
-            <div class="form-row">
-              <span class="form-label">Patient Name:</span>
-              <span class="form-value">${formData.patientName || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Patient ID:</span>
-              <span class="form-value">${formData.patientId?.slice(0, 8) || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Date of Birth:</span>
-              <span class="form-value">${formData.dateOfBirth || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Gender:</span>
-              <span class="form-value">${formData.gender || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Phone:</span>
-              <span class="form-value">${formData.phone || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Address:</span>
-              <span class="form-value">${formData.address || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Blood Type:</span>
-              <span class="form-value">${formData.bloodType || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Known Allergies:</span>
-              <span class="form-value">${formData.allergies || 'None reported'}</span>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Name:</span> ${formData.patientName}</div>
+              <div class="info-item"><span class="info-label">DOB:</span> ${formData.dateOfBirth}</div>
+              <div class="info-item"><span class="info-label">Gender:</span> ${formData.gender}</div>
+              <div class="info-item"><span class="info-label">Phone:</span> ${formData.phone || '-'}</div>
+              <div class="info-item"><span class="info-label">Blood Type:</span> ${formData.bloodType || '-'}</div>
+              <div class="info-item"><span class="info-label">Allergies:</span> ${formData.allergies || 'None'}</div>
             </div>
           </div>
 
           <div class="section">
-            <div class="section-title">SURGICAL PROCEDURE DETAILS</div>
-            <div class="form-row">
-              <span class="form-label">Type of Surgery:</span>
-              <span class="form-value">${formData.surgeryType || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Scheduled Date:</span>
-              <span class="form-value">${formData.surgeryDate || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Surgeon Name:</span>
-              <span class="form-value">${formData.surgeonName || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Anesthetist Name:</span>
-              <span class="form-value">${formData.anesthetistName || '_____________________'}</span>
-            </div>
-            <div class="form-row">
-              <span class="form-label">Operation Theatre:</span>
-              <span class="form-value">${formData.operationTheatre || '_____________________'}</span>
+            <div class="section-title">SURGERY DETAILS</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Procedure:</span> ${formData.surgeryType}</div>
+              <div class="info-item"><span class="info-label">Date:</span> ${formData.surgeryDate}</div>
+              <div class="info-item"><span class="info-label">Surgeon:</span> ${formData.surgeonName}</div>
+              <div class="info-item"><span class="info-label">OT:</span> ${formData.operationTheatre}</div>
             </div>
           </div>
 
           <div class="section">
             <div class="section-title">TERMS AND CONDITIONS</div>
-            <div class="terms-text">
-              <p><strong>1. CONSENT FOR SURGERY:</strong> I hereby authorize the above-named surgeon and medical team to perform the surgical procedure described above. I understand that during the procedure, unforeseen conditions may be revealed that necessitate the extension of the original procedure or different procedures than those planned.</p>
-              <br/>
-              <p><strong>2. RISKS AND COMPLICATIONS:</strong> I acknowledge that I have been informed about the potential risks, complications, and benefits of the proposed procedure. These may include but are not limited to: bleeding, infection, adverse reactions to anesthesia, blood clots, nerve damage, and other unforeseen complications.</p>
-              <br/>
-              <p><strong>3. ANESTHESIA:</strong> I consent to the administration of anesthesia as deemed appropriate by the anesthesiologist. I understand the risks associated with anesthesia including allergic reactions, breathing difficulties, and in rare cases, death.</p>
-              <br/>
-              <p><strong>4. BLOOD TRANSFUSION:</strong> I consent to blood transfusion if necessary during or after the procedure. I have been informed of the risks including allergic reactions and transmission of infectious diseases.</p>
-              <br/>
-              <p><strong>5. NO GUARANTEE:</strong> I understand that no guarantee or assurance has been made as to the results that may be obtained from this procedure.</p>
-              <br/>
-              <p><strong>6. PHOTOGRAPHS/RECORDING:</strong> I consent to the photographing or recording of the procedure for medical, scientific, or educational purposes.</p>
-              <br/>
-              <p><strong>7. DISPOSAL OF TISSUE:</strong> I authorize the hospital to dispose of any tissues or body parts removed during the procedure in accordance with standard medical practices.</p>
+            <div class="terms">
+              <p><strong>1. CONSENT:</strong> I authorize the surgical team to perform the procedure. I understand additional procedures may be necessary.</p>
+              <p><strong>2. RISKS:</strong> I acknowledge potential risks including bleeding, infection, adverse reactions, and other complications.</p>
+              <p><strong>3. ANESTHESIA:</strong> I consent to anesthesia and understand its risks including allergic reactions and breathing difficulties.</p>
+              <p><strong>4. BLOOD TRANSFUSION:</strong> I consent to blood transfusion if necessary during the procedure.</p>
+              <p><strong>5. NO GUARANTEE:</strong> No guarantee has been made regarding the outcome of this procedure.</p>
             </div>
           </div>
 
           <div class="section">
-            <div class="section-title">PATIENT ACKNOWLEDGMENT</div>
-            <div class="consent-item">
-              <div class="consent-checkbox ${formData.procedureExplained ? 'checked' : ''}"></div>
-              <span>I confirm that the surgical procedure has been fully explained to me in a language I understand.</span>
-            </div>
-            <div class="consent-item">
-              <div class="consent-checkbox ${formData.risksExplained ? 'checked' : ''}"></div>
-              <span>I confirm that the risks, benefits, and possible complications have been explained to me.</span>
-            </div>
-            <div class="consent-item">
-              <div class="consent-checkbox ${formData.alternativesExplained ? 'checked' : ''}"></div>
-              <span>I confirm that alternative treatment options have been discussed with me.</span>
-            </div>
-            <div class="consent-item">
-              <div class="consent-checkbox ${formData.questionsAnswered ? 'checked' : ''}"></div>
-              <span>I confirm that I have had the opportunity to ask questions and all my questions have been answered satisfactorily.</span>
-            </div>
-            <div class="consent-item">
-              <div class="consent-checkbox ${formData.consentVoluntary ? 'checked' : ''}"></div>
-              <span>I confirm that I am giving this consent voluntarily, without any coercion or undue influence.</span>
+            <div class="section-title">ACKNOWLEDGMENT</div>
+            <div class="consent-grid">
+              <div class="consent-item">
+                <span class="checkbox">${formData.procedureExplained ? '✓' : ''}</span>
+                <span>Procedure explained in understandable language</span>
+              </div>
+              <div class="consent-item">
+                <span class="checkbox">${formData.risksExplained ? '✓' : ''}</span>
+                <span>Risks and benefits explained</span>
+              </div>
+              <div class="consent-item">
+                <span class="checkbox">${formData.alternativesExplained ? '✓' : ''}</span>
+                <span>Alternative treatments discussed</span>
+              </div>
+              <div class="consent-item">
+                <span class="checkbox">${formData.questionsAnswered ? '✓' : ''}</span>
+                <span>All questions answered satisfactorily</span>
+              </div>
+              <div class="consent-item">
+                <span class="checkbox">${formData.consentVoluntary ? '✓' : ''}</span>
+                <span>Consent given voluntarily</span>
+              </div>
             </div>
           </div>
-
-          ${formData.additionalNotes ? `
-          <div class="section">
-            <div class="section-title">ADDITIONAL NOTES</div>
-            <p style="font-size: 12px; padding: 10px;">${formData.additionalNotes}</p>
-          </div>
-          ` : ''}
 
           <div class="section">
             <div class="section-title">SIGNATURES</div>
             <div class="signature-section">
               <div class="signature-box">
-                <div class="signature-line">${formData.patientSignature || ''}</div>
-                <div class="signature-label"><strong>Patient / Legal Guardian Signature</strong></div>
-                <div class="signature-label">${formData.patientName || 'Name: _____________________'}</div>
+                <div class="signature-image">
+                  ${formData.patientSignature ? `<img src="${formData.patientSignature}" alt="Patient Signature" />` : ''}
+                </div>
+                <div class="signature-label"><strong>Patient / Guardian Signature</strong></div>
+                <div class="signature-label">${formData.patientName}</div>
               </div>
               <div class="signature-box">
-                <div class="signature-line">${formData.witnessSignature || ''}</div>
+                <div class="signature-image">
+                  ${formData.witnessSignature ? `<img src="${formData.witnessSignature}" alt="Witness Signature" />` : ''}
+                </div>
                 <div class="signature-label"><strong>Witness Signature</strong></div>
-                <div class="signature-label">Name: ${formData.witnessName || '_____________________'}</div>
-                <div class="signature-label">Relation: ${formData.witnessRelation || '_____________________'}</div>
-                <div class="signature-label">Phone: ${formData.witnessPhone || '_____________________'}</div>
+                <div class="signature-label">${formData.witnessName} (${formData.witnessRelation})</div>
               </div>
             </div>
           </div>
 
           <div class="footer">
-            <p>This form is a legal document. Please retain a copy for your records.</p>
-            <p>Hospital Management System - Surgical Consent Form | Generated on ${format(new Date(), 'PPP')} at ${format(new Date(), 'HH:mm:ss')}</p>
+            This is a legal document. Retain a copy for your records. | Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}
           </div>
         </body>
       </html>
@@ -405,7 +318,7 @@ const SurgicalConsentForm: React.FC = () => {
     
     setTimeout(() => {
       printWindow.print();
-    }, 250);
+    }, 300);
 
     toast({
       title: "Print Ready",
@@ -421,13 +334,11 @@ const SurgicalConsentForm: React.FC = () => {
       dateOfBirth: '',
       gender: '',
       phone: '',
-      address: '',
       bloodType: '',
       allergies: '',
       surgeryType: '',
       surgeryDate: format(new Date(), 'yyyy-MM-dd'),
       surgeonName: '',
-      anesthetistName: '',
       operationTheatre: '',
       procedureExplained: false,
       risksExplained: false,
@@ -437,9 +348,7 @@ const SurgicalConsentForm: React.FC = () => {
       patientSignature: '',
       witnessName: '',
       witnessRelation: '',
-      witnessSignature: '',
-      witnessPhone: '',
-      additionalNotes: ''
+      witnessSignature: ''
     });
   };
 
@@ -449,6 +358,8 @@ const SurgicalConsentForm: React.FC = () => {
     formData.alternativesExplained && 
     formData.questionsAnswered && 
     formData.consentVoluntary;
+
+  const canPrint = allConsentsChecked && formData.patientName && formData.patientSignature && formData.witnessSignature;
 
   return (
     <div className="space-y-6" ref={printRef}>
@@ -463,7 +374,7 @@ const SurgicalConsentForm: React.FC = () => {
               <Button variant="outline" onClick={handleClear}>
                 Clear Form
               </Button>
-              <Button onClick={handlePrint} className="flex items-center space-x-2">
+              <Button onClick={handlePrint} disabled={!canPrint} className="flex items-center space-x-2">
                 <Printer className="w-4 h-4" />
                 <span>Print Form</span>
               </Button>
@@ -474,11 +385,11 @@ const SurgicalConsentForm: React.FC = () => {
           {/* Patient Selection */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <User className="w-5 h-5 text-medical-blue" />
+              <User className="w-5 h-5 text-primary" />
               <span>Patient Information</span>
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="lg:col-span-2">
                 <Label>Select Patient</Label>
                 <Select value={selectedPatientId} onValueChange={handlePatientSelect}>
@@ -496,24 +407,6 @@ const SurgicalConsentForm: React.FC = () => {
               </div>
               
               <div>
-                <Label>Patient ID</Label>
-                <Input 
-                  value={formData.patientId ? formData.patientId.slice(0, 8) : ''} 
-                  readOnly 
-                  className="bg-muted"
-                />
-              </div>
-              
-              <div>
-                <Label>Full Name</Label>
-                <Input 
-                  value={formData.patientName} 
-                  onChange={(e) => handleInputChange('patientName', e.target.value)}
-                  placeholder="Patient full name"
-                />
-              </div>
-              
-              <div>
                 <Label>Date of Birth</Label>
                 <Input 
                   type="date"
@@ -526,7 +419,7 @@ const SurgicalConsentForm: React.FC = () => {
                 <Label>Gender</Label>
                 <Select value={formData.gender} onValueChange={(v) => handleInputChange('gender', v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
+                    <SelectValue placeholder="Gender" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
@@ -549,40 +442,25 @@ const SurgicalConsentForm: React.FC = () => {
                 <Label>Blood Type</Label>
                 <Select value={formData.bloodType} onValueChange={(v) => handleInputChange('bloodType', v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select blood type" />
+                    <SelectValue placeholder="Blood type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="A+">A+</SelectItem>
-                    <SelectItem value="A-">A-</SelectItem>
-                    <SelectItem value="B+">B+</SelectItem>
-                    <SelectItem value="B-">B-</SelectItem>
-                    <SelectItem value="AB+">AB+</SelectItem>
-                    <SelectItem value="AB-">AB-</SelectItem>
-                    <SelectItem value="O+">O+</SelectItem>
-                    <SelectItem value="O-">O-</SelectItem>
+                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="lg:col-span-2">
-                <Label>Address</Label>
-                <Input 
-                  value={formData.address} 
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Full address"
-                />
-              </div>
-              
-              <div className="lg:col-span-3">
                 <Label className="flex items-center space-x-1">
-                  <AlertTriangle className="w-4 h-4 text-warning" />
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
                   <span>Known Allergies</span>
                 </Label>
                 <Input 
                   value={formData.allergies} 
                   onChange={(e) => handleInputChange('allergies', e.target.value)}
-                  placeholder="List any known allergies (or 'None')"
-                  className="border-warning/50"
+                  placeholder="List allergies or 'None'"
                 />
               </div>
             </div>
@@ -593,17 +471,17 @@ const SurgicalConsentForm: React.FC = () => {
           {/* Surgery Details */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <Heart className="w-5 h-5 text-medical-red" />
+              <Heart className="w-5 h-5 text-destructive" />
               <span>Surgery Details</span>
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="lg:col-span-2">
                 <Label>Type of Surgery / Procedure</Label>
                 <Input 
                   value={formData.surgeryType} 
                   onChange={(e) => handleInputChange('surgeryType', e.target.value)}
-                  placeholder="e.g., Appendectomy, Knee Replacement, etc."
+                  placeholder="e.g., Appendectomy"
                 />
               </div>
               
@@ -617,29 +495,20 @@ const SurgicalConsentForm: React.FC = () => {
               </div>
               
               <div>
+                <Label>Operation Theatre</Label>
+                <Input 
+                  value={formData.operationTheatre} 
+                  onChange={(e) => handleInputChange('operationTheatre', e.target.value)}
+                  placeholder="e.g., OT-1"
+                />
+              </div>
+              
+              <div className="lg:col-span-2">
                 <Label>Surgeon Name</Label>
                 <Input 
                   value={formData.surgeonName} 
                   onChange={(e) => handleInputChange('surgeonName', e.target.value)}
                   placeholder="Dr. Name"
-                />
-              </div>
-              
-              <div>
-                <Label>Anesthetist Name</Label>
-                <Input 
-                  value={formData.anesthetistName} 
-                  onChange={(e) => handleInputChange('anesthetistName', e.target.value)}
-                  placeholder="Dr. Name"
-                />
-              </div>
-              
-              <div>
-                <Label>Operation Theatre</Label>
-                <Input 
-                  value={formData.operationTheatre} 
-                  onChange={(e) => handleInputChange('operationTheatre', e.target.value)}
-                  placeholder="e.g., OT-1, OT-2"
                 />
               </div>
             </div>
@@ -650,19 +519,16 @@ const SurgicalConsentForm: React.FC = () => {
           {/* Patient Acknowledgment */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Patient Acknowledgment</h3>
-            <p className="text-sm text-muted-foreground">
-              Please confirm the following before signing the consent form:
-            </p>
             
-            <div className="space-y-3 bg-accent/30 p-4 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-accent/30 p-4 rounded-lg">
               <div className="flex items-start space-x-3">
                 <Checkbox 
                   id="procedureExplained"
                   checked={formData.procedureExplained}
                   onCheckedChange={(checked) => handleInputChange('procedureExplained', !!checked)}
                 />
-                <Label htmlFor="procedureExplained" className="text-sm leading-relaxed cursor-pointer">
-                  I confirm that the surgical procedure has been fully explained to me in a language I understand.
+                <Label htmlFor="procedureExplained" className="text-sm cursor-pointer">
+                  Procedure fully explained
                 </Label>
               </div>
               
@@ -672,8 +538,8 @@ const SurgicalConsentForm: React.FC = () => {
                   checked={formData.risksExplained}
                   onCheckedChange={(checked) => handleInputChange('risksExplained', !!checked)}
                 />
-                <Label htmlFor="risksExplained" className="text-sm leading-relaxed cursor-pointer">
-                  I confirm that the risks, benefits, and possible complications have been explained to me.
+                <Label htmlFor="risksExplained" className="text-sm cursor-pointer">
+                  Risks and benefits explained
                 </Label>
               </div>
               
@@ -683,8 +549,8 @@ const SurgicalConsentForm: React.FC = () => {
                   checked={formData.alternativesExplained}
                   onCheckedChange={(checked) => handleInputChange('alternativesExplained', !!checked)}
                 />
-                <Label htmlFor="alternativesExplained" className="text-sm leading-relaxed cursor-pointer">
-                  I confirm that alternative treatment options have been discussed with me.
+                <Label htmlFor="alternativesExplained" className="text-sm cursor-pointer">
+                  Alternatives discussed
                 </Label>
               </div>
               
@@ -694,19 +560,19 @@ const SurgicalConsentForm: React.FC = () => {
                   checked={formData.questionsAnswered}
                   onCheckedChange={(checked) => handleInputChange('questionsAnswered', !!checked)}
                 />
-                <Label htmlFor="questionsAnswered" className="text-sm leading-relaxed cursor-pointer">
-                  I confirm that I have had the opportunity to ask questions and all my questions have been answered satisfactorily.
+                <Label htmlFor="questionsAnswered" className="text-sm cursor-pointer">
+                  Questions answered
                 </Label>
               </div>
               
-              <div className="flex items-start space-x-3">
+              <div className="flex items-start space-x-3 md:col-span-2">
                 <Checkbox 
                   id="consentVoluntary"
                   checked={formData.consentVoluntary}
                   onCheckedChange={(checked) => handleInputChange('consentVoluntary', !!checked)}
                 />
-                <Label htmlFor="consentVoluntary" className="text-sm leading-relaxed cursor-pointer">
-                  I confirm that I am giving this consent voluntarily, without any coercion or undue influence.
+                <Label htmlFor="consentVoluntary" className="text-sm cursor-pointer">
+                  Consent given voluntarily
                 </Label>
               </div>
             </div>
@@ -714,7 +580,7 @@ const SurgicalConsentForm: React.FC = () => {
             {!allConsentsChecked && (
               <p className="text-sm text-destructive flex items-center space-x-1">
                 <AlertTriangle className="w-4 h-4" />
-                <span>All acknowledgments must be checked before printing</span>
+                <span>All acknowledgments must be checked</span>
               </p>
             )}
           </div>
@@ -726,26 +592,20 @@ const SurgicalConsentForm: React.FC = () => {
             <h3 className="text-lg font-semibold">Signatures</h3>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Patient/Guardian Signature */}
+              {/* Patient Signature */}
               <div className="space-y-4 p-4 border rounded-lg">
                 <h4 className="font-medium">Patient / Legal Guardian</h4>
-                <div>
-                  <Label>Signature (Type Name)</Label>
-                  <Input 
-                    value={formData.patientSignature} 
-                    onChange={(e) => handleInputChange('patientSignature', e.target.value)}
-                    placeholder="Type full name as signature"
-                    className="italic"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    By typing your name, you agree this constitutes your legal signature
-                  </p>
-                </div>
+                <SignaturePad
+                  label="Patient Signature"
+                  value={formData.patientSignature}
+                  onChange={(sig) => handleInputChange('patientSignature', sig)}
+                  height={100}
+                />
               </div>
               
               {/* Witness Signature */}
               <div className="space-y-4 p-4 border rounded-lg">
-                <h4 className="font-medium">Witness (Family Member / Guardian)</h4>
+                <h4 className="font-medium">Witness</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Witness Name</Label>
@@ -756,46 +616,22 @@ const SurgicalConsentForm: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label>Relation to Patient</Label>
+                    <Label>Relation</Label>
                     <Input 
                       value={formData.witnessRelation} 
                       onChange={(e) => handleInputChange('witnessRelation', e.target.value)}
-                      placeholder="e.g., Spouse, Parent, Child"
+                      placeholder="e.g., Spouse"
                     />
                   </div>
                 </div>
-                <div>
-                  <Label>Witness Phone</Label>
-                  <Input 
-                    value={formData.witnessPhone} 
-                    onChange={(e) => handleInputChange('witnessPhone', e.target.value)}
-                    placeholder="Contact number"
-                  />
-                </div>
-                <div>
-                  <Label>Signature (Type Name)</Label>
-                  <Input 
-                    value={formData.witnessSignature} 
-                    onChange={(e) => handleInputChange('witnessSignature', e.target.value)}
-                    placeholder="Type full name as signature"
-                    className="italic"
-                  />
-                </div>
+                <SignaturePad
+                  label="Witness Signature"
+                  value={formData.witnessSignature}
+                  onChange={(sig) => handleInputChange('witnessSignature', sig)}
+                  height={100}
+                />
               </div>
             </div>
-          </div>
-
-          <Separator />
-
-          {/* Additional Notes */}
-          <div className="space-y-2">
-            <Label>Additional Notes (Optional)</Label>
-            <Textarea 
-              value={formData.additionalNotes}
-              onChange={(e) => handleInputChange('additionalNotes', e.target.value)}
-              placeholder="Any additional information or special instructions..."
-              rows={3}
-            />
           </div>
 
           {/* Action Buttons */}
@@ -805,7 +641,7 @@ const SurgicalConsentForm: React.FC = () => {
             </Button>
             <Button 
               onClick={handlePrint} 
-              disabled={!allConsentsChecked || !formData.patientName || !formData.patientSignature}
+              disabled={!canPrint}
               className="flex items-center space-x-2"
             >
               <Printer className="w-4 h-4" />
