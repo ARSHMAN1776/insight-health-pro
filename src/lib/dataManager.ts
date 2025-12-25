@@ -18,9 +18,24 @@ export interface Patient {
   medical_history?: string;
   insurance_provider?: string;
   insurance_policy_number?: string;
-  status: 'active' | 'inactive' | 'discharged';
+  status: 'active' | 'inactive' | 'discharged' | 'pending_verification';
+  user_id?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface PatientRegistration {
+  id: string;
+  patient_id: string;
+  user_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by?: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  patient?: Patient;
 }
 
 export interface Doctor {
@@ -258,6 +273,78 @@ class DataManager {
 
     if (error) return null;
     return data as Patient;
+  }
+
+  async getPatientByUserId(userId: string): Promise<Patient | null> {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) return null;
+    return data as Patient;
+  }
+
+  // Patient Registration Queue Management
+  async getPendingRegistrations(): Promise<PatientRegistration[]> {
+    const { data, error } = await supabase
+      .from('patient_registration_queue')
+      .select(`
+        *,
+        patient:patients(*)
+      `)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as PatientRegistration[];
+  }
+
+  async approvePatientRegistration(registrationId: string, userId: string): Promise<boolean> {
+    // Update registration queue
+    const { error: queueError } = await supabase
+      .from('patient_registration_queue')
+      .update({
+        status: 'approved',
+        reviewed_by: userId,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', registrationId);
+
+    if (queueError) throw queueError;
+
+    // Get the patient_id from the registration
+    const { data: registration } = await supabase
+      .from('patient_registration_queue')
+      .select('patient_id')
+      .eq('id', registrationId)
+      .single();
+
+    if (registration) {
+      // Update patient status to active
+      await supabase
+        .from('patients')
+        .update({ status: 'active' })
+        .eq('id', registration.patient_id);
+    }
+
+    return true;
+  }
+
+  async rejectPatientRegistration(registrationId: string, userId: string, reason: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('patient_registration_queue')
+      .update({
+        status: 'rejected',
+        reviewed_by: userId,
+        reviewed_at: new Date().toISOString(),
+        rejection_reason: reason
+      })
+      .eq('id', registrationId);
+
+    if (error) throw error;
+    return true;
   }
 
   // Doctor Management

@@ -10,6 +10,7 @@ import DoctorRegistrationForm from '../forms/DoctorRegistrationForm';
 import NurseRegistrationForm from '../forms/NurseRegistrationForm';
 import PaymentManagementForm from '../forms/PaymentManagementForm';
 import RecordUpdateForm from '../forms/RecordUpdateForm';
+import PendingVerificationsWidget from './PendingVerificationsWidget';
 import { dataManager } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
 
@@ -93,6 +94,9 @@ const ReceptionistDashboard: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Pending Patient Verifications */}
+      <PendingVerificationsWidget />
 
       <Card className="card-gradient">
         <CardHeader>

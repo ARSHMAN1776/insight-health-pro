@@ -139,8 +139,9 @@ CREATE TABLE public.patients (
     insurance_provider VARCHAR(255),                 -- Insurance company name
     insurance_policy_number VARCHAR(100),            -- Insurance policy number
     department_id UUID,                              -- Assigned department
-    status VARCHAR(20) DEFAULT 'active'              -- Patient status
-        CHECK (status IN ('active', 'inactive', 'deceased')),
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- Link to auth user
+    status VARCHAR(30) DEFAULT 'active'              -- Patient status
+        CHECK (status IN ('active', 'inactive', 'deceased', 'pending_verification')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -157,6 +158,62 @@ CREATE INDEX idx_patients_status ON public.patients(status);
 CREATE INDEX idx_patients_name ON public.patients(last_name, first_name);
 CREATE INDEX idx_patients_email ON public.patients(email);
 CREATE INDEX idx_patients_department ON public.patients(department_id);
+CREATE INDEX idx_patients_user_id ON public.patients(user_id);
+
+-- ============================================================================
+-- TABLE: patient_registration_queue
+-- Description: Tracks new patient registrations pending verification
+-- ============================================================================
+CREATE TABLE public.patient_registration_queue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending' 
+        CHECK (status IN ('pending', 'approved', 'rejected')),
+    reviewed_by UUID REFERENCES auth.users(id),       -- Staff who reviewed
+    reviewed_at TIMESTAMP WITH TIME ZONE,             -- When reviewed
+    rejection_reason TEXT,                            -- Reason if rejected
+    notes TEXT,                                       -- Additional notes
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.patient_registration_queue ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for patient_registration_queue
+CREATE POLICY "Staff can view all patient registrations" 
+ON public.patient_registration_queue 
+FOR SELECT 
+USING (
+    has_role(auth.uid(), 'admin') OR 
+    has_role(auth.uid(), 'receptionist') OR
+    has_role(auth.uid(), 'doctor') OR
+    has_role(auth.uid(), 'nurse')
+);
+
+CREATE POLICY "System can insert patient registrations" 
+ON public.patient_registration_queue 
+FOR INSERT 
+WITH CHECK (true);
+
+CREATE POLICY "Staff can update patient registrations" 
+ON public.patient_registration_queue 
+FOR UPDATE 
+USING (
+    has_role(auth.uid(), 'admin') OR 
+    has_role(auth.uid(), 'receptionist')
+);
+
+CREATE POLICY "Patients can view their own registration" 
+ON public.patient_registration_queue 
+FOR SELECT 
+USING (auth.uid() = user_id);
+
+-- Indexes for patient_registration_queue
+CREATE INDEX idx_patient_registration_queue_status ON public.patient_registration_queue(status);
+CREATE INDEX idx_patient_registration_queue_patient ON public.patient_registration_queue(patient_id);
+CREATE INDEX idx_patient_registration_queue_user ON public.patient_registration_queue(user_id);
 
 -- ============================================================================
 -- TABLE: doctors
@@ -995,13 +1052,16 @@ END;
 $$;
 
 -- Function: Handle new user registration
--- Creates profile and assigns default role
+-- Creates profile, assigns default role, creates patient record with verification queue
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+    new_patient_id uuid;
+    staff_user record;
 BEGIN
     -- Insert into profiles table
     INSERT INTO public.profiles (id, first_name, last_name, phone, department, specialization, license_number)
@@ -1031,7 +1091,8 @@ BEGIN
             phone,
             date_of_birth,
             gender,
-            status
+            status,
+            user_id
         )
         VALUES (
             COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
@@ -1040,8 +1101,47 @@ BEGIN
             COALESCE(NEW.raw_user_meta_data->>'phone', NULL),
             COALESCE((NEW.raw_user_meta_data->>'date_of_birth')::date, CURRENT_DATE),
             COALESCE(NEW.raw_user_meta_data->>'gender', 'Other'),
-            'active'
-        );
+            'pending_verification',
+            NEW.id
+        )
+        RETURNING id INTO new_patient_id;
+
+        -- Create registration queue entry
+        INSERT INTO public.patient_registration_queue (patient_id, user_id, status)
+        VALUES (new_patient_id, NEW.id, 'pending');
+
+        -- Create notifications for admins and receptionists
+        FOR staff_user IN 
+            SELECT ur.user_id 
+            FROM public.user_roles ur 
+            WHERE ur.role IN ('admin', 'receptionist')
+        LOOP
+            INSERT INTO public.notifications (
+                user_id,
+                title,
+                message,
+                type,
+                priority,
+                action_url,
+                metadata
+            )
+            VALUES (
+                staff_user.user_id,
+                'New Patient Registration',
+                'New patient ' || COALESCE(NEW.raw_user_meta_data->>'first_name', '') || ' ' || 
+                    COALESCE(NEW.raw_user_meta_data->>'last_name', '') || ' has registered and requires verification.',
+                'patient_registration',
+                'high',
+                '/patients',
+                jsonb_build_object(
+                    'patient_id', new_patient_id,
+                    'patient_name', COALESCE(NEW.raw_user_meta_data->>'first_name', '') || ' ' || 
+                        COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+                    'patient_email', NEW.email,
+                    'registration_time', now()
+                )
+            );
+        END LOOP;
     END IF;
 
     RETURN NEW;
