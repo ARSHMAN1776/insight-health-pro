@@ -19,6 +19,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at: string | null
+          department_id: string | null
           doctor_id: string
           duration: number | null
           id: string
@@ -33,6 +34,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at?: string | null
+          department_id?: string | null
           doctor_id: string
           duration?: number | null
           id?: string
@@ -47,6 +49,7 @@ export type Database = {
           appointment_date?: string
           appointment_time?: string
           created_at?: string | null
+          department_id?: string | null
           doctor_id?: string
           duration?: number | null
           id?: string
@@ -58,6 +61,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
           {
             foreignKeyName: "appointments_doctor_id_fkey"
             columns: ["doctor_id"]
@@ -76,48 +86,36 @@ export type Database = {
       }
       departments: {
         Row: {
-          code: string
           created_at: string | null
+          department_head: string | null
+          department_id: string
+          department_name: string
           description: string | null
-          email: string | null
-          floor: number | null
-          head_doctor_id: string | null
-          id: string
-          is_active: boolean
-          name: string
-          phone: string | null
+          status: string
           updated_at: string | null
         }
         Insert: {
-          code: string
           created_at?: string | null
+          department_head?: string | null
+          department_id?: string
+          department_name: string
           description?: string | null
-          email?: string | null
-          floor?: number | null
-          head_doctor_id?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          phone?: string | null
+          status?: string
           updated_at?: string | null
         }
         Update: {
-          code?: string
           created_at?: string | null
+          department_head?: string | null
+          department_id?: string
+          department_name?: string
           description?: string | null
-          email?: string | null
-          floor?: number | null
-          head_doctor_id?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          phone?: string | null
+          status?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "departments_head_doctor_id_fkey"
-            columns: ["head_doctor_id"]
+            foreignKeyName: "departments_department_head_fkey"
+            columns: ["department_head"]
             isOneToOne: false
             referencedRelation: "doctors"
             referencedColumns: ["id"]
@@ -130,6 +128,7 @@ export type Database = {
           consultation_fee: number | null
           created_at: string | null
           department: string | null
+          department_id: string | null
           email: string | null
           first_name: string
           id: string
@@ -146,6 +145,7 @@ export type Database = {
           consultation_fee?: number | null
           created_at?: string | null
           department?: string | null
+          department_id?: string | null
           email?: string | null
           first_name: string
           id?: string
@@ -162,6 +162,7 @@ export type Database = {
           consultation_fee?: number | null
           created_at?: string | null
           department?: string | null
+          department_id?: string | null
           email?: string | null
           first_name?: string
           id?: string
@@ -173,7 +174,15 @@ export type Database = {
           updated_at?: string | null
           years_of_experience?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "doctors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+        ]
       }
       hospital_settings: {
         Row: {
@@ -533,6 +542,7 @@ export type Database = {
           blood_type: string | null
           created_at: string | null
           date_of_birth: string
+          department_id: string | null
           email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
@@ -553,6 +563,7 @@ export type Database = {
           blood_type?: string | null
           created_at?: string | null
           date_of_birth: string
+          department_id?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -573,6 +584,7 @@ export type Database = {
           blood_type?: string | null
           created_at?: string | null
           date_of_birth?: string
+          department_id?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -587,7 +599,15 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+        ]
       }
       payments: {
         Row: {
