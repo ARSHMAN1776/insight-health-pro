@@ -15,7 +15,8 @@ import {
   CheckCircle,
   UserPlus,
   Scissors,
-  AlertCircle
+  AlertCircle,
+  Droplets
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -27,6 +28,7 @@ import { supabase } from '../../integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { formatInTimeZone } from 'date-fns-tz';
 import StaffRegistrationForm from '../forms/StaffRegistrationForm';
+import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -552,6 +554,9 @@ const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Blood Bank Widget */}
+      <BloodAvailabilityWidget />
     </div>
   );
 };
