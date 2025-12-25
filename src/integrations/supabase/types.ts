@@ -74,6 +74,56 @@ export type Database = {
           },
         ]
       }
+      departments: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          email: string | null
+          floor: number | null
+          head_doctor_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          floor?: number | null
+          head_doctor_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          floor?: number | null
+          head_doctor_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_head_doctor_id_fkey"
+            columns: ["head_doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctors: {
         Row: {
           availability_schedule: Json | null
