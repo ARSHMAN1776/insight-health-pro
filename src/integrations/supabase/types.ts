@@ -84,6 +84,461 @@ export type Database = {
           },
         ]
       }
+      blood_bank_audit_log: {
+        Row: {
+          action_timestamp: string | null
+          action_type: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          notes: string | null
+          old_values: Json | null
+          performed_by: string | null
+          record_id: string
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action_timestamp?: string | null
+          action_type: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          performed_by?: string | null
+          record_id: string
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action_timestamp?: string | null
+          action_type?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          performed_by?: string | null
+          record_id?: string
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      blood_donations: {
+        Row: {
+          adverse_reactions: string | null
+          bag_number: string
+          blood_pressure_diastolic: number | null
+          blood_pressure_systolic: number | null
+          blood_type: string
+          collected_by: string
+          collection_site: string | null
+          created_at: string | null
+          donation_date: string
+          donation_time: string
+          donor_id: string
+          hemoglobin_level: number | null
+          id: string
+          pulse_rate: number | null
+          screening_notes: string | null
+          screening_status: string | null
+          status: string | null
+          temperature: number | null
+          updated_at: string | null
+          volume_ml: number
+        }
+        Insert: {
+          adverse_reactions?: string | null
+          bag_number: string
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          blood_type: string
+          collected_by: string
+          collection_site?: string | null
+          created_at?: string | null
+          donation_date?: string
+          donation_time: string
+          donor_id: string
+          hemoglobin_level?: number | null
+          id?: string
+          pulse_rate?: number | null
+          screening_notes?: string | null
+          screening_status?: string | null
+          status?: string | null
+          temperature?: number | null
+          updated_at?: string | null
+          volume_ml?: number
+        }
+        Update: {
+          adverse_reactions?: string | null
+          bag_number?: string
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          blood_type?: string
+          collected_by?: string
+          collection_site?: string | null
+          created_at?: string | null
+          donation_date?: string
+          donation_time?: string
+          donor_id?: string
+          hemoglobin_level?: number | null
+          id?: string
+          pulse_rate?: number | null
+          screening_notes?: string | null
+          screening_status?: string | null
+          status?: string | null
+          temperature?: number | null
+          updated_at?: string | null
+          volume_ml?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "blood_donors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_donors: {
+        Row: {
+          address: string | null
+          blood_type: string
+          created_at: string | null
+          date_of_birth: string
+          eligibility_notes: string | null
+          email: string | null
+          first_name: string
+          gender: string
+          id: string
+          is_eligible: boolean | null
+          last_donation_date: string | null
+          last_name: string
+          medical_conditions: string | null
+          medications: string | null
+          next_eligible_date: string | null
+          phone: string | null
+          status: string | null
+          total_donations: number | null
+          updated_at: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          address?: string | null
+          blood_type: string
+          created_at?: string | null
+          date_of_birth: string
+          eligibility_notes?: string | null
+          email?: string | null
+          first_name: string
+          gender: string
+          id?: string
+          is_eligible?: boolean | null
+          last_donation_date?: string | null
+          last_name: string
+          medical_conditions?: string | null
+          medications?: string | null
+          next_eligible_date?: string | null
+          phone?: string | null
+          status?: string | null
+          total_donations?: number | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          address?: string | null
+          blood_type?: string
+          created_at?: string | null
+          date_of_birth?: string
+          eligibility_notes?: string | null
+          email?: string | null
+          first_name?: string
+          gender?: string
+          id?: string
+          is_eligible?: boolean | null
+          last_donation_date?: string | null
+          last_name?: string
+          medical_conditions?: string | null
+          medications?: string | null
+          next_eligible_date?: string | null
+          phone?: string | null
+          status?: string | null
+          total_donations?: number | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      blood_inventory: {
+        Row: {
+          bag_number: string
+          blood_type: string
+          collection_date: string
+          component_type: string
+          created_at: string | null
+          crossmatch_compatible: boolean | null
+          donation_id: string | null
+          expiry_date: string
+          hbv_status: string | null
+          hcv_status: string | null
+          hiv_status: string | null
+          id: string
+          malaria_status: string | null
+          notes: string | null
+          status: string | null
+          storage_location: string | null
+          storage_temperature: string | null
+          syphilis_status: string | null
+          testing_status: string | null
+          updated_at: string | null
+          volume_ml: number
+        }
+        Insert: {
+          bag_number: string
+          blood_type: string
+          collection_date: string
+          component_type?: string
+          created_at?: string | null
+          crossmatch_compatible?: boolean | null
+          donation_id?: string | null
+          expiry_date: string
+          hbv_status?: string | null
+          hcv_status?: string | null
+          hiv_status?: string | null
+          id?: string
+          malaria_status?: string | null
+          notes?: string | null
+          status?: string | null
+          storage_location?: string | null
+          storage_temperature?: string | null
+          syphilis_status?: string | null
+          testing_status?: string | null
+          updated_at?: string | null
+          volume_ml: number
+        }
+        Update: {
+          bag_number?: string
+          blood_type?: string
+          collection_date?: string
+          component_type?: string
+          created_at?: string | null
+          crossmatch_compatible?: boolean | null
+          donation_id?: string | null
+          expiry_date?: string
+          hbv_status?: string | null
+          hcv_status?: string | null
+          hiv_status?: string | null
+          id?: string
+          malaria_status?: string | null
+          notes?: string | null
+          status?: string | null
+          storage_location?: string | null
+          storage_temperature?: string | null
+          syphilis_status?: string | null
+          testing_status?: string | null
+          updated_at?: string | null
+          volume_ml?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_inventory_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "blood_donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          blood_type: string
+          clinical_notes: string | null
+          component_type: string
+          created_at: string | null
+          doctor_id: string
+          id: string
+          indication: string
+          patient_id: string
+          priority: string
+          rejection_reason: string | null
+          request_status: string | null
+          required_date: string
+          required_time: string | null
+          units_issued: number | null
+          units_requested: number
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          blood_type: string
+          clinical_notes?: string | null
+          component_type?: string
+          created_at?: string | null
+          doctor_id: string
+          id?: string
+          indication: string
+          patient_id: string
+          priority?: string
+          rejection_reason?: string | null
+          request_status?: string | null
+          required_date: string
+          required_time?: string | null
+          units_issued?: number | null
+          units_requested?: number
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          blood_type?: string
+          clinical_notes?: string | null
+          component_type?: string
+          created_at?: string | null
+          doctor_id?: string
+          id?: string
+          indication?: string
+          patient_id?: string
+          priority?: string
+          rejection_reason?: string | null
+          request_status?: string | null
+          required_date?: string
+          required_time?: string | null
+          units_issued?: number | null
+          units_requested?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_requests_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_requests_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_transfusions: {
+        Row: {
+          administered_by: string
+          adverse_reaction: boolean | null
+          bag_number: string
+          blood_type: string
+          compatibility_verified: boolean
+          component_type: string
+          created_at: string | null
+          id: string
+          inventory_id: string
+          notes: string | null
+          outcome: string | null
+          patient_consent_obtained: boolean
+          patient_id: string
+          post_transfusion_vitals: Json | null
+          pre_transfusion_vitals: Json | null
+          reaction_description: string | null
+          reaction_management: string | null
+          reaction_severity: string | null
+          reaction_type: string | null
+          request_id: string | null
+          transfusion_date: string
+          transfusion_end_time: string | null
+          transfusion_start_time: string
+          updated_at: string | null
+          verified_by: string
+          volume_ml: number
+        }
+        Insert: {
+          administered_by: string
+          adverse_reaction?: boolean | null
+          bag_number: string
+          blood_type: string
+          compatibility_verified?: boolean
+          component_type: string
+          created_at?: string | null
+          id?: string
+          inventory_id: string
+          notes?: string | null
+          outcome?: string | null
+          patient_consent_obtained?: boolean
+          patient_id: string
+          post_transfusion_vitals?: Json | null
+          pre_transfusion_vitals?: Json | null
+          reaction_description?: string | null
+          reaction_management?: string | null
+          reaction_severity?: string | null
+          reaction_type?: string | null
+          request_id?: string | null
+          transfusion_date?: string
+          transfusion_end_time?: string | null
+          transfusion_start_time: string
+          updated_at?: string | null
+          verified_by: string
+          volume_ml: number
+        }
+        Update: {
+          administered_by?: string
+          adverse_reaction?: boolean | null
+          bag_number?: string
+          blood_type?: string
+          compatibility_verified?: boolean
+          component_type?: string
+          created_at?: string | null
+          id?: string
+          inventory_id?: string
+          notes?: string | null
+          outcome?: string | null
+          patient_consent_obtained?: boolean
+          patient_id?: string
+          post_transfusion_vitals?: Json | null
+          pre_transfusion_vitals?: Json | null
+          reaction_description?: string | null
+          reaction_management?: string | null
+          reaction_severity?: string | null
+          reaction_type?: string | null
+          request_id?: string | null
+          transfusion_date?: string
+          transfusion_end_time?: string | null
+          transfusion_start_time?: string
+          updated_at?: string | null
+          verified_by?: string
+          volume_ml?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_transfusions_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "blood_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_transfusions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_transfusions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "blood_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string | null
