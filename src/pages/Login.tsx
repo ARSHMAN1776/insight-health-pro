@@ -443,6 +443,42 @@ const Login: React.FC = () => {
 
                 {/* Staff Tab */}
                 <TabsContent value="staff">
+                  {/* Demo Login Buttons */}
+                  <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                    <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Demo Accounts (For Testing Only)
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { role: 'admin', label: 'Admin', email: 'admin@hospital.com', icon: Shield },
+                        { role: 'doctor', label: 'Doctor', email: 'doctor@hospital.com', icon: Stethoscope },
+                        { role: 'nurse', label: 'Nurse', email: 'nurse@hospital.com', icon: User },
+                        { role: 'receptionist', label: 'Reception', email: 'receptionist@hospital.com', icon: User },
+                        { role: 'pharmacist', label: 'Pharmacist', email: 'pharmacist@hospital.com', icon: User },
+                      ].map(({ role, label, email: demoEmail, icon: Icon }) => (
+                        <Button
+                          key={role}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="justify-start gap-2 text-xs"
+                          onClick={() => {
+                            setEmail(demoEmail);
+                            setPassword('Demo@123');
+                            setSelectedStaffRole(role as StaffRole);
+                          }}
+                        >
+                          <Icon className="w-3 h-3" />
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Password for all: <code className="bg-muted px-1 rounded">Demo@123</code>
+                    </p>
+                  </div>
+
                   <form onSubmit={handleLogin} className="space-y-4">
                     {/* Staff Role Selector */}
                     <div className="space-y-2">
