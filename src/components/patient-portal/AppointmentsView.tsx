@@ -3,14 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Calendar, Clock, User, MapPin, FileText } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
-import { Appointment } from '../../lib/dataManager';
+import { Appointment, Patient } from '../../lib/dataManager';
+import PatientAppointmentBooking from './PatientAppointmentBooking';
 
 interface AppointmentsViewProps {
   appointments: Appointment[];
   loading: boolean;
+  patientData?: Patient | null;
+  onAppointmentBooked?: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ appointments, loading }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
+  appointments, 
+  loading, 
+  patientData,
+  onAppointmentBooked 
+}) => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
@@ -58,6 +66,12 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ appointments, loadi
 
   return (
     <div className="space-y-6">
+      {/* Appointment Booking */}
+      <PatientAppointmentBooking 
+        patientData={patientData || null} 
+        onAppointmentBooked={onAppointmentBooked}
+      />
+
       {/* Upcoming Appointments */}
       <Card className="card-gradient">
         <CardHeader>
