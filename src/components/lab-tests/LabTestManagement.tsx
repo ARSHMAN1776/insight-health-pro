@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { dataManager, LabTest, Patient, Doctor } from '../../lib/dataManager';
-import { TestTube, Plus, Search, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { TestTube, Plus, Clock, CheckCircle, AlertCircle, Upload, Image, X, Eye } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 
 const LabTestManagement: React.FC = () => {
@@ -20,6 +21,9 @@ const LabTestManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedLabTest, setSelectedLabTest] = useState<LabTest | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,7 +66,69 @@ const LabTestManagement: React.FC = () => {
     notes: '',
     cost: 0,
     lab_technician: '',
+    report_image_url: '',
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload an image smaller than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `reports/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('lab-reports')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('lab-reports')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, report_image_url: publicUrl }));
+      toast({
+        title: 'Success',
+        description: 'Report image uploaded successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message || 'Failed to upload image',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData(prev => ({ ...prev, report_image_url: '' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +144,6 @@ const LabTestManagement: React.FC = () => {
 
     try {
       if (selectedLabTest) {
-        // Update existing test
         const updated = await dataManager.updateLabTest(selectedLabTest.id, formData);
         if (updated) {
           setLabTests(prev => prev.map(test => test.id === selectedLabTest.id ? updated : test));
@@ -88,7 +153,6 @@ const LabTestManagement: React.FC = () => {
           });
         }
       } else {
-        // Create new test
         const newTest = await dataManager.createLabTest(formData);
         setLabTests(prev => [...prev, newTest]);
         toast({
@@ -97,21 +161,7 @@ const LabTestManagement: React.FC = () => {
         });
       }
       
-      setFormData({
-        patient_id: '',
-        doctor_id: '',
-        test_name: '',
-        test_type: '',
-        test_date: new Date().toISOString().split('T')[0],
-        priority: 'normal',
-        status: 'pending',
-        results: '',
-        normal_range: '',
-        notes: '',
-        cost: 0,
-        lab_technician: '',
-      });
-      setSelectedLabTest(null);
+      resetForm();
       setIsDialogOpen(false);
     } catch (error) {
       toast({
@@ -119,6 +169,28 @@ const LabTestManagement: React.FC = () => {
         description: `Failed to ${selectedLabTest ? 'update' : 'create'} lab test`,
         variant: 'destructive',
       });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      patient_id: '',
+      doctor_id: '',
+      test_name: '',
+      test_type: '',
+      test_date: new Date().toISOString().split('T')[0],
+      priority: 'normal',
+      status: 'pending',
+      results: '',
+      normal_range: '',
+      notes: '',
+      cost: 0,
+      lab_technician: '',
+      report_image_url: '',
+    });
+    setSelectedLabTest(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -137,6 +209,7 @@ const LabTestManagement: React.FC = () => {
       notes: labTest.notes || '',
       cost: labTest.cost || 0,
       lab_technician: labTest.lab_technician || '',
+      report_image_url: labTest.report_image_url || '',
     });
     setIsDialogOpen(true);
   };
@@ -213,12 +286,12 @@ const LabTestManagement: React.FC = () => {
     {
       key: 'patient_id',
       label: 'Patient',
-      render: (_, test: LabTest) => getPatientName(test.patient_id),
+      render: (_: any, test: LabTest) => getPatientName(test.patient_id),
     },
     {
       key: 'doctor_id',
       label: 'Doctor',
-      render: (_, test: LabTest) => getDoctorName(test.doctor_id),
+      render: (_: any, test: LabTest) => getDoctorName(test.doctor_id),
     },
     {
       key: 'test_date',
@@ -228,12 +301,31 @@ const LabTestManagement: React.FC = () => {
     {
       key: 'priority',
       label: 'Priority',
-      render: (_, test: LabTest) => getPriorityBadge(test.priority),
+      render: (_: any, test: LabTest) => getPriorityBadge(test.priority),
     },
     {
       key: 'status',
       label: 'Status',
-      render: (_, test: LabTest) => getStatusBadge(test.status),
+      render: (_: any, test: LabTest) => getStatusBadge(test.status),
+    },
+    {
+      key: 'report_image_url',
+      label: 'Report',
+      render: (value: string) => value ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setPreviewImage(value);
+          }}
+        >
+          <Eye className="w-4 h-4 mr-1" />
+          View
+        </Button>
+      ) : (
+        <span className="text-muted-foreground text-sm">No report</span>
+      ),
     },
     {
       key: 'cost',
@@ -321,21 +413,7 @@ const LabTestManagement: React.FC = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onAdd={() => {
-          setSelectedLabTest(null);
-          setFormData({
-            patient_id: '',
-            doctor_id: '',
-            test_name: '',
-            test_type: '',
-            test_date: new Date().toISOString().split('T')[0],
-            priority: 'normal',
-            status: 'pending',
-            results: '',
-            normal_range: '',
-            notes: '',
-            cost: 0,
-            lab_technician: '',
-          });
+          resetForm();
           setIsDialogOpen(true);
         }}
         addButtonText="Order Test"
@@ -343,7 +421,7 @@ const LabTestManagement: React.FC = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedLabTest ? 'Edit Lab Test' : 'Order New Lab Test'}
@@ -487,6 +565,56 @@ const LabTestManagement: React.FC = () => {
               />
             </div>
 
+            {/* Report Image Upload */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Image className="w-4 h-4" />
+                Report Image
+              </Label>
+              
+              {formData.report_image_url ? (
+                <div className="relative border rounded-lg p-2">
+                  <img 
+                    src={formData.report_image_url} 
+                    alt="Lab report" 
+                    className="max-h-48 rounded object-contain mx-auto"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="report-image-upload"
+                  />
+                  <label 
+                    htmlFor="report-image-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <Upload className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {uploading ? 'Uploading...' : 'Click to upload report image'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Max 5MB, JPG/PNG
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label>Notes</Label>
               <Textarea
@@ -498,14 +626,32 @@ const LabTestManagement: React.FC = () => {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1">
-                {selectedLabTest ? 'Update Test' : 'Order Test'}
-              </Button>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
+              <Button type="submit" disabled={uploading}>
+                {selectedLabTest ? 'Update Test' : 'Create Test'}
+              </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Lab Report Image</DialogTitle>
+          </DialogHeader>
+          {previewImage && (
+            <div className="flex justify-center">
+              <img 
+                src={previewImage} 
+                alt="Lab report" 
+                className="max-h-[70vh] object-contain rounded-lg"
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
