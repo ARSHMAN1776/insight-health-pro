@@ -10,7 +10,8 @@ import {
   AlertTriangle,
   Clock,
   Settings2,
-  Database
+  Database,
+  FileOutput
 } from 'lucide-react';
 import BloodInventory from './BloodInventory';
 import DonorManagement from './DonorManagement';
@@ -19,6 +20,7 @@ import BloodRequests from './BloodRequests';
 import TransfusionRecords from './TransfusionRecords';
 import BloodGroupsManagement from './BloodGroupsManagement';
 import BloodStockManagement from './BloodStockManagement';
+import BloodIssue from './BloodIssue';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -157,9 +159,13 @@ const BloodBankDashboard: React.FC = () => {
             <Droplets className="h-4 w-4" />
             <span className="hidden sm:inline">Donations</span>
           </TabsTrigger>
-          <TabsTrigger value="issues" className="flex items-center gap-2">
+          <TabsTrigger value="issue" className="flex items-center gap-2">
+            <FileOutput className="h-4 w-4" />
+            <span className="hidden sm:inline">Issue Blood</span>
+          </TabsTrigger>
+          <TabsTrigger value="transfusions" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
-            <span className="hidden sm:inline">Issues</span>
+            <span className="hidden sm:inline">Transfusions</span>
           </TabsTrigger>
           <TabsTrigger value="blood-groups" className="flex items-center gap-2">
             <Settings2 className="h-4 w-4" />
@@ -179,7 +185,11 @@ const BloodBankDashboard: React.FC = () => {
           <DonationRecords />
         </TabsContent>
 
-        <TabsContent value="issues">
+        <TabsContent value="issue">
+          <BloodIssue />
+        </TabsContent>
+
+        <TabsContent value="transfusions">
           <TransfusionRecords />
         </TabsContent>
 
