@@ -28,7 +28,7 @@ import { supabase } from '../../integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { formatInTimeZone } from 'date-fns-tz';
 import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
-
+import PendingVerificationsWidget from './PendingVerificationsWidget';
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -352,6 +352,9 @@ const AdminDashboard: React.FC = () => {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Pending Patient Verifications */}
+      <PendingVerificationsWidget />
 
       {/* Recent Activities and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

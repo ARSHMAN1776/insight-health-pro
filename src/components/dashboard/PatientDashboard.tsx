@@ -28,44 +28,51 @@ const PatientDashboard: React.FC = () => {
       try {
         setLoading(true);
         
-        console.log('Fetching patient data for email:', user?.email);
+        console.log('Fetching patient data for user:', user?.id, user?.email);
         
-        // Fetch patient data by email if available
+        // First try to fetch patient data by user_id (new method)
         let patient = null;
-        if (user?.email) {
+        if (user?.id) {
+          patient = await dataManager.getPatientByUserId(user.id);
+          console.log('Patient record found by user_id:', patient);
+        }
+        
+        // Fallback to email lookup for existing patients without user_id
+        if (!patient && user?.email) {
           patient = await dataManager.getPatientByEmail(user.email);
-          console.log('Patient record found:', patient);
-          setPatientData(patient);
+          console.log('Patient record found by email:', patient);
+        }
+        
+        setPatientData(patient);
+        
+        // If patient found, fetch their specific data
+        if (patient) {
+          console.log('Fetching patient-specific data for patient ID:', patient.id);
+          const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
+            dataManager.getAppointmentsByPatient(patient.id),
+            dataManager.getMedicalRecordsByPatient(patient.id),
+            dataManager.getPrescriptionsByPatient(patient.id),
+            dataManager.getLabTestsByPatient(patient.id)
+          ]);
           
-          // If patient found, fetch their specific data
-          if (patient) {
-            console.log('Fetching patient-specific data for patient ID:', patient.id);
-            const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
-              dataManager.getAppointmentsByPatient(patient.id),
-              dataManager.getMedicalRecordsByPatient(patient.id),
-              dataManager.getPrescriptionsByPatient(patient.id),
-              dataManager.getLabTestsByPatient(patient.id)
-            ]);
-            
-            console.log('Fetched data:', {
-              appointments: appointmentsData.length,
-              records: recordsData.length,
-              prescriptions: prescriptionsData.length,
-              labTests: labTestsData.length
-            });
-            
-            setAppointments(appointmentsData);
-            setMedicalRecords(recordsData);
-            setPrescriptions(prescriptionsData);
-            setLabTests(labTestsData);
-          } else {
-            console.warn('No patient record found for email:', user?.email);
-            toast({
-              title: "Patient Record Not Found",
-              description: "Please contact reception to set up your patient profile.",
-              variant: "destructive"
-            });
-          }
+          console.log('Fetched data:', {
+            appointments: appointmentsData.length,
+            records: recordsData.length,
+            prescriptions: prescriptionsData.length,
+            labTests: labTestsData.length
+          });
+          
+          setAppointments(appointmentsData);
+          setMedicalRecords(recordsData);
+          setPrescriptions(prescriptionsData);
+          setLabTests(labTestsData);
+        } else {
+          console.warn('No patient record found for user:', user?.id, user?.email);
+          toast({
+            title: "Patient Record Not Found",
+            description: "Your registration is pending verification. Please wait for hospital staff to approve your account.",
+            variant: "default"
+          });
         }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -80,7 +87,7 @@ const PatientDashboard: React.FC = () => {
     };
 
     fetchData();
-  }, [toast, user?.email]);
+  }, [toast, user?.id, user?.email]);
 
   const handleLogout = () => {
     logout();
