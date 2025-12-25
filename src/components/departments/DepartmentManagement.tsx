@@ -503,14 +503,14 @@ const DepartmentManagement: React.FC = () => {
                       Department Head
                     </Label>
                     <Select
-                      value={formData.department_head}
-                      onValueChange={(value) => setFormData({ ...formData, department_head: value })}
+                      value={formData.department_head || "__none__"}
+                      onValueChange={(value) => setFormData({ ...formData, department_head: value === "__none__" ? "" : value })}
                     >
                       <SelectTrigger className="bg-card">
                         <SelectValue placeholder="Select department head (optional)" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover z-50">
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {doctors.map((doctor) => (
                           <SelectItem key={doctor.id} value={doctor.id}>
                             <div className="flex items-center gap-2">
