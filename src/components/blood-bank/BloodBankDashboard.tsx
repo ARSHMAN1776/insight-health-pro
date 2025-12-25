@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Droplets, 
   Users, 
@@ -11,8 +10,7 @@ import {
   AlertTriangle,
   Database,
   FileOutput,
-  BarChart3,
-  ChevronRight
+  BarChart3
 } from 'lucide-react';
 import DonorManagement from './DonorManagement';
 import BloodStockManagement from './BloodStockManagement';
@@ -25,40 +23,6 @@ interface BloodBankStats {
   criticalGroups: number;
   activeDonors: number;
 }
-
-interface NavItem {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-  description: string;
-}
-
-const navItems: NavItem[] = [
-  {
-    id: 'stock',
-    label: 'Blood Stock',
-    icon: Database,
-    description: 'Manage blood inventory'
-  },
-  {
-    id: 'donors',
-    label: 'Donors',
-    icon: Users,
-    description: 'Manage donor records'
-  },
-  {
-    id: 'issue',
-    label: 'Issue Blood',
-    icon: FileOutput,
-    description: 'Issue blood to patients'
-  },
-  {
-    id: 'reports',
-    label: 'Reports',
-    icon: BarChart3,
-    description: 'View analytics & reports'
-  }
-];
 
 const BloodBankDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('stock');
@@ -108,138 +72,92 @@ const BloodBankDashboard: React.FC = () => {
     };
   }, []);
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'stock':
-        return <BloodStockManagement />;
-      case 'donors':
-        return <DonorManagement />;
-      case 'issue':
-        return <BloodIssue />;
-      case 'reports':
-        return <BloodBankReports />;
-      default:
-        return <BloodStockManagement />;
-    }
-  };
-
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex-shrink-0 hidden md:flex flex-col">
-        {/* Sidebar Header */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-              <Droplets className="h-5 w-5 text-red-500" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-foreground">Blood Bank</h2>
-              <p className="text-xs text-muted-foreground">Management System</p>
-            </div>
+    <div className="space-y-6">
+      {/* Header with Stats */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center">
+            <Droplets className="h-6 w-6 text-red-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Blood Bank</h1>
+            <p className="text-sm text-muted-foreground">Management System</p>
           </div>
         </div>
 
-        {/* Stats Summary */}
-        <div className="p-4 border-b border-border space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Total Stock</span>
-            <span className="font-semibold">{loading ? '...' : stats.totalStock}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Critical</span>
-            <Badge 
-              variant={stats.criticalGroups > 0 ? 'destructive' : 'secondary'}
-              className="text-xs"
-            >
-              {loading ? '...' : stats.criticalGroups}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Donors</span>
-            <span className="font-semibold text-green-600">{loading ? '...' : stats.activeDonors}</span>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <ScrollArea className="flex-1 py-2">
-          <nav className="px-2 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeSection === item.id;
-              
-              return (
-                <Button
-                  key={item.id}
-                  variant="ghost"
-                  onClick={() => setActiveSection(item.id)}
-                  className={cn(
-                    'w-full justify-start h-auto py-3 px-3',
-                    isActive && 'bg-primary/10 text-primary hover:bg-primary/15'
-                  )}
-                >
-                  <Icon className={cn('h-5 w-5 mr-3', isActive ? 'text-primary' : 'text-muted-foreground')} />
-                  <div className="flex-1 text-left">
-                    <div className={cn('text-sm font-medium', !isActive && 'text-foreground')}>
-                      {item.label}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{item.description}</div>
-                  </div>
-                  {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
-                </Button>
-              );
-            })}
-          </nav>
-        </ScrollArea>
-
-        {/* Low Stock Warning */}
-        {stats.criticalGroups > 0 && (
-          <div className="p-4 border-t border-border">
-            <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm font-medium">Low Stock Alert</span>
+        {/* Stats Cards */}
+        <div className="flex gap-4">
+          <Card className="px-4 py-2">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">Total Stock</p>
+                <p className="font-semibold">{loading ? '...' : stats.totalStock} units</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stats.criticalGroups} blood group(s) below threshold
-              </p>
             </div>
-          </div>
-        )}
-      </aside>
-
-      {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-        <div className="flex justify-around py-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
-            
-            return (
-              <Button
-                key={item.id}
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveSection(item.id)}
-                className={cn(
-                  'flex-col h-auto py-2 px-3 gap-1',
-                  isActive && 'text-primary'
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="text-xs">{item.label}</span>
-              </Button>
-            );
-          })}
+          </Card>
+          <Card className="px-4 py-2">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-green-500" />
+              <div>
+                <p className="text-xs text-muted-foreground">Active Donors</p>
+                <p className="font-semibold text-green-600">{loading ? '...' : stats.activeDonors}</p>
+              </div>
+            </div>
+          </Card>
+          {stats.criticalGroups > 0 && (
+            <Card className="px-4 py-2 border-destructive/50 bg-destructive/5">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Critical</p>
+                  <p className="font-semibold text-destructive">{stats.criticalGroups} groups</p>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 pb-20 md:pb-6">
-          {renderContent()}
-        </div>
-      </main>
+      {/* Tabs Navigation */}
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="stock" className="gap-2">
+            <Database className="h-4 w-4" />
+            <span className="hidden sm:inline">Blood Stock</span>
+            <span className="sm:hidden">Stock</span>
+          </TabsTrigger>
+          <TabsTrigger value="donors" className="gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Donors</span>
+            <span className="sm:hidden">Donors</span>
+          </TabsTrigger>
+          <TabsTrigger value="issue" className="gap-2">
+            <FileOutput className="h-4 w-4" />
+            <span className="hidden sm:inline">Issue Blood</span>
+            <span className="sm:hidden">Issue</span>
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Reports</span>
+            <span className="sm:hidden">Reports</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stock" className="mt-6">
+          <BloodStockManagement />
+        </TabsContent>
+        <TabsContent value="donors" className="mt-6">
+          <DonorManagement />
+        </TabsContent>
+        <TabsContent value="issue" className="mt-6">
+          <BloodIssue />
+        </TabsContent>
+        <TabsContent value="reports" className="mt-6">
+          <BloodBankReports />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
