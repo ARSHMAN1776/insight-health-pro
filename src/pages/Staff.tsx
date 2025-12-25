@@ -1,15 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Users, UserPlus, Stethoscope, Activity } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
+import { Users, Stethoscope, Activity, Building2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import DoctorRegistrationForm from '../components/forms/DoctorRegistrationForm';
 import NurseRegistrationForm from '../components/forms/NurseRegistrationForm';
 import DataTable from '../components/shared/DataTable';
-import { dataManager } from '../lib/dataManager';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Department {
+  department_id: string;
+  department_name: string;
+}
+
+interface Doctor {
+  id: string;
+  first_name: string;
+  last_name: string;
+  specialization: string;
+  department: string;
+  department_id: string;
+  phone: string;
+  email: string;
+}
+
+interface Nurse {
+  id: string;
+  first_name: string;
+  last_name: string;
+  department: string;
+  shift_schedule: string;
+  phone: string;
+  email: string;
+}
 
 const Staff: React.FC = () => {
-  const [doctors, setDoctors] = useState<any[]>([]);
-  const [nurses, setNurses] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [nurses, setNurses] = useState<Nurse[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,12 +47,29 @@ const Staff: React.FC = () => {
   const loadStaffData = async () => {
     try {
       setLoading(true);
-      const [doctorsData, nursesData] = await Promise.all([
-        dataManager.getDoctors(),
-        dataManager.getNurses(),
-      ]);
-      setDoctors(doctorsData);
-      setNurses(nursesData);
+      
+      // Fetch departments first
+      const { data: deptData } = await supabase
+        .from('departments')
+        .select('department_id, department_name')
+        .order('department_name');
+      
+      setDepartments(deptData || []);
+
+      // Fetch doctors
+      const { data: doctorsData } = await supabase
+        .from('doctors')
+        .select('*')
+        .order('first_name');
+      
+      // Fetch nurses
+      const { data: nursesData } = await supabase
+        .from('nurses')
+        .select('*')
+        .order('first_name');
+
+      setDoctors(doctorsData || []);
+      setNurses(nursesData || []);
     } catch (error) {
       console.error('Error loading staff:', error);
     } finally {
@@ -32,21 +77,69 @@ const Staff: React.FC = () => {
     }
   };
 
+  // Helper to get department name
+  const getDepartmentName = (departmentId: string | null, fallback: string = '-') => {
+    if (!departmentId) return fallback;
+    const dept = departments.find(d => d.department_id === departmentId);
+    return dept?.department_name || fallback;
+  };
+
+  // Transform doctors data for table display
+  const doctorsTableData = doctors.map(doc => ({
+    ...doc,
+    name: `Dr. ${doc.first_name} ${doc.last_name}`,
+    departmentDisplay: getDepartmentName(doc.department_id, doc.department || '-'),
+  }));
+
+  // Transform nurses data for table display
+  const nursesTableData = nurses.map(nurse => ({
+    ...nurse,
+    name: `${nurse.first_name} ${nurse.last_name}`,
+    shift: nurse.shift_schedule || '-',
+  }));
+
   const doctorColumns = [
-    { key: 'name', label: 'Name' },
+    { 
+      key: 'name', 
+      label: 'Name',
+      render: (value: string) => (
+        <span className="font-medium">{value}</span>
+      )
+    },
     { key: 'specialization', label: 'Specialization' },
-    { key: 'department', label: 'Department' },
+    { 
+      key: 'departmentDisplay', 
+      label: 'Department',
+      render: (value: string, row: any) => (
+        <Badge variant="outline" className="flex items-center gap-1 w-fit">
+          <Building2 className="h-3 w-3" />
+          {value}
+        </Badge>
+      )
+    },
     { key: 'phone', label: 'Phone' },
     { key: 'email', label: 'Email' },
   ];
 
   const nurseColumns = [
-    { key: 'name', label: 'Name' },
+    { 
+      key: 'name', 
+      label: 'Name',
+      render: (value: string) => (
+        <span className="font-medium">{value}</span>
+      )
+    },
     { key: 'department', label: 'Department' },
     { key: 'shift', label: 'Shift' },
     { key: 'phone', label: 'Phone' },
     { key: 'email', label: 'Email' },
   ];
+
+  // Count doctors per department
+  const doctorsByDepartment = departments.map(dept => ({
+    ...dept,
+    count: doctors.filter(d => d.department_id === dept.department_id).length
+  })).filter(d => d.count > 0);
 
   if (loading) {
     return (
@@ -68,7 +161,7 @@ const Staff: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -76,8 +169,8 @@ const Staff: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Total Doctors</p>
                 <p className="text-3xl font-bold text-foreground">{doctors.length}</p>
               </div>
-              <div className="w-14 h-14 bg-medical-blue rounded-lg flex items-center justify-center">
-                <Stethoscope className="w-7 h-7 text-white" />
+              <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Stethoscope className="w-7 h-7 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -90,8 +183,8 @@ const Staff: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Total Nurses</p>
                 <p className="text-3xl font-bold text-foreground">{nurses.length}</p>
               </div>
-              <div className="w-14 h-14 bg-medical-green rounded-lg flex items-center justify-center">
-                <Activity className="w-7 h-7 text-white" />
+              <div className="w-14 h-14 bg-green-500/10 rounded-lg flex items-center justify-center">
+                <Activity className="w-7 h-7 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -104,13 +197,52 @@ const Staff: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Total Staff</p>
                 <p className="text-3xl font-bold text-foreground">{doctors.length + nurses.length}</p>
               </div>
-              <div className="w-14 h-14 bg-medical-purple rounded-lg flex items-center justify-center">
-                <Users className="w-7 h-7 text-white" />
+              <div className="w-14 h-14 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <Users className="w-7 h-7 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Departments</p>
+                <p className="text-3xl font-bold text-foreground">{doctorsByDepartment.length}</p>
+              </div>
+              <div className="w-14 h-14 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                <Building2 className="w-7 h-7 text-orange-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Department Distribution */}
+      {doctorsByDepartment.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Doctors by Department
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {doctorsByDepartment.map((dept) => (
+                <Badge 
+                  key={dept.department_id} 
+                  variant="secondary"
+                  className="px-4 py-2 text-sm"
+                >
+                  {dept.department_name}: {dept.count} doctor{dept.count !== 1 ? 's' : ''}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="doctors" className="space-y-6">
         <TabsList>
@@ -123,7 +255,7 @@ const Staff: React.FC = () => {
             <div className="lg:col-span-2">
               <DataTable
                 title="All Doctors"
-                data={doctors}
+                data={doctorsTableData}
                 columns={doctorColumns}
               />
             </div>
@@ -138,7 +270,7 @@ const Staff: React.FC = () => {
             <div className="lg:col-span-2">
               <DataTable
                 title="All Nurses"
-                data={nurses}
+                data={nursesTableData}
                 columns={nurseColumns}
               />
             </div>

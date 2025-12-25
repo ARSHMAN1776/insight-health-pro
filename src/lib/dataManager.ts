@@ -32,6 +32,7 @@ export interface Doctor {
   email?: string;
   license_number: string;
   department?: string;
+  department_id?: string;
   years_of_experience?: number;
   consultation_fee?: number;
   availability_schedule?: any;

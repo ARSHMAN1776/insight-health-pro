@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Building2 } from 'lucide-react';
 import { 
   Form, 
   FormControl, 
@@ -17,6 +19,12 @@ import {
   FormMessage 
 } from '../ui/form';
 
+interface Department {
+  department_id: string;
+  department_name: string;
+  status: string;
+}
+
 const doctorSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
@@ -24,7 +32,7 @@ const doctorSchema = z.object({
   phone: z.string().min(10, 'Phone number must be at least 10 characters'),
   licenseNumber: z.string().min(5, 'License number must be at least 5 characters'),
   specialty: z.string().min(2, 'Specialty is required'),
-  department: z.string().min(2, 'Department is required'),
+  departmentId: z.string().min(1, 'Department is required'),
   experience: z.string().min(1, 'Experience is required'),
   education: z.string().min(5, 'Education background is required'),
   schedule: z.string().optional(),
@@ -39,6 +47,8 @@ interface DoctorRegistrationFormProps {
 
 const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose }) => {
   const { toast } = useToast();
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
   
   const form = useForm<DoctorFormData>({
     resolver: zodResolver(doctorSchema),
@@ -49,7 +59,7 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
       phone: '',
       licenseNumber: '',
       specialty: '',
-      department: '',
+      departmentId: '',
       experience: '',
       education: '',
       schedule: '',
@@ -57,24 +67,52 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
     },
   });
 
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('department_id, department_name, status')
+        .eq('status', 'Active')
+        .order('department_name');
+
+      if (error) throw error;
+      setDepartments(data || []);
+    } catch (error) {
+      console.error('Failed to fetch departments:', error);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
   const onSubmit = async (data: DoctorFormData) => {
     try {
-      // Import dataManager
-      const { dataManager } = await import('../../lib/dataManager');
+      // Get department name for the department field
+      const selectedDept = departments.find(d => d.department_id === data.departmentId);
       
-      // Create new doctor
-      const newDoctor = await dataManager.createDoctor({
-        first_name: data.firstName,
-        last_name: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        license_number: data.licenseNumber,
-        specialization: data.specialty,
-        department: data.department,
-        years_of_experience: parseInt(data.experience),
-        consultation_fee: parseFloat(data.consultationFee),
-        status: 'active' as const,
-      });
+      // Insert doctor with department_id
+      const { data: newDoctor, error } = await supabase
+        .from('doctors')
+        .insert([{
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          license_number: data.licenseNumber,
+          specialization: data.specialty,
+          department: selectedDept?.department_name || '',
+          department_id: data.departmentId,
+          years_of_experience: parseInt(data.experience),
+          consultation_fee: parseFloat(data.consultationFee),
+          status: 'active',
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
       
       toast({
         title: 'Success',
@@ -84,6 +122,7 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
       form.reset();
       onClose();
     } catch (error) {
+      console.error('Error registering doctor:', error);
       toast({
         title: 'Error',
         description: 'Failed to register doctor',
@@ -203,7 +242,7 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
                           <SelectValue placeholder="Select specialty" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-popover z-50">
                         <SelectItem value="cardiology">Cardiology</SelectItem>
                         <SelectItem value="neurology">Neurology</SelectItem>
                         <SelectItem value="orthopedics">Orthopedics</SelectItem>
@@ -220,21 +259,38 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Department</FormLabel>
+            <FormField
+              control={form.control}
+              name="departmentId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Department <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingDepartments}>
                     <FormControl>
-                      <Input placeholder="Internal Medicine" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingDepartments ? "Loading departments..." : "Select department"} />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
+                    <SelectContent className="bg-popover z-50">
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.department_id} value={dept.department_id}>
+                          {dept.department_name}
+                        </SelectItem>
+                      ))}
+                      {departments.length === 0 && !loadingDepartments && (
+                        <SelectItem value="" disabled>No departments available</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="experience"
@@ -243,6 +299,20 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
                     <FormLabel>Experience (years)</FormLabel>
                     <FormControl>
                       <Input placeholder="10" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="consultationFee"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Consultation Fee</FormLabel>
+                    <FormControl>
+                      <Input placeholder="$200" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -264,35 +334,19 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="schedule"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Schedule</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Mon-Fri 9AM-5PM" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="consultationFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Consultation Fee</FormLabel>
-                    <FormControl>
-                      <Input placeholder="$200" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="schedule"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Schedule</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Mon-Fri 9AM-5PM" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex gap-2 pt-4">
               <Button type="submit" className="flex-1">
