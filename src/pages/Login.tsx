@@ -11,6 +11,16 @@ import { useToast } from '../hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
+type StaffRole = 'doctor' | 'nurse' | 'admin' | 'receptionist' | 'pharmacist';
+
+const staffRoleOptions: { value: StaffRole; label: string; icon: React.ElementType }[] = [
+  { value: 'doctor', label: 'Doctor', icon: Stethoscope },
+  { value: 'nurse', label: 'Nurse', icon: User },
+  { value: 'admin', label: 'Administrator', icon: Shield },
+  { value: 'receptionist', label: 'Receptionist', icon: User },
+  { value: 'pharmacist', label: 'Pharmacist', icon: User }
+];
+
 const Login: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'patient' | 'staff'>('patient');
   const [isSignup, setIsSignup] = useState(false);
@@ -18,6 +28,7 @@ const Login: React.FC = () => {
   // Login fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedStaffRole, setSelectedStaffRole] = useState<StaffRole>('doctor');
   
   // Patient signup fields
   const [firstName, setFirstName] = useState('');
@@ -433,6 +444,26 @@ const Login: React.FC = () => {
                 {/* Staff Tab */}
                 <TabsContent value="staff">
                   <form onSubmit={handleLogin} className="space-y-4">
+                    {/* Staff Role Selector */}
+                    <div className="space-y-2">
+                      <Label>I am a</Label>
+                      <Select value={selectedStaffRole} onValueChange={(v) => setSelectedStaffRole(v as StaffRole)}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          {staffRoleOptions.map(({ value, label, icon: Icon }) => (
+                            <SelectItem key={value} value={value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                <span>{label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="staffEmail">Email</Label>
                       <Input
