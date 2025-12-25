@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +14,7 @@ interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description: string;
+  description: string | ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
