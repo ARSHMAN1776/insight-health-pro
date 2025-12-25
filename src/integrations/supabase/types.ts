@@ -182,6 +182,56 @@ export type Database = {
           },
         ]
       }
+      blood_stock_transactions: {
+        Row: {
+          blood_group_id: string
+          created_at: string | null
+          new_balance: number
+          notes: string | null
+          performed_by: string | null
+          previous_balance: number
+          reference_id: string | null
+          source: string | null
+          transaction_id: string
+          transaction_type: string
+          units: number
+        }
+        Insert: {
+          blood_group_id: string
+          created_at?: string | null
+          new_balance: number
+          notes?: string | null
+          performed_by?: string | null
+          previous_balance: number
+          reference_id?: string | null
+          source?: string | null
+          transaction_id?: string
+          transaction_type: string
+          units: number
+        }
+        Update: {
+          blood_group_id?: string
+          created_at?: string | null
+          new_balance?: number
+          notes?: string | null
+          performed_by?: string | null
+          previous_balance?: number
+          reference_id?: string | null
+          source?: string | null
+          transaction_id?: string
+          transaction_type?: string
+          units?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_stock_transactions_blood_group_id_fkey"
+            columns: ["blood_group_id"]
+            isOneToOne: false
+            referencedRelation: "blood_groups"
+            referencedColumns: ["group_id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string | null
