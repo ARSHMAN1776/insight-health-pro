@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth, UserRole } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Heart, Eye, EyeOff, Users, Stethoscope, Shield, UserCheck, Pill, Activity, ArrowRight } from 'lucide-react';
+import { Heart, Eye, EyeOff, Stethoscope, Shield, Activity, ArrowRight, Calendar, Phone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 const Login: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'patient' | 'staff'>('patient');
   const [isSignup, setIsSignup] = useState(false);
+  
+  // Login fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Patient signup fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
-  const { login, signup, isLoading, user } = useAuth();
+  
+  const { login, signupPatient, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Staff roles with demo accounts
-  const staffRoles = [
-    { role: 'admin' as UserRole, label: 'Administrator', icon: Shield, email: 'admin@hospital.com' },
-    { role: 'doctor' as UserRole, label: 'Doctor', icon: Stethoscope, email: 'doctor@hospital.com' },
-    { role: 'nurse' as UserRole, label: 'Nurse', icon: UserCheck, email: 'nurse@hospital.com' },
-    { role: 'receptionist' as UserRole, label: 'Receptionist', icon: Users, email: 'receptionist@hospital.com' },
-    { role: 'pharmacist' as UserRole, label: 'Pharmacist', icon: Pill, email: 'pharmacist@hospital.com' }
-  ];
 
   // Redirect if already logged in
   useEffect(() => {
@@ -41,21 +41,32 @@ const Login: React.FC = () => {
     }
   }, [user, navigate]);
 
-  const handleLogin = async (e: React.FormEvent, demoEmail?: string) => {
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^[\d\s\-+()]{10,}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const loginEmail = demoEmail || email;
-    const loginPassword = demoEmail ? 'demo123' : password;
-
-    // Basic validation
-    if (!loginEmail || !loginPassword) {
+    if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
 
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     try {
-      await login(loginEmail, loginPassword);
+      await login(email, password);
       toast({
         title: 'Login Successful',
         description: 'Welcome back to Hospital Management System',
@@ -71,13 +82,23 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handlePatientSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     // Validation
-    if (!email || !password || !firstName || !lastName) {
-      setError('Please fill in all fields');
+    if (!email || !password || !firstName || !lastName || !phone || !dateOfBirth || !gender) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!validatePhone(phone)) {
+      setError('Please enter a valid phone number');
       return;
     }
 
@@ -91,17 +112,39 @@ const Login: React.FC = () => {
       return;
     }
 
+    // Validate date of birth
+    const dob = new Date(dateOfBirth);
+    const today = new Date();
+    if (dob >= today) {
+      setError('Please enter a valid date of birth');
+      return;
+    }
+
     try {
-      await signup(email, password, firstName, lastName, selectedRole);
-      toast({
-        title: 'Account Created Successfully! ✓',
-        description: 'You can now sign in with your credentials. Email confirmation has been disabled for testing.',
+      await signupPatient({
+        email,
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+        dateOfBirth,
+        gender
       });
+      
+      toast({
+        title: 'Account Created Successfully!',
+        description: 'You can now sign in with your credentials.',
+      });
+      
+      // Reset form and switch to login
       setIsSignup(false);
       setEmail('');
       setPassword('');
       setFirstName('');
       setLastName('');
+      setPhone('');
+      setDateOfBirth('');
+      setGender('');
       setConfirmPassword('');
     } catch (err: any) {
       setError(err.message || 'Signup failed');
@@ -112,7 +155,6 @@ const Login: React.FC = () => {
       });
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-medical-blue-light via-background to-medical-green-light flex items-center justify-center p-4">
@@ -157,16 +199,16 @@ const Login: React.FC = () => {
           <Card className="card-gradient">
             <CardHeader>
               <CardTitle className="text-2xl text-center">
-                {isSignup ? 'Create Account' : 'Sign In'}
+                {isSignup ? 'Create Patient Account' : 'Sign In'}
               </CardTitle>
               <CardDescription className="text-center">
                 {isSignup 
-                  ? 'Register for a new account'
-                  : 'Enter your credentials or use demo accounts'}
+                  ? 'Register as a new patient'
+                  : 'Enter your credentials to access your account'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'patient' | 'staff')} className="mb-4">
+              <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as 'patient' | 'staff'); setIsSignup(false); setError(''); }} className="mb-4">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="patient">Patient</TabsTrigger>
                   <TabsTrigger value="staff">Staff</TabsTrigger>
@@ -174,104 +216,192 @@ const Login: React.FC = () => {
 
                 {/* Patient Tab */}
                 <TabsContent value="patient">
-                  <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
-                {isSignup && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input
-                          id="firstName"
-                          type="text"
-                          placeholder="John"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          required
-                        />
+                  {isSignup ? (
+                    // Patient Signup Form
+                    <form onSubmit={handlePatientSignup} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName">First Name *</Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              id="firstName"
+                              type="text"
+                              placeholder="John"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName">Last Name *</Label>
+                          <Input
+                            id="lastName"
+                            type="text"
+                            placeholder="Doe"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            required
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input
-                          id="lastName"
-                          type="text"
-                          placeholder="Doe"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder={isSignup ? 'Min. 6 characters' : 'Enter your password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
+                      <div className="space-y-2">
+                        <Label htmlFor="signupEmail">Email *</Label>
+                        <Input
+                          id="signupEmail"
+                          type="email"
+                          placeholder="your.email@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="phone"
+                            type="tel"
+                            placeholder="+1234567890"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                          <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              id="dateOfBirth"
+                              type="date"
+                              value={dateOfBirth}
+                              onChange={(e) => setDateOfBirth(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gender">Gender *</Label>
+                          <Select value={gender} onValueChange={setGender}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Male">Male</SelectItem>
+                              <SelectItem value="Female">Female</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="signupPassword">Password *</Label>
+                        <div className="relative">
+                          <Input
+                            id="signupPassword"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Min. 6 characters"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="Re-enter your password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
                       )}
-                    </Button>
-                  </div>
-                </div>
 
-                {isSignup && (
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Re-enter your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                )}
+                      <Button type="submit" className="w-full btn-primary" disabled={isLoading}>
+                        {isLoading ? 'Creating Account...' : 'Create Account'}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </form>
+                  ) : (
+                    // Patient Login Form
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="your.email@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      </div>
 
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      )}
 
-                    <Button
-                      type="submit"
-                      className="w-full btn-primary"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (isSignup ? 'Creating Account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </form>
+                      <Button type="submit" className="w-full btn-primary" disabled={isLoading}>
+                        {isLoading ? 'Signing in...' : 'Sign In'}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </form>
+                  )}
 
                   {/* Toggle between Login and Signup */}
                   <div className="mt-4">
@@ -302,25 +432,57 @@ const Login: React.FC = () => {
 
                 {/* Staff Tab */}
                 <TabsContent value="staff">
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground text-center mb-4">
-                      Click to login with demo account (password: demo123)
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="staffEmail">Email</Label>
+                      <Input
+                        id="staffEmail"
+                        type="email"
+                        placeholder="your.email@hospital.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="staffPassword">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="staffPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button type="submit" className="w-full btn-primary" disabled={isLoading}>
+                      {isLoading ? 'Signing in...' : 'Sign In'}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+
+                    <p className="text-xs text-muted-foreground text-center mt-4">
+                      Staff accounts are created by administrators. Contact your admin if you need access.
                     </p>
-                    {staffRoles.map(({ role, label, icon: Icon, email }) => (
-                      <Button
-                        key={role}
-                        type="button"
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={(e) => handleLogin(e, email)}
-                        disabled={isLoading}
-                      >
-                        <Icon className="w-4 h-4 mr-2" />
-                        <span className="flex-1 text-left">{label}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </Button>
-                    ))}
-                  </div>
+                  </form>
                 </TabsContent>
               </Tabs>
 
