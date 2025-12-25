@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useBloodDonors, BloodDonor } from '@/hooks/useBloodBank';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -29,56 +28,154 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import { Plus, Search, Users, RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { format } from 'date-fns';
-import { BLOOD_TYPES, getBloodTypeColor, isDonorEligible, calculateNextEligibleDate } from '@/lib/bloodCompatibility';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Plus, 
+  Search, 
+  Users, 
+  RefreshCw, 
+  CheckCircle2, 
+  XCircle, 
+  Clock,
+  Pencil,
+  Trash2,
+  AlertTriangle
+} from 'lucide-react';
+import { format, differenceInDays, addDays } from 'date-fns';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
+
+interface BloodGroup {
+  group_id: string;
+  group_name: string;
+}
+
+interface Donor {
+  donor_id: string;
+  name: string;
+  blood_group_id: string;
+  contact: string | null;
+  last_donation_date: string | null;
+  status: string;
+  created_at: string | null;
+  updated_at: string | null;
+  blood_group?: BloodGroup;
+}
 
 const donorSchema = z.object({
-  first_name: z.string().min(2, 'First name must be at least 2 characters'),
-  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
-  date_of_birth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['Male', 'Female', 'Other']),
-  blood_type: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  address: z.string().optional(),
-  weight_kg: z.number().min(45, 'Minimum weight is 45 kg').optional(),
-  medical_conditions: z.string().optional(),
-  medications: z.string().optional(),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
+  blood_group_id: z.string().uuid('Please select a blood group'),
+  contact: z.string().max(50, 'Contact too long').optional(),
+  status: z.enum(['Eligible', 'Ineligible', 'Deferred']),
 });
 
+const ELIGIBILITY_DAYS = 56; // 8 weeks between donations
+
 const DonorManagement: React.FC = () => {
-  const { donors, loading, refetch } = useBloodDonors();
+  const { toast } = useToast();
+  const [donors, setDonors] = useState<Donor[]>([]);
+  const [bloodGroups, setBloodGroups] = useState<BloodGroup[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterBloodType, setFilterBloodType] = useState<string>('all');
+  const [filterBloodGroup, setFilterBloodGroup] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    date_of_birth: '',
-    gender: 'Male' as const,
-    blood_type: 'O+' as const,
-    phone: '',
-    email: '',
-    address: '',
-    weight_kg: '',
-    medical_conditions: '',
-    medications: ''
+    name: '',
+    blood_group_id: '',
+    contact: '',
+    status: 'Eligible' as 'Eligible' | 'Ineligible' | 'Deferred',
+    last_donation_date: '',
   });
+
+  const fetchBloodGroups = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('blood_groups')
+      .select('*')
+      .order('group_name');
+    
+    if (error) {
+      console.error('Error fetching blood groups:', error);
+      return;
+    }
+    setBloodGroups(data || []);
+  }, []);
+
+  const fetchDonors = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('donors')
+        .select(`
+          *,
+          blood_group:blood_group_id (group_id, group_name)
+        `)
+        .order('name');
+
+      if (error) throw error;
+      setDonors(data || []);
+    } catch (error: any) {
+      console.error('Error fetching donors:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch donors',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchBloodGroups();
+    fetchDonors();
+  }, [fetchBloodGroups, fetchDonors]);
 
   const filteredDonors = donors.filter(donor => {
     const matchesSearch = 
-      `${donor.first_name} ${donor.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      donor.blood_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      donor.phone?.includes(searchTerm);
-    const matchesBloodType = filterBloodType === 'all' || donor.blood_type === filterBloodType;
+      donor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      donor.contact?.includes(searchTerm) ||
+      donor.blood_group?.group_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBloodGroup = filterBloodGroup === 'all' || donor.blood_group_id === filterBloodGroup;
     const matchesStatus = filterStatus === 'all' || donor.status === filterStatus;
-    return matchesSearch && matchesBloodType && matchesStatus;
+    return matchesSearch && matchesBloodGroup && matchesStatus;
   });
+
+  const handleOpenDialog = (donor?: Donor) => {
+    if (donor) {
+      setSelectedDonor(donor);
+      setFormData({
+        name: donor.name,
+        blood_group_id: donor.blood_group_id,
+        contact: donor.contact || '',
+        status: donor.status as 'Eligible' | 'Ineligible' | 'Deferred',
+        last_donation_date: donor.last_donation_date || '',
+      });
+    } else {
+      setSelectedDonor(null);
+      resetForm();
+    }
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setSelectedDonor(null);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      blood_group_id: '',
+      contact: '',
+      status: 'Eligible' as 'Eligible' | 'Ineligible' | 'Deferred',
+      last_donation_date: '',
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,75 +183,156 @@ const DonorManagement: React.FC = () => {
 
     try {
       const validatedData = donorSchema.parse({
-        ...formData,
-        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : undefined,
-        email: formData.email || undefined
+        name: formData.name.trim(),
+        blood_group_id: formData.blood_group_id,
+        contact: formData.contact.trim() || undefined,
+        status: formData.status,
       });
 
-      const { error } = await (supabase as any)
-        .from('blood_donors')
-        .insert([{
-          ...validatedData,
-          is_eligible: true,
-          total_donations: 0,
-          status: 'active'
-        }]);
+      const donorData: {
+        name: string;
+        blood_group_id: string;
+        contact?: string;
+        status: string;
+        last_donation_date: string | null;
+      } = {
+        name: validatedData.name,
+        blood_group_id: validatedData.blood_group_id,
+        contact: validatedData.contact,
+        status: validatedData.status,
+        last_donation_date: formData.last_donation_date || null,
+      };
 
-      if (error) throw error;
+      if (selectedDonor) {
+        // Update existing donor
+        const { error } = await supabase
+          .from('donors')
+          .update(donorData)
+          .eq('donor_id', selectedDonor.donor_id);
 
-      toast.success('Donor registered successfully');
-      setDialogOpen(false);
-      resetForm();
-      refetch();
-    } catch (error: any) {
-      console.error('Error adding donor:', error);
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+        if (error) throw error;
+        
+        toast({
+          title: 'Success',
+          description: 'Donor updated successfully',
+        });
       } else {
-        toast.error(error.message || 'Failed to register donor');
+        // Create new donor
+        const { error } = await supabase
+          .from('donors')
+          .insert([donorData]);
+
+        if (error) throw error;
+        
+        toast({
+          title: 'Success',
+          description: 'Donor registered successfully',
+        });
+      }
+
+      handleCloseDialog();
+      fetchDonors();
+    } catch (error: any) {
+      console.error('Error saving donor:', error);
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to save donor',
+          variant: 'destructive',
+        });
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      first_name: '',
-      last_name: '',
-      date_of_birth: '',
-      gender: 'Male',
-      blood_type: 'O+',
-      phone: '',
-      email: '',
-      address: '',
-      weight_kg: '',
-      medical_conditions: '',
-      medications: ''
-    });
+  const handleDeleteClick = (donor: Donor) => {
+    setSelectedDonor(donor);
+    setDeleteDialogOpen(true);
   };
 
-  const getEligibilityStatus = (donor: BloodDonor) => {
-    if (!donor.is_eligible) {
+  const handleConfirmDelete = async () => {
+    if (!selectedDonor) return;
+
+    try {
+      const { error } = await supabase
+        .from('donors')
+        .delete()
+        .eq('donor_id', selectedDonor.donor_id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Donor deleted successfully',
+      });
+
+      setDeleteDialogOpen(false);
+      setSelectedDonor(null);
+      fetchDonors();
+    } catch (error: any) {
+      console.error('Error deleting donor:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete donor',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getBloodGroupColor = (groupName: string): string => {
+    const colors: Record<string, string> = {
+      'A+': 'bg-red-100 text-red-800 border-red-300',
+      'A-': 'bg-red-50 text-red-700 border-red-200',
+      'B+': 'bg-blue-100 text-blue-800 border-blue-300',
+      'B-': 'bg-blue-50 text-blue-700 border-blue-200',
+      'AB+': 'bg-purple-100 text-purple-800 border-purple-300',
+      'AB-': 'bg-purple-50 text-purple-700 border-purple-200',
+      'O+': 'bg-green-100 text-green-800 border-green-300',
+      'O-': 'bg-green-50 text-green-700 border-green-200',
+    };
+    return colors[groupName] || 'bg-gray-100 text-gray-800 border-gray-300';
+  };
+
+  const getEligibilityStatus = (donor: Donor) => {
+    // Check manual status first
+    if (donor.status === 'Ineligible') {
       return { 
         eligible: false, 
         icon: XCircle, 
         color: 'text-red-500', 
-        label: 'Not Eligible',
-        reason: donor.eligibility_notes || 'Deferred'
+        label: 'Ineligible',
+        reason: 'Marked as ineligible'
       };
     }
     
+    if (donor.status === 'Deferred') {
+      return { 
+        eligible: false, 
+        icon: Clock, 
+        color: 'text-yellow-500', 
+        label: 'Deferred',
+        reason: 'Temporarily deferred'
+      };
+    }
+    
+    // Check donation date eligibility
     if (donor.last_donation_date) {
-      const isEligible = isDonorEligible(new Date(donor.last_donation_date));
-      if (!isEligible) {
-        const nextDate = calculateNextEligibleDate(new Date(donor.last_donation_date));
+      const daysSinceDonation = differenceInDays(new Date(), new Date(donor.last_donation_date));
+      if (daysSinceDonation < ELIGIBILITY_DAYS) {
+        const nextEligibleDate = addDays(new Date(donor.last_donation_date), ELIGIBILITY_DAYS);
         return { 
           eligible: false, 
           icon: Clock, 
           color: 'text-yellow-500', 
           label: 'Waiting',
-          reason: `Eligible after ${format(nextDate, 'MMM dd, yyyy')}`
+          reason: `Eligible after ${format(nextEligibleDate, 'MMM dd, yyyy')}`
         };
       }
     }
@@ -168,174 +346,43 @@ const DonorManagement: React.FC = () => {
     };
   };
 
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'Eligible':
+        return 'default';
+      case 'Ineligible':
+        return 'destructive';
+      case 'Deferred':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+
+  const eligibleCount = donors.filter(d => getEligibilityStatus(d).eligible).length;
+
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Donor Management
-          </CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Donor Management
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {donors.length} total donors • {eligibleCount} eligible
+            </p>
+          </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={refetch}>
+            <Button variant="outline" size="sm" onClick={fetchDonors}>
               <RefreshCw className="h-4 w-4 mr-1" />
               Refresh
             </Button>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Register Donor
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Register New Donor</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="first_name">First Name *</Label>
-                      <Input
-                        id="first_name"
-                        value={formData.first_name}
-                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="last_name">Last Name *</Label>
-                      <Input
-                        id="last_name"
-                        value={formData.last_name}
-                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="date_of_birth">Date of Birth *</Label>
-                      <Input
-                        id="date_of_birth"
-                        type="date"
-                        value={formData.date_of_birth}
-                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gender">Gender *</Label>
-                      <Select
-                        value={formData.gender}
-                        onValueChange={(value: any) => setFormData({ ...formData, gender: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="blood_type">Blood Type *</Label>
-                      <Select
-                        value={formData.blood_type}
-                        onValueChange={(value: any) => setFormData({ ...formData, blood_type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {BLOOD_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="weight_kg">Weight (kg)</Label>
-                      <Input
-                        id="weight_kg"
-                        type="number"
-                        value={formData.weight_kg}
-                        onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })}
-                        min={45}
-                        placeholder="Min 45 kg"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="medical_conditions">Medical Conditions</Label>
-                    <Textarea
-                      id="medical_conditions"
-                      value={formData.medical_conditions}
-                      onChange={(e) => setFormData({ ...formData, medical_conditions: e.target.value })}
-                      placeholder="Any relevant medical history..."
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="medications">Current Medications</Label>
-                    <Textarea
-                      id="medications"
-                      value={formData.medications}
-                      onChange={(e) => setFormData({ ...formData, medications: e.target.value })}
-                      placeholder="List of current medications..."
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting ? 'Registering...' : 'Register Donor'}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button size="sm" onClick={() => handleOpenDialog()}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Donor
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -345,20 +392,22 @@ const DonorManagement: React.FC = () => {
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, blood type, or phone..."
+              placeholder="Search by name, contact, or blood group..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
             />
           </div>
-          <Select value={filterBloodType} onValueChange={setFilterBloodType}>
+          <Select value={filterBloodGroup} onValueChange={setFilterBloodGroup}>
             <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Blood Type" />
+              <SelectValue placeholder="Blood Group" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {BLOOD_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
+              <SelectItem value="all">All Groups</SelectItem>
+              {bloodGroups.map((group) => (
+                <SelectItem key={group.group_id} value={group.group_id}>
+                  {group.group_name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -368,9 +417,9 @@ const DonorManagement: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="deferred">Deferred</SelectItem>
+              <SelectItem value="Eligible">Eligible</SelectItem>
+              <SelectItem value="Ineligible">Ineligible</SelectItem>
+              <SelectItem value="Deferred">Deferred</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -381,8 +430,14 @@ const DonorManagement: React.FC = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : filteredDonors.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No donors found. Register a new donor to get started.
+          <div className="text-center py-8">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No Donors Found</h3>
+            <p className="text-muted-foreground">
+              {searchTerm || filterBloodGroup !== 'all' || filterStatus !== 'all'
+                ? 'No donors match your filters.'
+                : 'Register a new donor to get started.'}
+            </p>
           </div>
         ) : (
           <div className="rounded-md border overflow-x-auto">
@@ -390,45 +445,37 @@ const DonorManagement: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Blood Type</TableHead>
+                  <TableHead>Blood Group</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Last Donation</TableHead>
-                  <TableHead>Total Donations</TableHead>
                   <TableHead>Eligibility</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDonors.map((donor) => {
                   const eligibility = getEligibilityStatus(donor);
                   const EligibilityIcon = eligibility.icon;
+                  const groupName = donor.blood_group?.group_name || 'Unknown';
                   return (
-                    <TableRow key={donor.id}>
+                    <TableRow key={donor.donor_id}>
+                      <TableCell className="font-medium">{donor.name}</TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{donor.first_name} {donor.last_name}</div>
-                          <div className="text-xs text-muted-foreground">{donor.gender}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${getBloodTypeColor(donor.blood_type as any)} text-white`}>
-                          {donor.blood_type}
+                        <Badge 
+                          variant="outline" 
+                          className={`font-semibold ${getBloodGroupColor(groupName)}`}
+                        >
+                          {groupName}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {donor.phone && <div>{donor.phone}</div>}
-                          {donor.email && <div className="text-muted-foreground">{donor.email}</div>}
-                        </div>
+                      <TableCell className="text-muted-foreground">
+                        {donor.contact || '-'}
                       </TableCell>
                       <TableCell>
                         {donor.last_donation_date 
                           ? format(new Date(donor.last_donation_date), 'MMM dd, yyyy')
-                          : 'Never'
-                        }
-                      </TableCell>
-                      <TableCell className="text-center font-medium">
-                        {donor.total_donations}
+                          : 'Never'}
                       </TableCell>
                       <TableCell>
                         <div className={`flex items-center gap-1 ${eligibility.color}`}>
@@ -438,9 +485,27 @@ const DonorManagement: React.FC = () => {
                         <div className="text-xs text-muted-foreground">{eligibility.reason}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={donor.status === 'active' ? 'default' : 'secondary'}>
-                          {donor.status.charAt(0).toUpperCase() + donor.status.slice(1)}
+                        <Badge variant={getStatusBadgeVariant(donor.status)}>
+                          {donor.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(donor)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(donor)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -449,6 +514,137 @@ const DonorManagement: React.FC = () => {
             </Table>
           </div>
         )}
+
+        {/* Add/Edit Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedDonor ? 'Edit Donor' : 'Register New Donor'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter donor's full name"
+                    required
+                    maxLength={100}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="blood_group">Blood Group *</Label>
+                  <Select
+                    value={formData.blood_group_id}
+                    onValueChange={(value) => setFormData({ ...formData, blood_group_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bloodGroups.map((group) => (
+                        <SelectItem key={group.group_id} value={group.group_id}>
+                          {group.group_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contact">Contact (Phone/Email)</Label>
+                  <Input
+                    id="contact"
+                    value={formData.contact}
+                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                    placeholder="Enter phone or email"
+                    maxLength={50}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="last_donation_date">Last Donation Date</Label>
+                  <Input
+                    id="last_donation_date"
+                    type="date"
+                    value={formData.last_donation_date}
+                    onChange={(e) => setFormData({ ...formData, last_donation_date: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Donors must wait 56 days (8 weeks) between donations
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status">Eligibility Status *</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: 'Eligible' | 'Ineligible' | 'Deferred') => 
+                      setFormData({ ...formData, status: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Eligible">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          Eligible
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Ineligible">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-red-500" />
+                          Ineligible
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Deferred">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-yellow-500" />
+                          Deferred
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? 'Saving...' : selectedDonor ? 'Update Donor' : 'Register Donor'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Delete Donor"
+          description={
+            <div className="space-y-2">
+              <p>Are you sure you want to delete donor <strong>{selectedDonor?.name}</strong>?</p>
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-md text-destructive text-sm">
+                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>This action cannot be undone. All donation history for this donor will be lost.</span>
+              </div>
+            </div>
+          }
+          onConfirm={handleConfirmDelete}
+          confirmText="Delete"
+          variant="destructive"
+        />
       </CardContent>
     </Card>
   );
