@@ -14,7 +14,8 @@ import {
   TestTube,
   Scissors,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Droplets
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -23,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { dataManager, Appointment, Patient, MedicalRecord, Prescription } from '../../lib/dataManager';
 import { supabase } from '../../integrations/supabase/client';
 import { useToast } from '../../hooks/use-toast';
+import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -412,6 +414,9 @@ const DoctorDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Blood Availability Widget */}
+      <BloodAvailabilityWidget />
+
       {/* Quick Actions */}
       <Card className="card-gradient">
         <CardHeader>
@@ -421,7 +426,7 @@ const DoctorDashboard: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
@@ -461,6 +466,14 @@ const DoctorDashboard: React.FC = () => {
             >
               <Scissors className="w-6 h-6" />
               <span className="text-sm">Surgeries</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20 border-red-200 hover:bg-red-50 hover:border-red-300"
+              onClick={() => navigate('/blood-bank')}
+            >
+              <Droplets className="w-6 h-6 text-red-500" />
+              <span className="text-sm">Blood Bank</span>
             </Button>
           </div>
         </CardContent>
