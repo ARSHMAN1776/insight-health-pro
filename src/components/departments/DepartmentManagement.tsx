@@ -98,8 +98,9 @@ interface FormErrors {
 }
 
 const DepartmentManagement: React.FC = () => {
-  const { user, isRole } = useAuth();
+  const { user, session, isRole } = useAuth();
   const isAdmin = isRole('admin');
+  const hasRealSession = !!session; // Check if user has a real Supabase session (not demo mode)
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -199,9 +200,14 @@ const DepartmentManagement: React.FC = () => {
       return;
     }
 
-    // Double-check admin permission
+    // Double-check admin permission and real session
     if (!isAdmin) {
       toast.error('You do not have permission to perform this action.');
+      return;
+    }
+
+    if (!hasRealSession) {
+      toast.error('Demo mode does not support department management. Please sign in with a real account.');
       return;
     }
 
@@ -257,6 +263,10 @@ const DepartmentManagement: React.FC = () => {
       toast.error('You do not have permission to edit departments.');
       return;
     }
+    if (!hasRealSession) {
+      toast.error('Demo mode does not support department management. Please sign in with a real account.');
+      return;
+    }
     setSelectedDepartment(department);
     setFormErrors({});
     setFormData({
@@ -273,6 +283,10 @@ const DepartmentManagement: React.FC = () => {
       toast.error('You do not have permission to change department status.');
       return;
     }
+    if (!hasRealSession) {
+      toast.error('Demo mode does not support department management. Please sign in with a real account.');
+      return;
+    }
     const newStatus = dept.status === 'Active' ? 'Inactive' : 'Active';
     setPendingStatusChange({ dept, newStatus });
     setStatusDialogOpen(true);
@@ -281,9 +295,16 @@ const DepartmentManagement: React.FC = () => {
   const handleStatusChange = async () => {
     if (!pendingStatusChange) return;
 
-    // Double-check admin permission
+    // Double-check admin permission and real session
     if (!isAdmin) {
       toast.error('You do not have permission to perform this action.');
+      setStatusDialogOpen(false);
+      setPendingStatusChange(null);
+      return;
+    }
+
+    if (!hasRealSession) {
+      toast.error('Demo mode does not support department management. Please sign in with a real account.');
       setStatusDialogOpen(false);
       setPendingStatusChange(null);
       return;
@@ -384,6 +405,19 @@ const DepartmentManagement: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Demo Mode Warning */}
+      {isAdmin && !hasRealSession && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-amber-700 dark:text-amber-400">Demo Mode Active</p>
+            <p className="text-sm text-amber-600 dark:text-amber-500">
+              You're using a demo account. Department add/edit/delete operations require signing in with a real account.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="space-y-1">
