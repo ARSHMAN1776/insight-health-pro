@@ -27,7 +27,6 @@ import { useToast } from '../../hooks/use-toast';
 import { supabase } from '../../integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { formatInTimeZone } from 'date-fns-tz';
-import StaffRegistrationForm from '../forms/StaffRegistrationForm';
 import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
 
 const AdminDashboard: React.FC = () => {
@@ -37,7 +36,6 @@ const AdminDashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showStaffRegistration, setShowStaffRegistration] = useState(false);
   const [otStats, setOtStats] = useState({
     todaySurgeries: [] as any[],
     availableOTs: 0,
@@ -220,11 +218,11 @@ const AdminDashboard: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowStaffRegistration(true)}
+              onClick={() => navigate('/staff-management')}
               className="text-primary-foreground hover:bg-primary-foreground/10 flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
-              Register Staff
+              Manage Staff Accounts
             </Button>
             <Button
               variant="ghost"
@@ -248,13 +246,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Staff Registration Dialog */}
-      <StaffRegistrationForm
-        open={showStaffRegistration}
-        onOpenChange={setShowStaffRegistration}
-        onSuccess={loadDashboardData}
-      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

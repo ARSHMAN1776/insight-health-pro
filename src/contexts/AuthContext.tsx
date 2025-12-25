@@ -22,12 +22,37 @@ export interface User {
   isActive: boolean;
 }
 
+// Patient signup data interface
+export interface PatientSignupData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: string;
+}
+
+// Staff signup data interface
+export interface StaffSignupData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  phone?: string;
+  department?: string;
+  specialization?: string;
+  licenseNumber?: string;
+}
+
 // Authentication context interface
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string, role?: UserRole) => Promise<void>;
+  signupPatient: (data: PatientSignupData) => Promise<void>;
+  signupStaff: (data: StaffSignupData) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
@@ -35,85 +60,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Demo users for testing
-const demoUsers: User[] = [
-  {
-    id: '1',
-    email: 'admin@hospital.com',
-    firstName: 'John',
-    lastName: 'Administrator',
-    role: 'admin',
-    department: 'Administration',
-    phone: '+1234567890',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '2',
-    email: 'doctor@hospital.com',
-    firstName: 'Dr. Sarah',
-    lastName: 'Johnson',
-    role: 'doctor',
-    department: 'Cardiology',
-    specialization: 'Cardiology',
-    licenseNumber: 'MD123456',
-    phone: '+1234567891',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '3',
-    email: 'nurse@hospital.com',
-    firstName: 'Emily',
-    lastName: 'Davis',
-    role: 'nurse',
-    department: 'Emergency',
-    licenseNumber: 'RN789012',
-    phone: '+1234567892',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '4',
-    email: 'patient@hospital.com',
-    firstName: 'Michael',
-    lastName: 'Smith',
-    role: 'patient',
-    phone: '+1234567893',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '5',
-    email: 'receptionist@hospital.com',
-    firstName: 'Lisa',
-    lastName: 'Brown',
-    role: 'receptionist',
-    department: 'Front Desk',
-    phone: '+1234567894',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  },
-  {
-    id: '6',
-    email: 'pharmacist@hospital.com',
-    firstName: 'David',
-    lastName: 'Wilson',
-    role: 'pharmacist',
-    department: 'Pharmacy',
-    licenseNumber: 'PH345678',
-    phone: '+1234567895',
-    createdAt: new Date(),
-    lastLogin: new Date(),
-    isActive: true
-  }
-];
 
 // Role-based permissions
 const rolePermissions: Record<UserRole, string[]> = {
@@ -172,6 +118,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchUserData = async (userId: string, email: string, createdAt: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const mappedUser: User = {
+        id: userId,
+        email: email || '',
+        firstName: profile?.first_name || '',
+        lastName: profile?.last_name || '',
+        role: (userRole?.role as UserRole) || 'patient',
+        department: profile?.department,
+        specialization: profile?.specialization,
+        licenseNumber: profile?.license_number,
+        phone: profile?.phone,
+        createdAt: new Date(createdAt),
+        lastLogin: new Date(),
+        isActive: true
+      };
+      setUser(mappedUser);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -179,39 +159,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         if (session?.user) {
           // Defer async database queries to avoid blocking auth state changes
-          setTimeout(async () => {
-            try {
-              // Use type assertion since types haven't regenerated yet
-              const { data: profile } = await (supabase as any)
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
-              
-              const { data: userRole } = await (supabase as any)
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', session.user.id)
-                .maybeSingle();
-
-              const mappedUser: User = {
-                id: session.user.id,
-                email: session.user.email || '',
-                firstName: profile?.first_name || '',
-                lastName: profile?.last_name || '',
-                role: (userRole?.role as UserRole) || 'patient',
-                department: profile?.department,
-                specialization: profile?.specialization,
-                licenseNumber: profile?.license_number,
-                phone: profile?.phone,
-                createdAt: new Date(session.user.created_at),
-                lastLogin: new Date(),
-                isActive: true
-              };
-              setUser(mappedUser);
-            } catch (error) {
-              console.error('Error fetching user profile:', error);
-            }
+          setTimeout(() => {
+            fetchUserData(session.user.id, session.user.email || '', session.user.created_at);
           }, 0);
         } else {
           setUser(null);
@@ -224,38 +173,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        try {
-          // Use type assertion since types haven't regenerated yet
-          const { data: profile } = await (supabase as any)
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          
-          const { data: userRole } = await (supabase as any)
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-
-          const mappedUser: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: profile?.first_name || '',
-            lastName: profile?.last_name || '',
-            role: (userRole?.role as UserRole) || 'patient',
-            department: profile?.department,
-            specialization: profile?.specialization,
-            licenseNumber: profile?.license_number,
-            phone: profile?.phone,
-            createdAt: new Date(session.user.created_at),
-            lastLogin: new Date(),
-            isActive: true
-          };
-          setUser(mappedUser);
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-        }
+        await fetchUserData(session.user.id, session.user.email || '', session.user.created_at);
       }
       setIsLoading(false);
     });
@@ -267,29 +185,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     
     try {
-      // Check if using demo account
-      const demoUser = demoUsers.find(u => u.email === email);
-      if (demoUser && password === 'demo123') {
-        setUser(demoUser);
-        setIsLoading(false);
-        return;
-      }
-
-      // Real Supabase authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
-        // Provide helpful message for email confirmation
         if (error.message.includes('Email not confirmed')) {
           throw new Error('Please verify your email address. Check your inbox for the confirmation link.');
         }
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Invalid email or password. Please check your credentials and try again.');
+        }
         throw error;
       }
-
-      // User state will be updated by onAuthStateChange listener
     } catch (error: any) {
       throw new Error(error.message || 'Login failed');
     } finally {
@@ -297,30 +206,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (email: string, password: string, firstName: string, lastName: string, role: UserRole = 'patient'): Promise<void> => {
+  const signupPatient = async (data: PatientSignupData): Promise<void> => {
     setIsLoading(true);
     
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            first_name: firstName,
-            last_name: lastName,
-            role: role
+            first_name: data.firstName,
+            last_name: data.lastName,
+            phone: data.phone,
+            date_of_birth: data.dateOfBirth,
+            gender: data.gender,
+            role: 'patient'
           }
         }
       });
 
       if (error) {
+        if (error.message.includes('User already registered')) {
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        }
         throw error;
       }
-
-      // User state will be updated by onAuthStateChange listener
     } catch (error: any) {
       throw new Error(error.message || 'Signup failed');
     } finally {
@@ -328,14 +241,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signupStaff = async (data: StaffSignupData): Promise<void> => {
+    setIsLoading(true);
+    
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            first_name: data.firstName,
+            last_name: data.lastName,
+            phone: data.phone,
+            department: data.department,
+            specialization: data.specialization,
+            license_number: data.licenseNumber,
+            role: data.role
+          }
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          throw new Error('An account with this email already exists.');
+        }
+        throw error;
+      }
+    } catch (error: any) {
+      throw new Error(error.message || 'Staff signup failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async (): Promise<void> => {
     try {
-      // Check if it's a demo user (no session)
-      if (!session) {
-        setUser(null);
-        return;
-      }
-      
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
@@ -359,7 +302,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     session,
     login,
-    signup,
+    signupPatient,
+    signupStaff,
     logout,
     isLoading,
     hasPermission,
