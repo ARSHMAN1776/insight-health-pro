@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Droplets, 
   User, 
@@ -35,7 +36,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  History
+  History,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +46,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { z } from 'zod';
+import {
+  bloodIssueSchema,
+  sanitizeInput,
+  sanitizeUnits,
+  validateStockAvailability,
+  isAuthorizedForBloodBank,
+  getAuthorizationError,
+  createAuditEntry,
+  formatAuditLog,
+  getUserFriendlyError,
+  ERROR_MESSAGES,
+} from '@/lib/bloodBankValidation';
 
 interface Patient {
   id: string;
@@ -76,15 +91,11 @@ interface BloodIssueRecord {
   blood_group?: BloodGroup;
 }
 
-const issueSchema = z.object({
-  patient_id: z.string().min(1, 'Patient is required'),
-  blood_group_id: z.string().min(1, 'Blood group is required'),
-  units: z.number().min(1, 'At least 1 unit required').max(10, 'Maximum 10 units per issue'),
-  notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
-});
+// Allowed roles for blood issue operations
+const AUTHORIZED_ROLES = ['admin', 'doctor', 'nurse'] as const;
 
 const BloodIssue: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isRole } = useAuth();
   const { toast } = useToast();
   
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -108,6 +119,10 @@ const BloodIssue: React.FC = () => {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [stockAvailability, setStockAvailability] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Authorization check
+  const isAuthorized = user && AUTHORIZED_ROLES.some(role => isRole(role));
+  const userRole = user ? (isRole('admin') ? 'admin' : isRole('doctor') ? 'doctor' : isRole('nurse') ? 'nurse' : null) : null;
 
   const fetchPatients = useCallback(async () => {
     const { data, error } = await supabase
@@ -250,10 +265,26 @@ const BloodIssue: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     
+    // Authorization check
+    if (!isAuthorized) {
+      toast({
+        title: 'Access Denied',
+        description: getAuthorizationError(userRole),
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    // Sanitize inputs
+    const sanitizedUnitsValue = sanitizeUnits(formData.units);
+    const sanitizedNotes = sanitizeInput(formData.notes);
+    
     try {
-      issueSchema.parse({
-        ...formData,
-        units: parseInt(formData.units, 10) || 0,
+      bloodIssueSchema.parse({
+        patient_id: formData.patient_id,
+        blood_group_id: formData.blood_group_id,
+        units: sanitizedUnitsValue,
+        notes: sanitizedNotes || undefined,
       });
     } catch (e) {
       if (e instanceof z.ZodError) {
@@ -265,9 +296,20 @@ const BloodIssue: React.FC = () => {
       }
     }
 
-    const units = parseInt(formData.units, 10);
-    if (stockAvailability !== null && units > stockAvailability) {
-      errors.units = `Insufficient stock. Only ${stockAvailability} units available.`;
+    // Stock availability validation with safety check
+    if (stockAvailability !== null) {
+      const stockValidation = validateStockAvailability(stockAvailability, sanitizedUnitsValue);
+      if (!stockValidation.valid) {
+        errors.units = stockValidation.error || ERROR_MESSAGES.INSUFFICIENT_STOCK;
+      }
+    }
+
+    // Additional safety: prevent negative results
+    if (stockAvailability !== null && sanitizedUnitsValue > 0) {
+      const resultingStock = stockAvailability - sanitizedUnitsValue;
+      if (resultingStock < 0) {
+        errors.units = ERROR_MESSAGES.NEGATIVE_STOCK;
+      }
     }
 
     setValidationErrors(errors);
@@ -281,66 +323,113 @@ const BloodIssue: React.FC = () => {
   };
 
   const handleConfirmIssue = async () => {
+    // Final authorization check
+    if (!isAuthorized || !user) {
+      toast({
+        title: 'Access Denied',
+        description: ERROR_MESSAGES.NOT_AUTHORIZED,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSubmitting(true);
-    const units = parseInt(formData.units, 10);
+    
+    // Sanitize all inputs before processing
+    const units = sanitizeUnits(formData.units);
+    const sanitizedNotes = sanitizeInput(formData.notes);
+
+    // Create audit entry
+    const auditEntry = createAuditEntry(
+      'ISSUE',
+      'blood_issues',
+      formData.blood_group_id,
+      user.id,
+      userRole,
+      {
+        patient_id: formData.patient_id,
+        blood_group_id: formData.blood_group_id,
+        units_requested: units,
+        patient_name: selectedPatient ? `${selectedPatient.first_name} ${selectedPatient.last_name}` : 'Unknown',
+      }
+    );
+    console.log(formatAuditLog(auditEntry));
 
     try {
-      // Get current stock
-      const currentStock = stocks.find(s => s.blood_group_id === formData.blood_group_id);
-      if (!currentStock) {
-        throw new Error('Blood stock not found');
+      // Get current stock with fresh data
+      const { data: freshStock, error: fetchError } = await supabase
+        .from('blood_stock')
+        .select('*')
+        .eq('blood_group_id', formData.blood_group_id)
+        .maybeSingle();
+
+      if (fetchError) throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
+      if (!freshStock) throw new Error('Blood stock not found for this blood group');
+
+      // Double-check stock availability with fresh data
+      const stockValidation = validateStockAvailability(freshStock.total_units, units);
+      if (!stockValidation.valid) {
+        throw new Error(stockValidation.error);
       }
 
-      if (units > currentStock.total_units) {
-        throw new Error('Insufficient stock');
+      // Calculate new balance with safety check
+      const newBalance = freshStock.total_units - units;
+      
+      // CRITICAL: Final negative stock prevention
+      if (newBalance < 0) {
+        throw new Error(ERROR_MESSAGES.NEGATIVE_STOCK);
       }
 
-      const newBalance = currentStock.total_units - units;
-
-      // Start transaction - Update stock first
+      // Update stock
       const { error: stockError } = await supabase
         .from('blood_stock')
         .update({ 
           total_units: newBalance,
           updated_at: new Date().toISOString()
         })
-        .eq('stock_id', currentStock.stock_id);
+        .eq('stock_id', freshStock.stock_id);
 
       if (stockError) throw stockError;
 
-      // Create issue record
-      const { error: issueError } = await supabase
+      // Create issue record with sanitized data
+      const { data: issueData, error: issueError } = await supabase
         .from('blood_issues')
         .insert({
           patient_id: formData.patient_id,
           blood_group_id: formData.blood_group_id,
           units_given: units,
           issue_date: new Date().toISOString().split('T')[0],
-          issued_by: user?.id || null,
-          notes: formData.notes.trim() || null,
-        });
+          issued_by: user.id,
+          notes: sanitizedNotes || null,
+        })
+        .select()
+        .single();
 
       if (issueError) throw issueError;
 
-      // Log the transaction
+      // Log the transaction for audit trail
+      const transactionNotes = `Issued to patient: ${sanitizeInput(selectedPatient?.first_name || '')} ${sanitizeInput(selectedPatient?.last_name || '')}. Authorized by: ${userRole}`;
+      
       const { error: transactionError } = await supabase
         .from('blood_stock_transactions')
         .insert({
           blood_group_id: formData.blood_group_id,
           transaction_type: 'issue',
           units: units,
-          previous_balance: currentStock.total_units,
+          previous_balance: freshStock.total_units,
           new_balance: newBalance,
           source: 'Patient Issue',
-          notes: `Issued to patient: ${selectedPatient?.first_name} ${selectedPatient?.last_name}`,
-          performed_by: user?.id || null,
-          reference_id: formData.patient_id,
+          notes: transactionNotes,
+          performed_by: user.id,
+          reference_id: issueData?.issue_id || formData.patient_id,
         });
 
       if (transactionError) {
-        console.error('Transaction log error:', transactionError);
-        // Don't throw - issue was successful
+        console.error('[AUDIT WARNING] Transaction log failed:', transactionError);
       }
+
+      // Success audit log
+      console.log(`[AUDIT SUCCESS] Blood issue completed: ${units} units of ${bloodGroups.find(bg => bg.group_id === formData.blood_group_id)?.group_name} to patient ${selectedPatient?.first_name} ${selectedPatient?.last_name} by ${userRole} (${user.id})`);
 
       toast({
         title: 'Blood Issued Successfully',
@@ -351,11 +440,13 @@ const BloodIssue: React.FC = () => {
       handleCloseDialog();
       fetchIssueRecords();
       fetchStocks();
-    } catch (error: any) {
-      console.error('Error issuing blood:', error);
+    } catch (error: unknown) {
+      const errorMessage = getUserFriendlyError(error);
+      console.error('[AUDIT FAILURE] Blood issue failed:', errorMessage, error);
+      
       toast({
         title: 'Issue Failed',
-        description: error.message || 'Failed to issue blood. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -390,6 +481,25 @@ const BloodIssue: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Authorization Status */}
+      {!isAuthorized && (
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertDescription>
+            {user ? getAuthorizationError(userRole) : ERROR_MESSAGES.NOT_AUTHENTICATED}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isAuthorized && (
+        <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+          <ShieldCheck className="h-4 w-4" />
+          <AlertDescription>
+            Authorized as <strong>{userRole}</strong> for blood bank operations. All actions are logged.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Issue Blood Card */}
       <Card>
         <CardHeader>
@@ -398,7 +508,11 @@ const BloodIssue: React.FC = () => {
               <Droplets className="h-5 w-5" />
               Issue Blood
             </CardTitle>
-            <Button onClick={handleOpenDialog} className="gap-2">
+            <Button 
+              onClick={handleOpenDialog} 
+              className="gap-2"
+              disabled={!isAuthorized}
+            >
               <Droplets className="h-4 w-4" />
               New Blood Issue
             </Button>
