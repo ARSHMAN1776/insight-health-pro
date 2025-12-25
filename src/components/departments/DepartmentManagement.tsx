@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -42,9 +43,32 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  ShieldAlert
 } from 'lucide-react';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+
+// ============= Zod Validation Schema =============
+const departmentSchema = z.object({
+  department_name: z
+    .string()
+    .trim()
+    .min(2, 'Department name must be at least 2 characters')
+    .max(255, 'Department name must be less than 255 characters')
+    .regex(
+      /^[a-zA-Z0-9\s\-&(),.']+$/,
+      'Department name can only contain letters, numbers, spaces, and common punctuation'
+    ),
+  description: z
+    .string()
+    .max(1000, 'Description must be less than 1000 characters')
+    .optional()
+    .transform(val => val?.trim() || ''),
+  department_head: z.string().optional(),
+  status: z.enum(['Active', 'Inactive']).default('Active'),
+});
+
+type DepartmentFormData = z.infer<typeof departmentSchema>;
 
 interface Department {
   department_id: string;
@@ -69,9 +93,16 @@ interface Doctor {
   specialization: string;
 }
 
+interface FormErrors {
+  department_name?: string;
+  description?: string;
+  department_head?: string;
+  status?: string;
+}
+
 const DepartmentManagement: React.FC = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { user, isRole } = useAuth();
+  const isAdmin = isRole('admin');
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -82,6 +113,7 @@ const DepartmentManagement: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ dept: Department; newStatus: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState({
     department_name: '',
     description: '',
@@ -89,12 +121,7 @@ const DepartmentManagement: React.FC = () => {
     status: 'Active',
   });
 
-  useEffect(() => {
-    fetchDepartments();
-    fetchDoctors();
-  }, []);
-
-  const fetchDepartments = async () => {
+  const fetchDepartments = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('departments?action=list', {
@@ -119,14 +146,14 @@ const DepartmentManagement: React.FC = () => {
       if (!dbError && data) {
         setDepartments(data);
       } else {
-        toast.error('Failed to fetch departments');
+        toast.error('Unable to load departments. Please try again.');
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('doctors')
@@ -139,13 +166,45 @@ const DepartmentManagement: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to fetch doctors:', error);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchDepartments();
+    fetchDoctors();
+  }, [fetchDepartments, fetchDoctors]);
+
+
+  // Validate form data
+  const validateForm = (): boolean => {
+    try {
+      departmentSchema.parse(formData);
+      setFormErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: FormErrors = {};
+        error.errors.forEach((err) => {
+          const field = err.path[0] as keyof FormErrors;
+          errors[field] = err.message;
+        });
+        setFormErrors(errors);
+      }
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.department_name.trim()) {
-      toast.error('Department Name is required');
+    // Client-side validation
+    if (!validateForm()) {
+      toast.error('Please fix the form errors before submitting.');
+      return;
+    }
+
+    // Double-check admin permission
+    if (!isAdmin) {
+      toast.error('You do not have permission to perform this action.');
       return;
     }
 
@@ -175,18 +234,34 @@ const DepartmentManagement: React.FC = () => {
         resetForm();
         fetchDepartments();
       } else {
-        toast.error(data?.message || 'Operation failed');
+        // Handle multiple errors if present
+        if (data?.errors?.length > 0) {
+          data.errors.forEach((err: string) => toast.error(err));
+        } else {
+          toast.error(data?.message || 'Operation failed. Please try again.');
+        }
       }
     } catch (error: any) {
       console.error('Submit error:', error);
-      toast.error(error.message || 'Failed to save department');
+      if (error.message?.includes('403')) {
+        toast.error('Access denied. Administrator privileges are required.');
+      } else if (error.message?.includes('401')) {
+        toast.error('Your session has expired. Please log in again.');
+      } else {
+        toast.error(error.message || 'Failed to save department. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleEdit = (department: Department) => {
+    if (!isAdmin) {
+      toast.error('You do not have permission to edit departments.');
+      return;
+    }
     setSelectedDepartment(department);
+    setFormErrors({});
     setFormData({
       department_name: department.department_name,
       description: department.description || '',
@@ -197,6 +272,10 @@ const DepartmentManagement: React.FC = () => {
   };
 
   const initiateStatusChange = (dept: Department) => {
+    if (!isAdmin) {
+      toast.error('You do not have permission to change department status.');
+      return;
+    }
     const newStatus = dept.status === 'Active' ? 'Inactive' : 'Active';
     setPendingStatusChange({ dept, newStatus });
     setStatusDialogOpen(true);
@@ -204,6 +283,14 @@ const DepartmentManagement: React.FC = () => {
 
   const handleStatusChange = async () => {
     if (!pendingStatusChange) return;
+
+    // Double-check admin permission
+    if (!isAdmin) {
+      toast.error('You do not have permission to perform this action.');
+      setStatusDialogOpen(false);
+      setPendingStatusChange(null);
+      return;
+    }
 
     const { dept, newStatus } = pendingStatusChange;
     setSubmitting(true);
@@ -219,7 +306,7 @@ const DepartmentManagement: React.FC = () => {
         if (error) throw error;
 
         if (data?.success) {
-          toast.success('Department deactivated successfully');
+          toast.success(data.message);
           fetchDepartments();
         } else {
           toast.error(data?.message || 'Failed to deactivate department');
@@ -237,7 +324,7 @@ const DepartmentManagement: React.FC = () => {
         if (error) throw error;
 
         if (data?.success) {
-          toast.success('Department activated successfully');
+          toast.success(data.message);
           fetchDepartments();
         } else {
           toast.error(data?.message || 'Failed to activate department');
@@ -245,7 +332,13 @@ const DepartmentManagement: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Status change error:', error);
-      toast.error(error.message || 'Failed to update status');
+      if (error.message?.includes('403')) {
+        toast.error('Access denied. Administrator privileges are required.');
+      } else if (error.message?.includes('401')) {
+        toast.error('Your session has expired. Please log in again.');
+      } else {
+        toast.error(error.message || 'Failed to update status. Please try again.');
+      }
     } finally {
       setSubmitting(false);
       setStatusDialogOpen(false);
@@ -255,6 +348,7 @@ const DepartmentManagement: React.FC = () => {
 
   const resetForm = () => {
     setSelectedDepartment(null);
+    setFormErrors({});
     setFormData({
       department_name: '',
       description: '',
@@ -354,12 +448,25 @@ const DepartmentManagement: React.FC = () => {
                     <Input
                       id="department_name"
                       value={formData.department_name}
-                      onChange={(e) => setFormData({ ...formData, department_name: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, department_name: e.target.value });
+                        if (formErrors.department_name) {
+                          setFormErrors({ ...formErrors, department_name: undefined });
+                        }
+                      }}
                       placeholder="e.g., Cardiology"
                       maxLength={255}
                       required
-                      className="bg-card"
+                      className={`bg-card ${formErrors.department_name ? 'border-destructive' : ''}`}
+                      aria-invalid={!!formErrors.department_name}
+                      aria-describedby={formErrors.department_name ? 'department_name_error' : undefined}
                     />
+                    {formErrors.department_name && (
+                      <p id="department_name_error" className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {formErrors.department_name}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -369,15 +476,29 @@ const DepartmentManagement: React.FC = () => {
                     <Textarea
                       id="description"
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, description: e.target.value });
+                        if (formErrors.description) {
+                          setFormErrors({ ...formErrors, description: undefined });
+                        }
+                      }}
                       placeholder="Brief description of the department and its services..."
                       rows={3}
                       maxLength={1000}
-                      className="bg-card resize-none"
+                      className={`bg-card resize-none ${formErrors.description ? 'border-destructive' : ''}`}
+                      aria-invalid={!!formErrors.description}
+                      aria-describedby={formErrors.description ? 'description_error' : 'description_hint'}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {formData.description.length}/1000 characters
-                    </p>
+                    {formErrors.description ? (
+                      <p id="description_error" className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {formErrors.description}
+                      </p>
+                    ) : (
+                      <p id="description_hint" className="text-xs text-muted-foreground">
+                        {formData.description.length}/1000 characters
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
