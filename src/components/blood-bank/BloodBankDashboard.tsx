@@ -9,19 +9,23 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
-  Clock
+  Clock,
+  Settings2
 } from 'lucide-react';
 import BloodInventory from './BloodInventory';
 import DonorManagement from './DonorManagement';
 import DonationRecords from './DonationRecords';
 import BloodRequests from './BloodRequests';
 import TransfusionRecords from './TransfusionRecords';
+import BloodGroupsManagement from './BloodGroupsManagement';
 import { useBloodBankStats } from '@/hooks/useBloodBank';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BloodBankDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('inventory');
   const { stats, loading } = useBloodBankStats();
-
+  const { isRole } = useAuth();
+  const isAdmin = isRole('admin');
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -100,7 +104,7 @@ const BloodBankDashboard: React.FC = () => {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="inventory" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Inventory</span>
@@ -120,6 +124,10 @@ const BloodBankDashboard: React.FC = () => {
           <TabsTrigger value="transfusions" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Transfusions</span>
+          </TabsTrigger>
+          <TabsTrigger value="blood-groups" className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Blood Groups</span>
           </TabsTrigger>
         </TabsList>
 
@@ -141,6 +149,10 @@ const BloodBankDashboard: React.FC = () => {
 
         <TabsContent value="transfusions">
           <TransfusionRecords />
+        </TabsContent>
+
+        <TabsContent value="blood-groups">
+          <BloodGroupsManagement />
         </TabsContent>
       </Tabs>
     </div>
