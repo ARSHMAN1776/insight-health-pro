@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Package, 
@@ -36,12 +37,27 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
-  RefreshCw
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import {
+  stockAdditionSchema,
+  sanitizeInput,
+  sanitizeUnits,
+  calculateNewBalance,
+  isValidUUID,
+  createAuditEntry,
+  formatAuditLog,
+  getUserFriendlyError,
+  ERROR_MESSAGES,
+  getAuthorizationError,
+} from '@/lib/bloodBankValidation';
+import { z } from 'zod';
 
 interface BloodGroup {
   group_id: string;
@@ -69,8 +85,11 @@ interface StockTransaction {
   blood_group?: BloodGroup;
 }
 
+// Allowed roles for stock management
+const AUTHORIZED_ROLES = ['admin', 'doctor', 'nurse'] as const;
+
 const BloodStockManagement: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isRole } = useAuth();
   const { toast } = useToast();
   const [stocks, setStocks] = useState<BloodStock[]>([]);
   const [bloodGroups, setBloodGroups] = useState<BloodGroup[]>([]);
@@ -79,6 +98,8 @@ const BloodStockManagement: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'issue'>('add');
   const [activeTab, setActiveTab] = useState('stock');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     blood_group_id: '',
@@ -86,6 +107,10 @@ const BloodStockManagement: React.FC = () => {
     source: '',
     notes: '',
   });
+
+  // Authorization check
+  const isAuthorized = user && AUTHORIZED_ROLES.some(role => isRole(role));
+  const userRole = user ? (isRole('admin') ? 'admin' : isRole('doctor') ? 'doctor' : isRole('nurse') ? 'nurse' : null) : null;
 
   const fetchBloodGroups = useCallback(async () => {
     const { data, error } = await supabase
@@ -196,119 +221,189 @@ const BloodStockManagement: React.FC = () => {
 
   const validateAndSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
 
-    const units = parseInt(formData.units, 10);
+    // Authorization check
+    if (!isAuthorized || !user) {
+      toast({
+        title: 'Access Denied',
+        description: getAuthorizationError(userRole),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Sanitize inputs
+    const sanitizedUnitsValue = sanitizeUnits(formData.units);
+    const sanitizedSource = sanitizeInput(formData.source);
+    const sanitizedNotes = sanitizeInput(formData.notes);
+
+    const errors: Record<string, string> = {};
     
-    // Validate inputs
-    if (!formData.blood_group_id) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a blood group',
-        variant: 'destructive',
-      });
-      return;
+    // Validate blood group ID
+    if (!formData.blood_group_id || !isValidUUID(formData.blood_group_id)) {
+      errors.blood_group_id = 'Please select a valid blood group';
     }
 
-    if (isNaN(units) || units <= 0) {
-      toast({
-        title: 'Validation Error',
-        description: 'Units must be a positive number',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (units > 1000) {
-      toast({
-        title: 'Validation Error',
-        description: 'Maximum 1000 units per transaction',
-        variant: 'destructive',
-      });
-      return;
+    // Validate units
+    if (sanitizedUnitsValue <= 0) {
+      errors.units = ERROR_MESSAGES.INVALID_UNITS;
+    } else if (sanitizedUnitsValue > 1000) {
+      errors.units = ERROR_MESSAGES.MAX_UNITS_EXCEEDED;
     }
 
     // Find current stock
     const currentStock = stocks.find(s => s.blood_group_id === formData.blood_group_id);
     const currentUnits = currentStock?.total_units || 0;
 
-    // For issuing, check if enough stock
-    if (dialogMode === 'issue' && units > currentUnits) {
+    // For issuing, validate stock availability
+    if (dialogMode === 'issue') {
+      if (sanitizedUnitsValue > currentUnits) {
+        errors.units = `${ERROR_MESSAGES.INSUFFICIENT_STOCK} Only ${currentUnits} units available.`;
+      }
+    }
+
+    // Calculate new balance with safety check
+    const balanceResult = calculateNewBalance(
+      currentUnits,
+      sanitizedUnitsValue,
+      dialogMode
+    );
+
+    if (!balanceResult.valid) {
+      errors.units = balanceResult.error || ERROR_MESSAGES.INVALID_UNITS;
+    }
+
+    // CRITICAL: Final negative stock check
+    if (balanceResult.newBalance < 0) {
+      errors.units = ERROR_MESSAGES.NEGATIVE_STOCK;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       toast({
-        title: 'Insufficient Stock',
-        description: `Only ${currentUnits} units available. Cannot issue ${units} units.`,
+        title: 'Validation Error',
+        description: Object.values(errors)[0],
         variant: 'destructive',
       });
       return;
     }
 
-    const newBalance = dialogMode === 'add' 
-      ? currentUnits + units 
-      : currentUnits - units;
+    setSubmitting(true);
 
-    // Ensure stock never goes negative
-    if (newBalance < 0) {
-      toast({
-        title: 'Error',
-        description: 'Stock cannot go negative',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // Create audit entry
+    const auditEntry = createAuditEntry(
+      dialogMode === 'add' ? 'ADD_STOCK' : 'REMOVE_STOCK',
+      'blood_stock',
+      formData.blood_group_id,
+      user.id,
+      userRole,
+      {
+        operation: dialogMode,
+        units: sanitizedUnitsValue,
+        previous_balance: currentUnits,
+        new_balance: balanceResult.newBalance,
+        source: sanitizedSource,
+      }
+    );
+    console.log(formatAuditLog(auditEntry));
 
     try {
+      // Get fresh stock data to prevent race conditions
+      const { data: freshStock, error: fetchError } = await supabase
+        .from('blood_stock')
+        .select('*')
+        .eq('blood_group_id', formData.blood_group_id)
+        .maybeSingle();
+
+      if (fetchError) throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
+
+      const freshUnits = freshStock?.total_units || 0;
+      
+      // Recalculate with fresh data
+      const freshBalanceResult = calculateNewBalance(
+        freshUnits,
+        sanitizedUnitsValue,
+        dialogMode
+      );
+
+      if (!freshBalanceResult.valid) {
+        throw new Error(freshBalanceResult.error);
+      }
+
+      // CRITICAL: Final negative stock prevention
+      if (freshBalanceResult.newBalance < 0) {
+        throw new Error(ERROR_MESSAGES.NEGATIVE_STOCK);
+      }
+
       // Update stock
-      if (currentStock) {
+      if (freshStock) {
         const { error: updateError } = await supabase
           .from('blood_stock')
           .update({ 
-            total_units: newBalance,
+            total_units: freshBalanceResult.newBalance,
             updated_at: new Date().toISOString()
           })
-          .eq('stock_id', currentStock.stock_id);
+          .eq('stock_id', freshStock.stock_id);
 
         if (updateError) throw updateError;
       } else {
-        // Create new stock entry if doesn't exist
+        // Create new stock entry if doesn't exist (only for additions)
+        if (dialogMode === 'issue') {
+          throw new Error('Cannot issue from non-existent stock');
+        }
+        
         const { error: insertError } = await supabase
           .from('blood_stock')
           .insert({
             blood_group_id: formData.blood_group_id,
-            total_units: newBalance,
+            total_units: freshBalanceResult.newBalance,
           });
 
         if (insertError) throw insertError;
       }
 
-      // Log the transaction
+      // Log the transaction for audit trail
+      const transactionNotes = `${dialogMode === 'add' ? 'Added' : 'Issued'} by ${userRole}. ${sanitizedNotes}`.trim();
+      
       const { error: transactionError } = await supabase
         .from('blood_stock_transactions')
         .insert({
           blood_group_id: formData.blood_group_id,
           transaction_type: dialogMode === 'add' ? 'addition' : 'issue',
-          units: units,
-          previous_balance: currentUnits,
-          new_balance: newBalance,
-          source: formData.source.trim() || null,
-          notes: formData.notes.trim() || null,
-          performed_by: user?.id || null,
+          units: sanitizedUnitsValue,
+          previous_balance: freshUnits,
+          new_balance: freshBalanceResult.newBalance,
+          source: sanitizedSource || null,
+          notes: transactionNotes || null,
+          performed_by: user.id,
         });
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        console.error('[AUDIT WARNING] Transaction log failed:', transactionError);
+      }
+
+      // Success audit log
+      console.log(`[AUDIT SUCCESS] Stock ${dialogMode}: ${sanitizedUnitsValue} units by ${userRole} (${user.id}). Balance: ${freshUnits} → ${freshBalanceResult.newBalance}`);
 
       toast({
         title: 'Success',
-        description: `Successfully ${dialogMode === 'add' ? 'added' : 'issued'} ${units} units`,
+        description: `Successfully ${dialogMode === 'add' ? 'added' : 'issued'} ${sanitizedUnitsValue} units`,
       });
 
       handleCloseDialog();
       fetchTransactions();
-    } catch (error: any) {
-      console.error('Error updating stock:', error);
+    } catch (error: unknown) {
+      const errorMessage = getUserFriendlyError(error);
+      console.error(`[AUDIT FAILURE] Stock ${dialogMode} failed:`, errorMessage, error);
+      
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update stock',
+        description: errorMessage,
         variant: 'destructive',
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -351,6 +446,25 @@ const BloodStockManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Authorization Status */}
+      {!isAuthorized && (
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertDescription>
+            {user ? getAuthorizationError(userRole) : ERROR_MESSAGES.NOT_AUTHENTICATED}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isAuthorized && (
+        <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+          <ShieldCheck className="h-4 w-4" />
+          <AlertDescription>
+            Authorized as <strong>{userRole}</strong> for stock management. All actions are logged.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
@@ -385,11 +499,20 @@ const BloodStockManagement: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex gap-2">
-            <Button onClick={() => handleOpenDialog('add')} className="flex-1 gap-2">
+            <Button 
+              onClick={() => handleOpenDialog('add')} 
+              className="flex-1 gap-2"
+              disabled={!isAuthorized}
+            >
               <Plus className="h-4 w-4" />
               Add Stock
             </Button>
-            <Button onClick={() => handleOpenDialog('issue')} variant="outline" className="flex-1 gap-2">
+            <Button 
+              onClick={() => handleOpenDialog('issue')} 
+              variant="outline" 
+              className="flex-1 gap-2"
+              disabled={!isAuthorized}
+            >
               <Minus className="h-4 w-4" />
               Issue Stock
             </Button>
@@ -593,17 +716,21 @@ const BloodStockManagement: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="units">Units *</Label>
+                <Label htmlFor="units">Units * {dialogMode === 'add' ? '(max 1000)' : '(max available)'}</Label>
                 <Input
                   id="units"
                   type="number"
                   min="1"
-                  max="1000"
+                  max={dialogMode === 'add' ? '1000' : '100'}
                   value={formData.units}
                   onChange={(e) => setFormData({ ...formData, units: e.target.value })}
                   placeholder="Enter number of units"
+                  className={validationErrors.units ? 'border-destructive' : ''}
                   required
                 />
+                {validationErrors.units && (
+                  <p className="text-sm text-destructive">{validationErrors.units}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -644,14 +771,15 @@ const BloodStockManagement: React.FC = () => {
               )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+              <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={submitting}>
                 Cancel
               </Button>
               <Button 
                 type="submit"
                 className={dialogMode === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                disabled={!isAuthorized || submitting}
               >
-                {dialogMode === 'add' ? 'Add Stock' : 'Issue Stock'}
+                {submitting ? 'Processing...' : dialogMode === 'add' ? 'Add Stock' : 'Issue Stock'}
               </Button>
             </DialogFooter>
           </form>
