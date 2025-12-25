@@ -7,9 +7,10 @@ import PatientPortalNav from '../patient-portal/PatientPortalNav';
 import PersonalInfoSection from '../patient-portal/PersonalInfoSection';
 import MedicalRecordsView from '../patient-portal/MedicalRecordsView';
 import AppointmentsView from '../patient-portal/AppointmentsView';
-import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin } from 'lucide-react';
+import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const PatientDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -23,71 +24,71 @@ const PatientDashboard: React.FC = () => {
   const [labTests, setLabTests] = useState<LabTest[]>([]);
   const [patientData, setPatientData] = useState<Patient | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        console.log('Fetching patient data for user:', user?.id, user?.email);
-        
-        // First try to fetch patient data by user_id (new method)
-        let patient = null;
-        if (user?.id) {
-          patient = await dataManager.getPatientByUserId(user.id);
-          console.log('Patient record found by user_id:', patient);
-        }
-        
-        // Fallback to email lookup for existing patients without user_id
-        if (!patient && user?.email) {
-          patient = await dataManager.getPatientByEmail(user.email);
-          console.log('Patient record found by email:', patient);
-        }
-        
-        setPatientData(patient);
-        
-        // If patient found, fetch their specific data
-        if (patient) {
-          console.log('Fetching patient-specific data for patient ID:', patient.id);
-          const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
-            dataManager.getAppointmentsByPatient(patient.id),
-            dataManager.getMedicalRecordsByPatient(patient.id),
-            dataManager.getPrescriptionsByPatient(patient.id),
-            dataManager.getLabTestsByPatient(patient.id)
-          ]);
-          
-          console.log('Fetched data:', {
-            appointments: appointmentsData.length,
-            records: recordsData.length,
-            prescriptions: prescriptionsData.length,
-            labTests: labTestsData.length
-          });
-          
-          setAppointments(appointmentsData);
-          setMedicalRecords(recordsData);
-          setPrescriptions(prescriptionsData);
-          setLabTests(labTestsData);
-        } else {
-          console.warn('No patient record found for user:', user?.id, user?.email);
-          toast({
-            title: "Patient Record Not Found",
-            description: "Your registration is pending verification. Please wait for hospital staff to approve your account.",
-            variant: "default"
-          });
-        }
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load dashboard data",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
+  const fetchPatientData = async () => {
+    try {
+      setLoading(true);
+      
+      console.log('Fetching patient data for user:', user?.id, user?.email);
+      
+      // First try to fetch patient data by user_id (new method)
+      let patient = null;
+      if (user?.id) {
+        patient = await dataManager.getPatientByUserId(user.id);
+        console.log('Patient record found by user_id:', patient);
       }
-    };
+      
+      // Fallback to email lookup for existing patients without user_id
+      if (!patient && user?.email) {
+        patient = await dataManager.getPatientByEmail(user.email);
+        console.log('Patient record found by email:', patient);
+      }
+      
+      setPatientData(patient);
+      
+      // If patient found, fetch their specific data
+      if (patient) {
+        console.log('Fetching patient-specific data for patient ID:', patient.id);
+        const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
+          dataManager.getAppointmentsByPatient(patient.id),
+          dataManager.getMedicalRecordsByPatient(patient.id),
+          dataManager.getPrescriptionsByPatient(patient.id),
+          dataManager.getLabTestsByPatient(patient.id)
+        ]);
+        
+        console.log('Fetched data:', {
+          appointments: appointmentsData.length,
+          records: recordsData.length,
+          prescriptions: prescriptionsData.length,
+          labTests: labTestsData.length
+        });
+        
+        setAppointments(appointmentsData);
+        setMedicalRecords(recordsData);
+        setPrescriptions(prescriptionsData);
+        setLabTests(labTestsData);
+      } else {
+        console.warn('No patient record found for user:', user?.id, user?.email);
+        toast({
+          title: "Patient Record Not Found",
+          description: "Your registration is pending verification. Please wait for hospital staff to approve your account.",
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
-  }, [toast, user?.id, user?.email]);
+  useEffect(() => {
+    fetchPatientData();
+  }, [user?.id, user?.email]);
 
   const handleLogout = () => {
     logout();
@@ -142,8 +143,31 @@ const PatientDashboard: React.FC = () => {
   );
   const nextAppointment = upcomingAppointments[0];
 
+  const isVerified = patientData?.status === 'active';
+
   const renderDashboardOverview = () => (
     <div className="space-y-8 animate-fade-in">
+      {/* Verification Status Banner */}
+      {patientData && !isVerified && (
+        <Alert className="bg-warning/10 border-warning/30">
+          <AlertCircle className="h-5 w-5 text-warning" />
+          <AlertTitle className="text-warning font-semibold">Account Pending Verification</AlertTitle>
+          <AlertDescription className="text-warning/80">
+            Your account is being reviewed by our staff. Once verified, you'll be able to book appointments 
+            and access all portal features. This usually takes 1-2 business days.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {patientData && isVerified && (
+        <Alert className="bg-success/10 border-success/30">
+          <CheckCircle className="h-5 w-5 text-success" />
+          <AlertTitle className="text-success font-semibold">Account Verified</AlertTitle>
+          <AlertDescription className="text-success/80">
+            Your account is verified. You can book appointments and access all portal features.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Welcome Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-hover to-medical-blue-dark p-10 text-primary-foreground shadow-elegant">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary-foreground/10 rounded-full -mr-32 -mt-32 blur-3xl" />
@@ -337,10 +361,15 @@ const PatientDashboard: React.FC = () => {
             <div className="mb-8">
               <h2 className="text-4xl font-bold text-foreground mb-3">Appointments</h2>
               <p className="text-muted-foreground text-lg">
-                View your appointment schedule and history
+                Book new appointments and view your schedule
               </p>
             </div>
-            <AppointmentsView appointments={appointments} loading={loading} />
+            <AppointmentsView 
+              appointments={appointments} 
+              loading={loading} 
+              patientData={patientData}
+              onAppointmentBooked={fetchPatientData}
+            />
           </div>
         )}
       </main>
