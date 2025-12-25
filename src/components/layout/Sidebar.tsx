@@ -60,6 +60,12 @@ const sidebarItems: SidebarItem[] = [
     roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist']
   },
   {
+    label: 'Departments',
+    icon: Building,
+    path: '/departments',
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist']
+  },
+  {
     label: 'Medical Records',
     icon: FileText,
     path: '/medical-records',
