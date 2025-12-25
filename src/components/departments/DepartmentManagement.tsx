@@ -28,22 +28,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Building2, Search, Phone, Mail, User } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, Search, User } from 'lucide-react';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 interface Department {
-  id: string;
-  name: string;
-  code: string;
+  department_id: string;
+  department_name: string;
   description: string | null;
-  head_doctor_id: string | null;
-  floor: number | null;
-  phone: string | null;
-  email: string | null;
-  is_active: boolean;
+  department_head: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -67,14 +62,10 @@ const DepartmentManagement: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    code: '',
+    department_name: '',
     description: '',
-    head_doctor_id: '',
-    floor: '',
-    phone: '',
-    email: '',
-    is_active: true,
+    department_head: '',
+    status: 'Active',
   });
 
   useEffect(() => {
@@ -87,7 +78,7 @@ const DepartmentManagement: React.FC = () => {
       const { data, error } = await supabase
         .from('departments')
         .select('*')
-        .order('name');
+        .order('department_name');
 
       if (error) throw error;
       setDepartments(data || []);
@@ -117,28 +108,24 @@ const DepartmentManagement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.code.trim()) {
-      toast.error('Name and Code are required');
+    if (!formData.department_name.trim()) {
+      toast.error('Department Name is required');
       return;
     }
 
     try {
       const departmentData = {
-        name: formData.name.trim(),
-        code: formData.code.trim().toUpperCase(),
+        department_name: formData.department_name.trim(),
         description: formData.description.trim() || null,
-        head_doctor_id: formData.head_doctor_id || null,
-        floor: formData.floor ? parseInt(formData.floor) : null,
-        phone: formData.phone.trim() || null,
-        email: formData.email.trim() || null,
-        is_active: formData.is_active,
+        department_head: formData.department_head || null,
+        status: formData.status,
       };
 
       if (selectedDepartment) {
         const { error } = await supabase
           .from('departments')
           .update(departmentData)
-          .eq('id', selectedDepartment.id);
+          .eq('department_id', selectedDepartment.department_id);
 
         if (error) throw error;
         toast.success('Department updated successfully');
@@ -163,14 +150,10 @@ const DepartmentManagement: React.FC = () => {
   const handleEdit = (department: Department) => {
     setSelectedDepartment(department);
     setFormData({
-      name: department.name,
-      code: department.code,
+      department_name: department.department_name,
       description: department.description || '',
-      head_doctor_id: department.head_doctor_id || '',
-      floor: department.floor?.toString() || '',
-      phone: department.phone || '',
-      email: department.email || '',
-      is_active: department.is_active,
+      department_head: department.department_head || '',
+      status: department.status,
     });
     setDialogOpen(true);
   };
@@ -182,7 +165,7 @@ const DepartmentManagement: React.FC = () => {
       const { error } = await supabase
         .from('departments')
         .delete()
-        .eq('id', selectedDepartment.id);
+        .eq('department_id', selectedDepartment.department_id);
 
       if (error) throw error;
       toast.success('Department deleted successfully');
@@ -198,14 +181,10 @@ const DepartmentManagement: React.FC = () => {
   const resetForm = () => {
     setSelectedDepartment(null);
     setFormData({
-      name: '',
-      code: '',
+      department_name: '',
       description: '',
-      head_doctor_id: '',
-      floor: '',
-      phone: '',
-      email: '',
-      is_active: true,
+      department_head: '',
+    status: 'Active',
     });
   };
 
@@ -215,10 +194,8 @@ const DepartmentManagement: React.FC = () => {
     return doctor ? `Dr. ${doctor.first_name} ${doctor.last_name}` : 'Unknown';
   };
 
-  const filteredDepartments = departments.filter(
-    (dept) =>
-      dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dept.code.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDepartments = departments.filter((dept) =>
+    dept.department_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -268,28 +245,15 @@ const DepartmentManagement: React.FC = () => {
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Department Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., Cardiology"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="code">Code *</Label>
-                      <Input
-                        id="code"
-                        value={formData.code}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                        placeholder="e.g., CARD"
-                        maxLength={10}
-                        required
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department_name">Department Name *</Label>
+                    <Input
+                      id="department_name"
+                      value={formData.department_name}
+                      onChange={(e) => setFormData({ ...formData, department_name: e.target.value })}
+                      placeholder="e.g., Cardiology"
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -299,16 +263,16 @@ const DepartmentManagement: React.FC = () => {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Brief description of the department"
-                      rows={2}
+                      rows={3}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="head_doctor">Head Doctor</Label>
+                      <Label htmlFor="department_head">Department Head</Label>
                       <Select
-                        value={formData.head_doctor_id}
-                        onValueChange={(value) => setFormData({ ...formData, head_doctor_id: value })}
+                        value={formData.department_head}
+                        onValueChange={(value) => setFormData({ ...formData, department_head: value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select head doctor" />
@@ -324,46 +288,20 @@ const DepartmentManagement: React.FC = () => {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="floor">Floor</Label>
-                      <Input
-                        id="floor"
-                        type="number"
-                        value={formData.floor}
-                        onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
-                        placeholder="e.g., 2"
-                      />
+                      <Label htmlFor="status">Status</Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) => setFormData({ ...formData, status: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Active">Active</SelectItem>
+                          <SelectItem value="Inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+1 234 567 8900"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="dept@hospital.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_active"
-                      checked={formData.is_active}
-                      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                    />
-                    <Label htmlFor="is_active">Active Department</Label>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4">
@@ -398,17 +336,17 @@ const DepartmentManagement: React.FC = () => {
             <Building2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{departments.filter((d) => d.is_active).length}</div>
+            <div className="text-2xl font-bold">{departments.filter((d) => d.status === 'Active').length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">With Head Doctor</CardTitle>
+            <CardTitle className="text-sm font-medium">With Department Head</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {departments.filter((d) => d.head_doctor_id).length}
+              {departments.filter((d) => d.department_head).length}
             </div>
           </CardContent>
         </Card>
@@ -420,11 +358,9 @@ const DepartmentManagement: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Department</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Head Doctor</TableHead>
-                <TableHead>Floor</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>Department Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Department Head</TableHead>
                 <TableHead>Status</TableHead>
                 {isAdmin && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
@@ -432,48 +368,25 @@ const DepartmentManagement: React.FC = () => {
             <TableBody>
               {filteredDepartments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-muted-foreground">
                     {searchTerm ? 'No departments match your search' : 'No departments found'}
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredDepartments.map((dept) => (
-                  <TableRow key={dept.id}>
+                  <TableRow key={dept.department_id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{dept.name}</div>
-                        {dept.description && (
-                          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                            {dept.description}
-                          </div>
-                        )}
+                      <div className="font-medium">{dept.department_name}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground truncate max-w-[250px]">
+                        {dept.description || '-'}
                       </div>
                     </TableCell>
+                    <TableCell>{getDoctorName(dept.department_head)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{dept.code}</Badge>
-                    </TableCell>
-                    <TableCell>{getDoctorName(dept.head_doctor_id)}</TableCell>
-                    <TableCell>{dept.floor ?? '-'}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {dept.phone && (
-                          <div className="flex items-center text-sm">
-                            <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
-                            {dept.phone}
-                          </div>
-                        )}
-                        {dept.email && (
-                          <div className="flex items-center text-sm">
-                            <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
-                            {dept.email}
-                          </div>
-                        )}
-                        {!dept.phone && !dept.email && '-'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={dept.is_active ? 'default' : 'secondary'}>
-                        {dept.is_active ? 'Active' : 'Inactive'}
+                      <Badge variant={dept.status === 'Active' ? 'default' : 'secondary'}>
+                        {dept.status}
                       </Badge>
                     </TableCell>
                     {isAdmin && (
@@ -511,7 +424,7 @@ const DepartmentManagement: React.FC = () => {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="Delete Department"
-        description={`Are you sure you want to delete "${selectedDepartment?.name}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete "${selectedDepartment?.department_name}"? This action cannot be undone.`}
         onConfirm={handleDelete}
         confirmText="Delete"
         variant="destructive"
