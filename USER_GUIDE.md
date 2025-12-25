@@ -8,8 +8,10 @@
 5. [Receptionist Guide](#receptionist-guide)
 6. [Pharmacist Guide](#pharmacist-guide)
 7. [Patient Guide](#patient-guide)
-8. [Common Features](#common-features)
-9. [Troubleshooting](#troubleshooting)
+8. [Blood Bank Module](#blood-bank-module)
+9. [Operation Department](#operation-department)
+10. [Common Features](#common-features)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -21,29 +23,37 @@ The Hospital Management System is a web-based application accessible from any mo
 ### Login Process
 1. Open your web browser and navigate to the hospital system URL
 2. Click **"Sign In"** on the homepage
-3. Enter your registered **Email** and **Password**
-4. Click **"Login"** button
-5. You will be redirected to your role-specific dashboard
+3. Select login type: **Patient** or **Staff**
+4. Enter your registered **Email** and **Password**
+5. Click **"Sign In"** button
+6. You will be redirected to your role-specific dashboard
 
 ### First-Time Users
-- Contact your hospital administrator to receive your login credentials
+- **Patients**: Create an account via "Create an account" link
+- **Staff**: Contact your hospital administrator to receive login credentials
 - Upon first login, update your profile information
 - Familiarize yourself with the navigation sidebar
 
 ### Navigation Overview
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🏥 HMS Logo    │  Search Bar  │  🔔 Notifications  │ 👤 Profile │
+│  🏥 HMS Logo    │  Header Info  │  🔔 Notifications  │ Theme │
 ├─────────────────┼──────────────────────────────────────────────┤
 │                 │                                              │
 │   📊 Dashboard  │                                              │
-│   📅 Appointments│           MAIN CONTENT AREA                 │
-│   👥 Patients   │                                              │
-│   📋 Records    │           (Changes based on                  │
-│   💊 Pharmacy   │            selected menu item)               │
+│   👥 Patients   │           MAIN CONTENT AREA                 │
+│   📅 Appointments│                                             │
+│   🏢 Departments │          (Changes based on                  │
+│   📋 Medical Records│         selected menu item)              │
+│   💊 Prescriptions│                                            │
 │   🧪 Lab Tests  │                                              │
-│   🏠 Rooms      │                                              │
+│   🩸 Blood Bank │                                              │
+│   🏠 Rooms & Beds│                                             │
 │   💰 Billing    │                                              │
+│   💊 Pharmacy   │                                              │
+│   👨‍⚕️ Staff     │                                              │
+│   🔪 Operations │                                              │
+│   📊 Reports    │                                              │
 │   ⚙️ Settings   │                                              │
 │                 │                                              │
 │   🚪 Logout     │                                              │
@@ -59,30 +69,37 @@ As an **Administrator**, you have full access to all system features and are res
 
 ### Dashboard Features
 Your dashboard displays:
-- **Total Patients**: Current patient count
+- **Total Patients**: Current patient count with status breakdown
 - **Today's Appointments**: Scheduled appointments for the day
-- **Total Revenue**: Financial overview
-- **Staff on Duty**: Active medical staff
+- **Active Staff**: Doctors, nurses, and other staff on duty
+- **Revenue Overview**: Financial summary
+- **Quick Action Cards**: Fast access to common tasks
 
 ### Key Responsibilities
 
 #### 1. Staff Management
-**How to Register New Staff:**
-1. Go to **Dashboard** → Click **"Register New Staff"**
-2. Choose staff type: Doctor or Nurse
-3. Fill in the registration form:
+**Accessing Staff Management:**
+1. Navigate to **Staff Management** from the sidebar or dashboard
+2. View **Staff Directory** tab for all registered staff
+3. Use **Add New Staff** tab to create accounts
+
+**Creating New Staff Account:**
+1. Go to **Staff Management** → **Add New Staff**
+2. Select staff role: Doctor, Nurse, Receptionist, Pharmacist, or Admin
+3. Fill in personal information:
    - First Name & Last Name
    - Email & Phone Number
    - Department
-   - Specialization (for doctors)
-   - License Number
-   - Years of Experience
-4. Click **"Register"** to create the account
+   - Specialization (for medical staff)
+   - License Number (required for doctors, nurses, pharmacists)
+4. Set initial password
+5. Click **"Create Staff Account"**
 
-**How to View Staff:**
-1. Navigate to **Staff Management** from sidebar
-2. Use tabs to switch between **Doctors** and **Nurses**
-3. Search or filter by department/specialization
+**Staff Directory Features:**
+- Search by name, department, or specialization
+- Filter by role (Doctor, Nurse, etc.)
+- View role-based statistics cards
+- Real-time staff count per role
 
 #### 2. Patient Management
 **How to View All Patients:**
@@ -90,35 +107,38 @@ Your dashboard displays:
 2. Browse the patient list with search functionality
 3. Click on a patient to view detailed records
 
-**How to Register New Patient:**
-1. Go to **Patients** → Click **"Add Patient"**
-2. Complete the registration form with:
-   - Personal Information (Name, DOB, Gender)
-   - Contact Details (Phone, Email, Address)
-   - Emergency Contact
-   - Medical Information (Blood Type, Allergies)
-   - Insurance Details
-3. Click **"Save"** to register
+**Patient Registry:**
+1. Navigate to **Patient Registry** for comprehensive patient data
+2. View, edit, or export patient information
+3. Track patient status and history
 
-#### 3. Appointment Oversight
-**How to Monitor Appointments:**
-1. Navigate to **Appointments**
-2. View all scheduled appointments
-3. Filter by date, doctor, or status
-4. Reschedule or cancel if needed
+#### 3. Department Management
+**Managing Departments:**
+1. Go to **Departments** from sidebar
+2. View all hospital departments
+3. Add new departments with:
+   - Department Name
+   - Description
+   - Department Head (assign a doctor)
+   - Status (Active/Inactive)
+4. Edit or deactivate existing departments
 
-#### 4. Financial Management
-**How to Track Revenue:**
-1. Go to **Billing** section
-2. View payment history and pending invoices
-3. Export reports for accounting
+#### 4. Blood Bank Oversight
+**Blood Bank Management:**
+1. Navigate to **Blood Bank** section
+2. Monitor blood stock levels by group
+3. View critical stock alerts
+4. Track donor activity and donations
+5. Review blood issue history
+6. Generate blood bank reports
 
-#### 5. Room Management
-**How to Manage Rooms:**
-1. Navigate to **Rooms** from sidebar
-2. View room availability status
-3. Add new rooms or update existing ones
-4. Track occupancy rates
+#### 5. Operation Department
+**Managing Surgeries:**
+1. Go to **Operation Department**
+2. View scheduled surgeries
+3. Manage operation theatres
+4. Track surgery teams
+5. Monitor post-operation records
 
 #### 6. System Settings
 **How to Configure Settings:**
@@ -128,22 +148,24 @@ Your dashboard displays:
    - Working Hours
    - Notification Preferences
    - Theme (Dark/Light Mode)
+   - System-wide configurations
 
 ### Admin Quick Actions
 | Action | Steps |
 |--------|-------|
-| Add Doctor | Dashboard → Register Staff → Doctor Form |
-| Add Nurse | Dashboard → Register Staff → Nurse Form |
+| Add Staff | Staff Management → Add New Staff → Fill Form |
+| View Staff List | Staff Management → Staff Directory |
+| Manage Departments | Departments → Add/Edit Department |
+| Blood Bank | Blood Bank → View Stock/Donors |
 | View Reports | Reports → Select Report Type → Generate |
-| Manage Inventory | Inventory → View/Add Items |
-| System Backup | Settings → Backup → Download |
+| System Settings | Settings → Configure Options |
 
 ---
 
 ## 👨‍⚕️ Doctor Guide
 
 ### Overview
-As a **Doctor**, you can manage your appointments, patient consultations, prescriptions, and medical records.
+As a **Doctor**, you can manage your appointments, patient consultations, prescriptions, medical records, and participate in surgical procedures.
 
 ### Dashboard Features
 Your dashboard shows:
@@ -151,6 +173,7 @@ Your dashboard shows:
 - **Total Patients**: Patients under your care
 - **Medical Records**: Records you've created
 - **Prescriptions**: Active prescriptions issued
+- **Quick Actions**: Create records, prescriptions, order tests
 
 ### Daily Workflow
 
@@ -162,7 +185,7 @@ Your dashboard shows:
 #### Step 2: Patient Consultation
 **How to Conduct a Consultation:**
 1. Click on the patient's appointment
-2. Review patient's medical history
+2. Review patient's medical history and allergies
 3. Document the visit:
    - Symptoms presented
    - Diagnosis
@@ -188,22 +211,17 @@ Your dashboard shows:
 1. Go to **Lab Tests** section
 2. Click **"Order New Test"**
 3. Select patient and test type
-4. Set priority level (Normal/Urgent)
+4. Set priority level (Normal/Urgent/STAT)
 5. Add any special instructions
 6. Submit the order
 
-#### Step 5: Update Medical Records
-**How to Update Patient Records:**
-1. Navigate to **Medical Records**
-2. Search for the patient
-3. Click **"Add Record"** or **"Update"**
-4. Enter consultation details:
-   - Visit Date
-   - Symptoms
-   - Diagnosis
-   - Treatment
-   - Follow-up Date
-5. Save changes
+#### Step 5: Surgery Participation
+**For Surgical Procedures:**
+1. Navigate to **Operation Department**
+2. View your scheduled surgeries
+3. Review patient surgical consent forms
+4. Access surgery team assignments
+5. Document post-operation notes
 
 ### Doctor Quick Reference
 | Task | Navigation Path |
@@ -213,20 +231,14 @@ Your dashboard shows:
 | Order Lab Test | Lab Tests → Order New Test |
 | Update Records | Medical Records → Select Patient → Update |
 | View Patient History | Patients → Select Patient → View History |
-
-### Managing Your Schedule
-**How to Set Availability:**
-1. Go to **Appointments** → **My Schedule**
-2. Set your available time slots
-3. Mark days off or reduced hours
-4. System will prevent bookings outside your availability
+| Surgeries | Operation Department → Surgery List |
 
 ---
 
 ## 👩‍⚕️ Nurse Guide
 
 ### Overview
-As a **Nurse**, you support patient care, monitor vitals, administer medications, and assist in daily hospital operations.
+As a **Nurse**, you support patient care, monitor vitals, administer medications, assist in surgeries, and manage blood bank operations.
 
 ### Dashboard Features
 Your dashboard displays:
@@ -235,12 +247,7 @@ Your dashboard displays:
 - **Critical Alerts**: Urgent patient notifications
 - **Upcoming Tasks**: Scheduled activities
 
-### Daily Workflow
-
-#### Morning Rounds
-1. Login and check **Assigned Patients**
-2. Review patient conditions and notes
-3. Check pending medication schedules
+### Key Responsibilities
 
 #### Patient Vital Signs
 **How to Record Vital Signs:**
@@ -264,12 +271,21 @@ Your dashboard displays:
 5. Mark as **"Administered"** in system
 6. Note any reactions
 
-#### Assisting with Appointments
-**How to Prepare for Appointments:**
-1. Check today's appointment schedule
-2. Prepare patient files and rooms
-3. Record pre-consultation vitals
-4. Notify doctor when patient is ready
+#### Blood Bank Access
+**Blood Bank Operations:**
+1. Navigate to **Blood Bank**
+2. View current blood stock levels
+3. Access donor information
+4. Assist with blood issue requests
+5. Record transfusion details
+
+#### Surgery Assistance
+**Operating Room Support:**
+1. Access **Operation Department**
+2. View surgery schedules
+3. Prepare patient files and equipment
+4. Assist during procedures
+5. Monitor post-operative patients
 
 ### Nurse Quick Actions
 | Task | How To |
@@ -277,15 +293,8 @@ Your dashboard displays:
 | Check Patient Status | Patients → Select Patient → View Status |
 | Record Vitals | Patients → Select → Record Vitals |
 | View Medications | Prescriptions → Filter by Today |
-| Report Emergency | Dashboard → Emergency Protocol Button |
-| Update Patient Notes | Medical Records → Add Note |
-
-### Emergency Protocols
-**How to Handle Emergencies:**
-1. Click **"Emergency Protocol"** button on dashboard
-2. System alerts relevant staff
-3. Log emergency details
-4. Follow hospital emergency procedures
+| Blood Bank | Blood Bank → View Stock |
+| Surgery Schedule | Operation Department → Surgery List |
 
 ---
 
@@ -298,8 +307,8 @@ As a **Receptionist**, you handle patient registration, appointment scheduling, 
 Your dashboard shows:
 - **Total Patients**: Registered patient count
 - **Today's Appointments**: All scheduled visits
-- **Total Revenue**: Payment collections
 - **Pending Payments**: Outstanding invoices
+- **Quick Actions**: New patient, new appointment
 
 ### Key Responsibilities
 
@@ -307,106 +316,51 @@ Your dashboard shows:
 **How to Register a New Patient:**
 1. Click **"Patients"** → **"Add New Patient"**
 2. Complete the form:
-   ```
-   Personal Information:
-   - First Name*
-   - Last Name*
-   - Date of Birth*
-   - Gender*
-   - Phone Number
-   - Email Address
-   - Address
-   
-   Emergency Contact:
-   - Contact Name
-   - Contact Phone
-   
-   Medical Information:
-   - Blood Type
-   - Allergies
-   - Medical History
-   
-   Insurance Details:
-   - Provider Name
-   - Policy Number
-   ```
-3. Review and click **"Register Patient"**
-4. Provide patient with their registration ID
+   - Personal Information (Name, DOB, Gender)
+   - Contact Details (Phone, Email, Address)
+   - Emergency Contact
+   - Medical Information (Blood Type, Allergies)
+   - Insurance Details
+3. Click **"Register Patient"**
+4. Provide patient with their registration confirmation
 
 #### 2. Appointment Scheduling
 **How to Schedule an Appointment:**
 1. Go to **Appointments** → **"Schedule New"**
 2. Search and select patient
-3. Choose doctor and specialization
+3. Choose doctor and department
 4. Select available date and time slot
-5. Add appointment type:
-   - General Consultation
-   - Follow-up
-   - Emergency
-   - Specialist Referral
-6. Add any symptoms or notes
-7. Click **"Confirm Booking"**
+5. Add appointment type and notes
+6. Click **"Confirm Booking"**
 
-**How to Reschedule:**
-1. Find the appointment in the list
-2. Click **"Reschedule"**
-3. Select new date/time
-4. Confirm changes
-5. System notifies patient automatically
-
-**How to Cancel:**
-1. Find the appointment
-2. Click **"Cancel"**
-3. Provide cancellation reason
-4. Confirm cancellation
+**Managing Appointments:**
+- **Reschedule**: Find appointment → Reschedule → Select new time
+- **Cancel**: Find appointment → Cancel → Provide reason
+- **View**: Use filters for date, doctor, or status
 
 #### 3. Payment Processing
 **How to Process Payments:**
 1. Navigate to **Billing** section
-2. Search for patient or select from list
+2. Search for patient
 3. View pending charges
 4. Click **"Process Payment"**
-5. Enter payment details:
-   - Amount
-   - Payment Method (Cash/Card/Insurance)
-   - Transaction Reference
+5. Enter payment details and method
 6. Generate and print receipt
 
-#### 4. Staff Registration (Data Entry)
-**How to Register Doctors:**
-1. Go to **Dashboard** → **"Staff Registration"** section
-2. Click **"Doctor Registration"**
-3. Fill in doctor details
-4. Submit for admin approval
+#### 4. Operation Department Support
+**Scheduling Surgeries:**
+1. Access **Operation Department**
+2. View operation theatre availability
+3. Assist with surgery scheduling
+4. Manage surgical consent forms
 
-**How to Register Nurses:**
-1. Go to **Dashboard** → **"Staff Registration"** section
-2. Click **"Nurse Registration"**
-3. Fill in nurse details
-4. Submit for admin approval
-
-#### 5. Record Updates
-**How to Update Patient Records:**
-1. Click **"Record Updates"** from dashboard
-2. Search for patient
-3. Update necessary information
-4. Save changes
-
-### Receptionist Daily Checklist
-- [ ] Review today's appointment schedule
-- [ ] Check for pending patient registrations
-- [ ] Process any pending payments
-- [ ] Update patient contact information if needed
-- [ ] Handle walk-in appointments
-- [ ] Answer patient inquiries
-
-### Quick Reference Table
+### Receptionist Quick Reference
 | Task | Steps |
 |------|-------|
 | New Patient | Patients → Add New → Fill Form → Save |
-| New Appointment | Appointments → Schedule New → Select Details → Confirm |
-| Process Payment | Billing → Select Patient → Process Payment → Receipt |
-| Cancel Appointment | Appointments → Find → Cancel → Confirm |
+| New Appointment | Appointments → Schedule New → Confirm |
+| Process Payment | Billing → Select Patient → Process |
+| View Surgery Schedule | Operation Department → Surgery List |
 
 ---
 
@@ -420,74 +374,43 @@ Your dashboard displays:
 - **Pending Prescriptions**: Awaiting dispensing
 - **Inventory Items**: Total medication count
 - **Low Stock Alerts**: Items below minimum level
-- **Pending Orders**: Restock orders
+- **Expiring Soon**: Items nearing expiration
 
 ### Key Responsibilities
 
 #### 1. Prescription Management
-**How to View Pending Prescriptions:**
+**How to Dispense Medication:**
 1. Go to **Prescriptions** from sidebar
 2. Filter by **"Pending"** status
-3. View prescription details:
-   - Patient name
-   - Prescribed medications
-   - Dosage and frequency
-   - Prescribing doctor
-
-**How to Dispense Medication:**
-1. Select a pending prescription
-2. Verify patient identity
-3. Check medication availability
-4. Prepare medications
-5. Click **"Dispense"**
-6. Update prescription status to **"Dispensed"**
-7. Print medication labels if needed
-
-**How to Handle Drug Interactions:**
-1. System automatically checks for interactions
-2. Review any alerts displayed
-3. Consult with prescribing doctor if needed
-4. Document any concerns
+3. Select a prescription
+4. Verify patient identity and medication details
+5. Check for drug interactions
+6. Prepare medications
+7. Click **"Dispense"**
+8. Update status to **"Dispensed"**
 
 #### 2. Inventory Management
-**How to Check Stock Levels:**
-1. Navigate to **Inventory**
+**How to Manage Stock:**
+1. Navigate to **Inventory** or **Pharmacy**
 2. View all medications with stock counts
 3. Filter by category or status
 4. Identify low-stock items (highlighted)
 
-**How to Add New Inventory:**
+**Adding New Inventory:**
 1. Go to **Inventory** → **"Add Item"**
 2. Enter medication details:
-   - Item Name
-   - Category
-   - Batch Number
-   - Quantity
-   - Unit Price
-   - Expiry Date
-   - Supplier
-   - Minimum Stock Level
+   - Item Name & Category
+   - Batch Number & Quantity
+   - Unit Price & Expiry Date
+   - Supplier & Storage Location
+   - Minimum/Maximum Stock Levels
 3. Save the item
 
-**How to Update Stock:**
-1. Find the item in inventory
+**Stock Updates:**
+1. Find item in inventory
 2. Click **"Update Stock"**
-3. Enter new quantity (received shipment)
-4. Add batch number and expiry date
-5. Save changes
-
-**How to Handle Expired Medications:**
-1. Check **"Expiring Soon"** filter
-2. Remove expired items from inventory
-3. Document disposal
-4. Reorder if necessary
-
-#### 3. Reorder Process
-**How to Reorder Stock:**
-1. Review **Low Stock Alerts**
-2. Create reorder list
-3. Contact suppliers
-4. Update inventory when received
+3. Enter new quantity and batch details
+4. Save changes
 
 ### Pharmacist Quick Actions
 | Task | Navigation |
@@ -496,20 +419,27 @@ Your dashboard displays:
 | Dispense Medication | Prescriptions → Select → Dispense |
 | Check Inventory | Inventory → View All |
 | Add Stock | Inventory → Add Item |
-| View Low Stock | Inventory → Filter: Low Stock |
-
-### Daily Workflow
-1. **Morning**: Check overnight prescriptions
-2. **Throughout Day**: Dispense medications as prescribed
-3. **Afternoon**: Review inventory levels
-4. **End of Day**: Check low stock alerts and reorder
+| Low Stock Report | Inventory → Filter: Low Stock |
 
 ---
 
 ## 🧑‍🦱 Patient Guide
 
 ### Overview
-As a **Patient**, you can view your medical records, appointments, and manage your healthcare information through the patient portal.
+As a **Patient**, you can view your medical records, appointments, prescriptions, and manage your healthcare information through the patient portal.
+
+### Creating an Account
+1. Navigate to the login page
+2. Click **"Create an account"**
+3. Fill in your information:
+   - First Name & Last Name
+   - Email Address
+   - Phone Number
+   - Date of Birth
+   - Gender
+   - Password
+4. Click **"Create Account"**
+5. Login with your new credentials
 
 ### Dashboard Features
 Your dashboard shows:
@@ -520,60 +450,192 @@ Your dashboard shows:
 
 ### Using the Patient Portal
 
-#### 1. View Personal Information
-**How to Access Your Profile:**
-1. Login to the patient portal
-2. Navigate to **"Personal Info"** tab
-3. View your:
+#### 1. Personal Information
+**View/Update Your Profile:**
+1. Navigate to **"Personal Info"** tab
+2. View your:
    - Basic Information
    - Contact Details
    - Emergency Contacts
    - Insurance Information
+3. Update information as needed
 
-#### 2. View Appointments
-**How to See Your Appointments:**
+#### 2. Appointments
+**Viewing Appointments:**
 1. Click **"Appointments"** tab
 2. View upcoming and past appointments
 3. See appointment details:
    - Date and Time
    - Doctor Name
    - Department
-   - Appointment Type
+   - Status
 
-#### 3. Access Medical Records
-**How to View Your Medical History:**
+#### 3. Medical Records
+**Accessing Your Records:**
 1. Navigate to **"Medical Records"** tab
-2. View your health records:
+2. View your health history:
    - Past Diagnoses
    - Treatments
    - Medications
    - Lab Results
    - Doctor Notes
 
-#### 4. View Prescriptions
-**How to Check Your Medications:**
-1. Go to medical records section
-2. Find **"Prescriptions"** area
-3. View active medications with:
-   - Medication Name
-   - Dosage Instructions
-   - Duration
-   - Prescribing Doctor
-
 ### Patient Quick Reference
 | What You Want | Where to Find It |
 |---------------|------------------|
-| Next Appointment | Dashboard → Upcoming Appointments |
+| Next Appointment | Dashboard → Upcoming |
 | Medical History | Medical Records Tab |
-| Doctor's Notes | Medical Records → Select Visit |
 | Lab Results | Medical Records → Lab Tests |
 | Prescriptions | Medical Records → Prescriptions |
+| Update Info | Personal Info → Edit |
 
-### Tips for Patients
-1. **Before Appointments**: Review your symptoms and prepare questions
-2. **After Appointments**: Check records for accuracy
-3. **Medications**: Follow dosage instructions carefully
-4. **Emergency**: Contact hospital immediately for urgent issues
+---
+
+## 🩸 Blood Bank Module
+
+### Overview
+The Blood Bank module manages blood inventory, donor records, blood issues, and transfusion tracking.
+
+### Accessing Blood Bank
+1. Navigate to **Blood Bank** from sidebar
+2. Available for Admin, Doctor, and Nurse roles
+
+### Blood Bank Features
+
+#### 1. Blood Stock Management
+**Viewing Stock Levels:**
+- Dashboard shows total stock and critical alerts
+- View stock by blood group (A+, A-, B+, B-, AB+, AB-, O+, O-)
+- Critical groups (< 5 units) are highlighted
+
+**Adjusting Stock:**
+1. Go to **Blood Stock** tab
+2. Select blood group
+3. Add or remove units
+4. Provide reason and notes
+5. Stock transactions are logged automatically
+
+#### 2. Donor Management
+**Registering Donors:**
+1. Navigate to **Donors** tab
+2. Click **"Add Donor"**
+3. Enter donor information:
+   - Name & Contact
+   - Blood Group
+   - Eligibility Status
+4. Save donor record
+
+**Donor Status:**
+- **Eligible**: Can donate
+- **Deferred**: Temporarily unable to donate
+- **Ineligible**: Cannot donate
+
+#### 3. Blood Issue
+**Issuing Blood:**
+1. Go to **Issue Blood** tab
+2. Select patient
+3. Choose blood group and units
+4. Add clinical notes
+5. Submit issue request
+6. Stock is automatically updated
+
+#### 4. Reports
+**Available Reports:**
+- Stock summary by group
+- Donation history
+- Issue history
+- Critical stock alerts
+- Transaction logs
+
+### Blood Bank Quick Reference
+| Task | Navigation |
+|------|------------|
+| View Stock | Blood Bank → Blood Stock |
+| Add Donor | Blood Bank → Donors → Add Donor |
+| Issue Blood | Blood Bank → Issue Blood |
+| View Reports | Blood Bank → Reports |
+
+---
+
+## 🔪 Operation Department
+
+### Overview
+The Operation Department module manages surgical procedures, operation theatres, surgery teams, and post-operative care.
+
+### Accessing Operation Department
+1. Navigate to **Operation Department** from sidebar
+2. Available for Admin, Doctor, Nurse, and Receptionist roles
+
+### Operation Features
+
+#### 1. Surgery Scheduling
+**Scheduling a Surgery:**
+1. Go to **Surgery Scheduler** tab
+2. Select patient and doctor
+3. Choose surgery type
+4. Select date, time, and operation theatre
+5. Set priority level
+6. Add pre-operative notes
+7. Confirm scheduling
+
+#### 2. Operation Theatres
+**Managing OTs:**
+1. Navigate to **Operation Theatres** tab
+2. View theatre availability status
+3. Add new theatres with:
+   - Name/Number
+   - Floor location
+   - Equipment list
+   - Current status
+4. Update theatre status (Available, Occupied, Maintenance)
+
+#### 3. Surgery List
+**Viewing Surgeries:**
+1. Go to **Surgery List** tab
+2. Filter by date, doctor, or status
+3. View surgery details:
+   - Patient & Doctor
+   - Surgery type
+   - Date/Time
+   - Status (Scheduled, In Progress, Completed)
+
+#### 4. Surgery Team
+**Assigning Team Members:**
+1. Select a surgery
+2. Go to **Surgery Team**
+3. Add team members with roles:
+   - Lead Surgeon
+   - Assistant Surgeon
+   - Anesthesiologist
+   - Scrub Nurse
+   - Circulating Nurse
+
+#### 5. Surgical Consent
+**Managing Consent Forms:**
+1. Access **Surgical Consent** for patient signatures
+2. Document informed consent
+3. Store signed forms digitally
+
+#### 6. Post-Operation Care
+**Recording Post-Op Data:**
+1. Navigate to **Post Operation** tab
+2. Select completed surgery
+3. Record:
+   - Vital signs
+   - Recovery notes
+   - Complications (if any)
+   - Medication notes
+   - Discharge status
+   - Follow-up date
+
+### Operation Quick Reference
+| Task | Navigation |
+|------|------------|
+| Schedule Surgery | Operation Dept → Surgery Scheduler |
+| View OT Status | Operation Dept → Operation Theatres |
+| Surgery List | Operation Dept → Surgery List |
+| Manage Team | Operation Dept → Surgery Team |
+| Post-Op Records | Operation Dept → Post Operation |
 
 ---
 
@@ -582,40 +644,48 @@ Your dashboard shows:
 ### Notifications
 **How Notifications Work:**
 - Click the **🔔 Bell Icon** in the header
-- View unread notifications
+- View unread notifications count
+- Switch between **Notifications** and **Reminders** tabs
 - Types of notifications:
   - Appointment reminders
   - Prescription updates
   - Lab result alerts
+  - Blood bank alerts
+  - Surgery notifications
   - System announcements
 
-### Search Functionality
-**How to Search:**
-1. Use the search bar in the header
-2. Type patient name, ID, or keywords
-3. Results appear instantly
-4. Click to navigate to the result
+**Managing Notifications:**
+- Mark individual as read
+- Mark all as read
+- Delete notifications
+- Configure preferences in Settings
 
 ### Theme Toggle
 **How to Switch Theme:**
-1. Go to **Settings**
-2. Find **"Appearance"** section
-3. Toggle between **Light** and **Dark** mode
-4. Preference saves automatically
+1. Click the theme toggle in the header
+2. Switch between **Light** and **Dark** mode
+3. Preference saves automatically
 
-### Filtering Data Tables
-**How to Filter:**
+### Search & Filtering
+**Using Search:**
+1. Use search bars in respective sections
+2. Type name, ID, or keywords
+3. Results filter in real-time
+
+**Filtering Tables:**
 1. Look for filter options above tables
-2. Select criteria (date, status, department)
+2. Select criteria (date, status, role, department)
 3. Apply filters to narrow results
 4. Clear filters to show all data
 
-### Exporting Data
-**How to Export:**
-1. Navigate to the data you want to export
-2. Look for **"Export"** button
-3. Choose format (PDF/Excel)
-4. Download the file
+### Settings
+**Personal Settings:**
+1. Navigate to **Settings** from sidebar
+2. Configure:
+   - Profile Information
+   - Notification Preferences
+   - Theme Preferences
+   - Security Options
 
 ---
 
@@ -626,8 +696,9 @@ Your dashboard shows:
 #### Cannot Login
 1. Verify email and password are correct
 2. Check if Caps Lock is on
-3. Try "Forgot Password" if needed
-4. Contact administrator for account issues
+3. Ensure you're using correct login type (Patient/Staff)
+4. Try password reset if needed
+5. Contact administrator for account issues
 
 #### Page Not Loading
 1. Refresh the browser (F5 or Ctrl+R)
@@ -635,23 +706,17 @@ Your dashboard shows:
 3. Try a different browser
 4. Check internet connection
 
-#### Cannot Find Patient
-1. Verify spelling of patient name
-2. Try searching by phone number or ID
-3. Check if patient is registered
-4. Ask receptionist for assistance
+#### Data Not Showing
+1. Refresh the page
+2. Check filter settings
+3. Verify you have proper access permissions
+4. Contact administrator if issue persists
 
 #### Appointment Slot Not Available
 1. Check doctor's availability schedule
 2. Try a different date/time
 3. Consider a different doctor
 4. Contact receptionist for alternatives
-
-#### Prescription Not Showing
-1. Refresh the page
-2. Check prescription date filter
-3. Verify patient selection
-4. Contact pharmacy department
 
 ### Getting Help
 - **Technical Issues**: Contact IT Support
@@ -681,15 +746,14 @@ Login → Dashboard → Navigate Sidebar → Perform Tasks → Logout
 ```
 
 ### Role-Specific First Steps
-
 | Role | First Things to Do |
 |------|-------------------|
-| **Admin** | Check dashboard stats, review pending registrations |
-| **Doctor** | Review today's appointments, check patient queue |
-| **Nurse** | Check assigned patients, review medication schedule |
-| **Receptionist** | Check appointments, handle patient arrivals |
+| **Admin** | Check dashboard, review staff directory, monitor system |
+| **Doctor** | Review appointments, check patient queue, update records |
+| **Nurse** | Check assigned patients, review medication schedule, vitals |
+| **Receptionist** | Check appointments, handle patient arrivals, billing |
 | **Pharmacist** | Check pending prescriptions, review inventory |
-| **Patient** | View upcoming appointments, check medical records |
+| **Patient** | View appointments, check medical records |
 
 ---
 
@@ -707,8 +771,8 @@ Login → Dashboard → Navigate Sidebar → Perform Tasks → Logout
 
 | | |
 |---|---|
-| **Version** | 1.0 |
-| **Last Updated** | December 2024 |
+| **Version** | 2.0 |
+| **Last Updated** | December 2025 |
 | **Document Type** | User Guide |
 | **Audience** | All Hospital Staff & Patients |
 

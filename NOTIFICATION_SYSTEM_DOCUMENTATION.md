@@ -2,7 +2,7 @@
 
 ## Overview
 
-A comprehensive, real-time notification and reminder system has been implemented across all user portals (Doctor, Patient, Nurse, Receptionist, Pharmacist, Administrator).
+A comprehensive, real-time notification and reminder system implemented across all user portals (Doctor, Patient, Nurse, Receptionist, Pharmacist, Administrator).
 
 ## ✅ Implementation Status
 
@@ -23,7 +23,7 @@ A comprehensive, real-time notification and reminder system has been implemented
 
 #### 1. **In-App Notifications**
 - ✓ Real-time notification delivery
-- ✓ Unread count badge
+- ✓ Unread count badge in header
 - ✓ Mark as read/unread
 - ✓ Delete notifications
 - ✓ Mark all as read
@@ -64,7 +64,7 @@ id UUID PRIMARY KEY
 user_id UUID NOT NULL
 title TEXT NOT NULL
 message TEXT NOT NULL
-type TEXT (appointment|medication|lab_result|system|critical|general)
+type TEXT (appointment|medication|lab_result|system|critical|general|payment|reminder|alert)
 priority TEXT (low|normal|high|urgent)
 read BOOLEAN DEFAULT false
 action_url TEXT
@@ -83,11 +83,11 @@ id UUID PRIMARY KEY
 user_id UUID NOT NULL
 title TEXT NOT NULL
 description TEXT
-reminder_type TEXT (appointment|medication|lab_test|follow_up|custom)
+reminder_type TEXT (appointment|medication|lab_test|follow_up|payment|general)
 reminder_time TIMESTAMP WITH TIME ZONE
 recurring BOOLEAN
 recurring_pattern TEXT
-status TEXT (pending|sent|dismissed|expired)
+status TEXT (pending|sent|completed|cancelled)
 related_id UUID
 related_table TEXT
 created_at TIMESTAMP WITH TIME ZONE
@@ -106,7 +106,7 @@ updated_at TIMESTAMP WITH TIME ZONE
 ### For Users
 
 #### Accessing Notifications
-1. Click the bell icon in the header
+1. Click the bell icon (🔔) in the header
 2. View unread count badge
 3. Switch between "Notifications" and "Reminders" tabs
 
@@ -114,6 +114,7 @@ updated_at TIMESTAMP WITH TIME ZONE
 - **Mark as read**: Click checkmark icon
 - **Delete**: Click trash icon
 - **Mark all read**: Click "Mark all read" button
+- **View action**: Click notification to navigate to related item
 
 #### Creating Reminders
 Use the `createReminder` function:
@@ -124,7 +125,7 @@ await createReminder({
   title: 'Take Medication',
   description: 'Blood pressure medication - 10mg',
   reminder_type: 'medication',
-  reminder_time: new Date('2025-11-06T08:00:00Z').toISOString(),
+  reminder_time: new Date('2025-12-26T08:00:00Z').toISOString(),
   recurring: false,
 });
 ```
@@ -142,8 +143,13 @@ function MyComponent() {
     loading,
     unreadCount,
     markAsRead,
+    markAllAsRead,
     deleteNotification,
     createNotification,
+    createReminder,
+    dismissReminder,
+    refreshNotifications,
+    refreshReminders,
   } = useNotifications();
   
   // Use notifications in your component
@@ -165,85 +171,53 @@ await createNotification({
 #### Real-time Subscription
 The hook automatically subscribes to real-time updates. No additional setup required!
 
-## Testing Instructions
+## Role-Specific Notifications
 
-### Manual Testing
-
-#### 1. Test Notification Creation
-```sql
--- Run this in Supabase SQL Editor
-INSERT INTO public.notifications (user_id, title, message, type, priority)
-VALUES (
-  'your-user-id-here',
-  'Test Notification',
-  'This is a test notification message',
-  'general',
-  'normal'
-);
-```
-
-#### 2. Test Reminder Creation
-```sql
-INSERT INTO public.reminders (user_id, title, description, reminder_type, reminder_time)
-VALUES (
-  'your-user-id-here',
-  'Test Reminder',
-  'This is a test reminder',
-  'custom',
-  NOW() + INTERVAL '1 hour'
-);
-```
-
-#### 3. Test Real-time Updates
-1. Open the app in two browser tabs
-2. Create a notification in one tab
-3. Watch it appear instantly in the other tab
-
-### Role-Specific Test Cases
-
-#### Doctor Portal
+### Doctor Portal
 - **Appointment reminders**: Patient check-in alerts
 - **Lab result notifications**: Critical lab results ready
+- **Surgery notifications**: Scheduled surgery reminders
 - **System alerts**: Schedule changes, emergency calls
 - **Medication alerts**: Prescription refill requests
 
-#### Patient Portal
+### Patient Portal
 - **Appointment reminders**: Upcoming appointments (24h before)
 - **Medication reminders**: Time to take medication
 - **Lab result notifications**: Results available for viewing
 - **Follow-up reminders**: Post-treatment check-ups
+- **Payment reminders**: Outstanding balance alerts
 
-#### Nurse Portal
+### Nurse Portal
 - **Patient alerts**: Vital sign abnormalities
 - **Medication reminders**: Med distribution schedule
+- **Blood bank alerts**: Critical stock, transfusion needed
+- **Surgery notifications**: Pre-op and post-op alerts
 - **Shift notifications**: Shift changes, handoff notes
 - **Critical alerts**: Emergency situations
 
-#### Pharmacist Portal
+### Pharmacist Portal
 - **Low stock alerts**: Inventory running low
 - **Expiry notifications**: Items nearing expiration
 - **Prescription notifications**: New prescriptions to fill
 - **Verification alerts**: Prescription verification required
+- **Reorder reminders**: Stock reorder notifications
 
-#### Receptionist Portal
+### Receptionist Portal
 - **Appointment notifications**: New bookings, cancellations
 - **Patient arrival alerts**: Check-in notifications
 - **Payment reminders**: Outstanding balance alerts
+- **Surgery scheduling**: Operation theatre availability
 - **Scheduling conflicts**: Double-booking warnings
 
-#### Administrator Portal
+### Administrator Portal
 - **System notifications**: System maintenance, updates
+- **Staff alerts**: Staff scheduling, new registrations
+- **Blood bank alerts**: Critical stock levels
 - **Security alerts**: Unauthorized access attempts
 - **Report notifications**: Daily/weekly reports ready
-- **Staff alerts**: Staff scheduling, availability changes
+- **Department updates**: Department status changes
 
-## Integration with Existing Features
-
-### Settings Integration
-Notification preferences are stored in `user_settings` table:
-- Users can toggle email, SMS, and push notifications
-- Category-specific notification preferences
-- Saved per-user basis with RLS protection
+## Integration with System Modules
 
 ### Appointment System
 - Automatic notifications when:
@@ -265,6 +239,21 @@ Notification preferences are stored in `user_settings` table:
   - Critical results (urgent priority)
   - Missing lab orders
   - Pending specimen collection
+
+### Blood Bank System
+- Alerts for:
+  - Critical stock levels (< 5 units)
+  - Blood issue completed
+  - Donor eligibility changes
+  - Transfusion records
+
+### Operation Department
+- Notifications for:
+  - Surgery scheduled
+  - Pre-operative reminders
+  - Post-operative care updates
+  - Theatre availability changes
+  - Surgery team assignments
 
 ## Performance Considerations
 
@@ -345,7 +334,16 @@ For issues or questions:
 
 ## Changelog
 
-### Version 1.0.0 (2025-11-05)
+### Version 2.0.0 (December 2025)
+- ✓ Added Blood Bank notification integration
+- ✓ Added Operation Department notifications
+- ✓ Added Staff Management notifications
+- ✓ Enhanced role-based notification categories
+- ✓ Improved notification UI/UX
+- ✓ Added Surgery team notifications
+- ✓ Department update notifications
+
+### Version 1.0.0 (November 2025)
 - ✓ Initial notification system implementation
 - ✓ Database schema with RLS
 - ✓ Real-time subscriptions
