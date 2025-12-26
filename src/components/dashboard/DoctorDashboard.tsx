@@ -15,10 +15,13 @@ import {
   Scissors,
   CheckCircle,
   AlertCircle,
-  Droplets
+  Droplets,
+  Filter
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { dataManager, Appointment, Patient, MedicalRecord, Prescription } from '../../lib/dataManager';
@@ -33,6 +36,8 @@ const DoctorDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { getCurrentDate, formatDate, formatTime } = useTimezone();
   const [loading, setLoading] = useState(true);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
@@ -42,21 +47,68 @@ const DoctorDashboard: React.FC = () => {
     mySurgeries: [] as any[],
     pendingPostOps: 0
   });
+
+  // Get doctor ID for current user
+  useEffect(() => {
+    const fetchDoctorId = async () => {
+      if (!user?.id) return;
+      
+      const { data } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setDoctorId(data.id);
+      }
+    };
+    
+    fetchDoctorId();
+  }, [user?.id]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [appointmentsData, patientsData, recordsData, prescriptionsData] = await Promise.all([
-          dataManager.getAppointments(),
-          dataManager.getPatients(),
-          dataManager.getMedicalRecords(),
-          dataManager.getPrescriptions()
-        ]);
         
-        setAppointments(appointmentsData.slice(0, 4)); // Show only first 4
-        setPatients(patientsData.slice(0, 3)); // Show only first 3
-        setMedicalRecords(recordsData);
-        setPrescriptions(prescriptionsData);
+        if (showOnlyMine && doctorId) {
+          // Fetch only doctor's own data
+          const [appointmentsData, recordsData, prescriptionsData] = await Promise.all([
+            dataManager.getAppointmentsByDoctor(doctorId),
+            dataManager.getMedicalRecordsByDoctor(doctorId),
+            dataManager.getPrescriptionsByDoctor(doctorId)
+          ]);
+          
+          // Get unique patient IDs
+          const patientIds = new Set([
+            ...appointmentsData.map(a => a.patient_id),
+            ...recordsData.map(r => r.patient_id),
+            ...prescriptionsData.map(p => p.patient_id)
+          ]);
+          
+          // Fetch those patients
+          const patientPromises = Array.from(patientIds).map(id => dataManager.getPatientById(id));
+          const patientsData = (await Promise.all(patientPromises)).filter(Boolean) as Patient[];
+          
+          setAppointments(appointmentsData.slice(0, 4));
+          setPatients(patientsData.slice(0, 3));
+          setMedicalRecords(recordsData);
+          setPrescriptions(prescriptionsData);
+        } else {
+          // Fetch all data
+          const [appointmentsData, patientsData, recordsData, prescriptionsData] = await Promise.all([
+            dataManager.getAppointments(),
+            dataManager.getPatients(),
+            dataManager.getMedicalRecords(),
+            dataManager.getPrescriptions()
+          ]);
+          
+          setAppointments(appointmentsData.slice(0, 4));
+          setPatients(patientsData.slice(0, 3));
+          setMedicalRecords(recordsData);
+          setPrescriptions(prescriptionsData);
+        }
 
         // Load surgery stats
         await loadSurgeryStats();
@@ -71,8 +123,10 @@ const DoctorDashboard: React.FC = () => {
       }
     };
 
-    fetchData();
-  }, [toast]);
+    if (!showOnlyMine || doctorId) {
+      fetchData();
+    }
+  }, [toast, showOnlyMine, doctorId]);
 
   const loadSurgeryStats = async () => {
     try {
@@ -213,6 +267,26 @@ const DoctorDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Filter Toggle */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-5 w-5 text-muted-foreground" />
+            <span className="font-medium">Data Filter</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="my-data-filter" className="text-sm text-muted-foreground">
+              {showOnlyMine ? 'My Patients/Appointments Only' : 'All Patients/Appointments'}
+            </Label>
+            <Switch
+              id="my-data-filter"
+              checked={showOnlyMine}
+              onCheckedChange={setShowOnlyMine}
+            />
+          </div>
+        </div>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
