@@ -1,15 +1,20 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { FileText, Pill, TestTube, Stethoscope, Calendar, User } from 'lucide-react';
+import { FileText, Pill, TestTube, Calendar, RefreshCw } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
-import { MedicalRecord, Prescription, LabTest } from '../../lib/dataManager';
+import { Button } from '../ui/button';
+import { MedicalRecord, Prescription, LabTest, Patient } from '../../lib/dataManager';
+import PrescriptionRefillRequest from './PrescriptionRefillRequest';
+import DoctorMessaging from './DoctorMessaging';
 
 interface MedicalRecordsViewProps {
   medicalRecords: MedicalRecord[];
   prescriptions: Prescription[];
   labTests: LabTest[];
   loading: boolean;
+  patientData?: Patient | null;
+  onDataRefresh?: () => void;
 }
 
 const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
@@ -17,6 +22,8 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
   prescriptions,
   labTests,
   loading,
+  patientData,
+  onDataRefresh,
 }) => {
   if (loading) {
     return (
@@ -31,6 +38,16 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Doctor Messaging */}
+      <DoctorMessaging patientData={patientData || null} />
+
+      {/* Prescription Refills */}
+      <PrescriptionRefillRequest 
+        patientData={patientData || null} 
+        prescriptions={prescriptions}
+        onRefillRequested={onDataRefresh}
+      />
+
       {/* Medical Records */}
       <Card className="card-gradient">
         <CardHeader>
