@@ -90,10 +90,10 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
 
   const onSubmit = async (data: DoctorFormData) => {
     try {
-      // Get department name for the department field
+      // Get department name for the legacy department field
       const selectedDept = departments.find(d => d.department_id === data.departmentId);
       
-      // Insert doctor with department_id
+      // Insert doctor (keep department_id for backward compatibility during transition)
       const { data: newDoctor, error } = await supabase
         .from('doctors')
         .insert([{
@@ -113,6 +113,22 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
         .single();
 
       if (error) throw error;
+      
+      // Also insert into department_doctors junction table (primary source of truth)
+      if (data.departmentId && newDoctor?.id) {
+        const { error: junctionError } = await supabase
+          .from('department_doctors')
+          .insert({
+            doctor_id: newDoctor.id,
+            department_id: data.departmentId,
+            role: 'member'
+          });
+        
+        if (junctionError) {
+          console.error('Warning: Failed to add department assignment:', junctionError);
+          // Don't fail the whole operation, doctor is created
+        }
+      }
       
       toast({
         title: 'Success',
