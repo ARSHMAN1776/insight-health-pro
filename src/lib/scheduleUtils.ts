@@ -129,12 +129,35 @@ export const isInBreakPeriod = (
   breakEnd: string | null
 ): boolean => {
   if (!breakStart || !breakEnd) return false;
-  
+
   const timeMinutes = timeToMinutes(time);
   const breakStartMinutes = timeToMinutes(breakStart);
   const breakEndMinutes = timeToMinutes(breakEnd);
-  
+
+  // Invalid or empty break range
+  if (Number.isNaN(timeMinutes) || Number.isNaN(breakStartMinutes) || Number.isNaN(breakEndMinutes)) return false;
+  if (breakStartMinutes >= breakEndMinutes) return false;
+
   return timeMinutes >= breakStartMinutes && timeMinutes < breakEndMinutes;
+};
+
+const doesSlotOverlapBreak = (
+  slotStartMinutes: number,
+  slotDurationMinutes: number,
+  breakStart: string | null,
+  breakEnd: string | null
+): boolean => {
+  if (!breakStart || !breakEnd) return false;
+
+  const breakStartMinutes = timeToMinutes(breakStart);
+  const breakEndMinutes = timeToMinutes(breakEnd);
+  if (Number.isNaN(breakStartMinutes) || Number.isNaN(breakEndMinutes)) return false;
+  if (breakStartMinutes >= breakEndMinutes) return false;
+
+  const slotEndMinutes = slotStartMinutes + slotDurationMinutes;
+
+  // overlap check: max(start) < min(end)
+  return Math.max(slotStartMinutes, breakStartMinutes) < Math.min(slotEndMinutes, breakEndMinutes);
 };
 
 /**
@@ -148,7 +171,7 @@ export const generateTimeSlotsFromSchedule = (schedule: StaffSchedule): { time: 
 
   for (let time = startMinutes; time + duration <= endMinutes; time += duration) {
     const timeStr = minutesToTime(time);
-    const isBreak = isInBreakPeriod(timeStr, schedule.break_start, schedule.break_end);
+    const isBreak = doesSlotOverlapBreak(time, duration, schedule.break_start, schedule.break_end);
     slots.push({ time: timeStr, isBreak });
   }
 
@@ -245,23 +268,25 @@ export const isTimeSlotAvailable = async (
     };
   }
 
+  const duration = schedule.slot_duration || 30;
+
   const timeMinutes = timeToMinutes(time);
   const startMinutes = timeToMinutes(schedule.start_time);
   const endMinutes = timeToMinutes(schedule.end_time);
 
-  // Check if time is within working hours
-  if (timeMinutes < startMinutes || timeMinutes >= endMinutes) {
-    return { 
-      available: false, 
-      reason: `Outside working hours (${schedule.start_time} - ${schedule.end_time})` 
+  // Check if slot is within working hours
+  if (timeMinutes < startMinutes || timeMinutes + duration > endMinutes) {
+    return {
+      available: false,
+      reason: `Outside working hours (${schedule.start_time} - ${schedule.end_time})`
     };
   }
 
-  // Check if in break period
-  if (isInBreakPeriod(time, schedule.break_start, schedule.break_end)) {
-    return { 
-      available: false, 
-      reason: `Break time (${schedule.break_start} - ${schedule.break_end})` 
+  // Check if slot overlaps break period
+  if (doesSlotOverlapBreak(timeMinutes, duration, schedule.break_start, schedule.break_end)) {
+    return {
+      available: false,
+      reason: `Break time (${schedule.break_start} - ${schedule.break_end})`
     };
   }
 
