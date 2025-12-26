@@ -45,14 +45,6 @@ const HeroSection = () => {
               Empowering healthcare providers and patients with cutting-edge technology.
             </p>
             
-            <Button 
-              size="lg" 
-              onClick={() => navigate('/login')}
-              className="btn-primary text-lg px-10 group"
-            >
-              Get Started
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10">
