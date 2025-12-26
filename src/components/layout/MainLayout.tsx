@@ -3,10 +3,14 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInventoryAlerts } from '../../hooks/useInventoryAlerts';
 
 const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { user } = useAuth();
+  
+  // Initialize inventory alerts for admin/pharmacist
+  useInventoryAlerts();
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
