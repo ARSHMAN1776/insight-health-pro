@@ -286,6 +286,7 @@ export type Database = {
           specialization: string
           status: string | null
           updated_at: string | null
+          user_id: string | null
           years_of_experience: number | null
         }
         Insert: {
@@ -303,6 +304,7 @@ export type Database = {
           specialization: string
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
           years_of_experience?: number | null
         }
         Update: {
@@ -320,6 +322,7 @@ export type Database = {
           specialization?: string
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
           years_of_experience?: number | null
         }
         Relationships: [

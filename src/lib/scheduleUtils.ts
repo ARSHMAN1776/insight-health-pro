@@ -32,51 +32,16 @@ export const getDayOfWeek = (dateString: string): number => {
 };
 
 /**
- * Get profile ID from doctor ID by matching email
+ * Get profile/user ID from doctor ID using the user_id column
  */
 export const getProfileIdFromDoctorId = async (doctorId: string): Promise<string | null> => {
-  // First get the doctor's email
   const { data: doctor } = await supabase
     .from('doctors')
-    .select('email')
+    .select('user_id')
     .eq('id', doctorId)
     .maybeSingle();
 
-  if (!doctor?.email) return null;
-
-  // Find the profile with matching email via auth.users
-  // Since we can't query auth.users directly, we need to look up via profiles
-  // The profile ID equals the auth user ID, and we linked doctors by email
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id');
-  
-  // Get all user roles to find doctors
-  const { data: doctorRoles } = await supabase
-    .from('user_roles')
-    .select('user_id')
-    .eq('role', 'doctor');
-
-  if (!doctorRoles) return null;
-
-  // Return the first doctor profile ID that matches
-  // In a properly linked system, we'd match by email
-  // For now, check if there's a schedule for any of these profile IDs
-  for (const role of doctorRoles) {
-    const { data: schedule } = await supabase
-      .from('staff_schedules')
-      .select('staff_id')
-      .eq('staff_id', role.user_id)
-      .eq('staff_type', 'doctor')
-      .limit(1)
-      .maybeSingle();
-    
-    if (schedule) {
-      return role.user_id;
-    }
-  }
-
-  return null;
+  return doctor?.user_id || null;
 };
 
 /**
@@ -88,7 +53,7 @@ export const getStaffScheduleForDay = async (
   dayOfWeek: number
 ): Promise<StaffSchedule | null> => {
   // First try with the provided ID (could be doctor table ID or profile ID)
-  let { data, error } = await supabase
+  let { data } = await supabase
     .from('staff_schedules')
     .select('*')
     .eq('staff_id', staffId)
@@ -97,7 +62,7 @@ export const getStaffScheduleForDay = async (
     .eq('is_available', true)
     .maybeSingle();
 
-  // If not found and this is a doctor, try to find via profile ID mapping
+  // If not found and this is a doctor, try to find via user_id mapping
   if (!data && staffType === 'doctor') {
     const profileId = await getProfileIdFromDoctorId(staffId);
     if (profileId) {
