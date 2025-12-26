@@ -18,11 +18,12 @@ import {
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  StaffSchedule, 
-  DAY_NAMES, 
-  getStaffSchedules, 
-  saveStaffSchedule 
+import {
+  StaffSchedule,
+  DAY_NAMES,
+  getStaffSchedules,
+  saveStaffSchedule,
+  timeToMinutes
 } from '@/lib/scheduleUtils';
 
 interface StaffMember {
@@ -95,22 +96,41 @@ const StaffScheduleManager: React.FC<StaffScheduleManagerProps> = ({
   const loadExistingSchedules = async () => {
     if (!staff) return;
 
+    const toTimeInputValue = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');
+
     setLoading(true);
     try {
       const existingSchedules = await getStaffSchedules(staff.id, staff.type);
-      
+
       // Merge with default schedules
       const mergedSchedules = Array.from({ length: 7 }, (_, i) => {
-        const existing = existingSchedules.find(s => s.day_of_week === i);
+        const existing = existingSchedules.find((s) => s.day_of_week === i);
         if (existing) {
+          const start_time = toTimeInputValue(existing.start_time);
+          const end_time = toTimeInputValue(existing.end_time);
+
+          let break_start = toTimeInputValue(existing.break_start);
+          let break_end = toTimeInputValue(existing.break_end);
+
+          // If a break was saved in an invalid range (e.g. start >= end), clear it
+          // so the UI doesn't silently behave incorrectly.
+          if (break_start && break_end) {
+            const bs = timeToMinutes(break_start);
+            const be = timeToMinutes(break_end);
+            if (bs >= be) {
+              break_start = '';
+              break_end = '';
+            }
+          }
+
           return {
             day_of_week: i,
             is_available: existing.is_available,
-            start_time: existing.start_time,
-            end_time: existing.end_time,
+            start_time,
+            end_time,
             slot_duration: existing.slot_duration,
-            break_start: existing.break_start || '',
-            break_end: existing.break_end || ''
+            break_start,
+            break_end
           };
         }
         return { ...DEFAULT_SCHEDULE, day_of_week: i };
@@ -143,10 +163,62 @@ const StaffScheduleManager: React.FC<StaffScheduleManagerProps> = ({
   const handleSave = async () => {
     if (!staff) return;
 
+    // Validate schedules (especially break times) before saving
+    for (const s of schedules) {
+      if (!s.is_available) continue;
+
+      const startMin = timeToMinutes(s.start_time);
+      const endMin = timeToMinutes(s.end_time);
+
+      if (startMin >= endMin) {
+        toast({
+          title: 'Invalid working hours',
+          description: `${DAY_NAMES[s.day_of_week]}: start time must be before end time.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const hasBreakStart = !!s.break_start;
+      const hasBreakEnd = !!s.break_end;
+
+      if (hasBreakStart !== hasBreakEnd) {
+        toast({
+          title: 'Incomplete break time',
+          description: `${DAY_NAMES[s.day_of_week]}: please set both “Break From” and “Break To”, or leave both empty.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (hasBreakStart && hasBreakEnd) {
+        const breakStartMin = timeToMinutes(s.break_start);
+        const breakEndMin = timeToMinutes(s.break_end);
+
+        if (breakStartMin >= breakEndMin) {
+          toast({
+            title: 'Invalid break time',
+            description: `${DAY_NAMES[s.day_of_week]}: break start must be before break end.`,
+            variant: 'destructive'
+          });
+          return;
+        }
+
+        if (breakStartMin < startMin || breakEndMin > endMin) {
+          toast({
+            title: 'Break outside working hours',
+            description: `${DAY_NAMES[s.day_of_week]}: break must be within ${s.start_time}–${s.end_time}.`,
+            variant: 'destructive'
+          });
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
       const result = await saveStaffSchedule(staff.id, staff.type, schedules);
-      
+
       if (result.success) {
         toast({
           title: "Schedule Saved",
