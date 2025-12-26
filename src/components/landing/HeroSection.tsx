@@ -45,19 +45,10 @@ const HeroSection = () => {
               <Button 
                 size="lg" 
                 onClick={() => navigate('/login')}
-                className="btn-primary text-lg px-8 group"
+                className="btn-primary text-lg px-10 group"
               >
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => navigate('/login')}
-                className="text-lg px-8 hover:bg-primary/5"
-              >
-                <Stethoscope className="mr-2 w-5 h-5" />
-                Staff Login
               </Button>
             </div>
 

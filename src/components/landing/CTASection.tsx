@@ -35,23 +35,14 @@ const CTASection = () => {
             Join thousands of satisfied patients and healthcare professionals who trust our platform for their healthcare needs.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <div className="flex justify-center pt-4">
             <Button 
               size="lg" 
               onClick={() => navigate('/login')}
-              className="bg-white text-primary hover:bg-white/90 text-lg px-8 shadow-xl group"
+              className="bg-white text-primary hover:bg-white/90 text-lg px-10 shadow-xl group"
             >
-              Patient Portal
+              Get Started
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => navigate('/login')}
-              className="text-lg px-8 border-2 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
-            >
-              <Stethoscope className="mr-2 w-5 h-5" />
-              Staff Access
             </Button>
           </div>
 
