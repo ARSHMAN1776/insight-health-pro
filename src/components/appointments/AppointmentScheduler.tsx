@@ -31,6 +31,7 @@ import { useToast } from '../../hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { dataManager, Appointment, Patient, Doctor } from '../../lib/dataManager';
 import DataTable, { Column } from '../shared/DataTable';
+import { useTimezone } from '@/hooks/useTimezone';
 
 interface Department {
   department_id: string;
@@ -64,6 +65,7 @@ const AppointmentScheduler: React.FC = () => {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>('all');
   const { toast } = useToast();
   const { isRole } = useAuth();
+  const { formatDate, formatTime, getTimezoneDisplay } = useTimezone();
   
   // Only administrators can approve/change appointment status
   const isAdmin = isRole('admin');
@@ -326,12 +328,12 @@ const AppointmentScheduler: React.FC = () => {
       key: 'appointment_date',
       label: 'Date',
       sortable: true,
-      render: (_, appointment) => new Date(appointment.appointment_date).toLocaleDateString(),
+      render: (_, appointment) => formatDate(appointment.appointment_date),
     },
     {
       key: 'appointment_time',
       label: 'Time',
-      render: (_, appointment) => appointment.appointment_time,
+      render: (_, appointment) => formatTime(appointment.appointment_time),
     },
     {
       key: 'type',

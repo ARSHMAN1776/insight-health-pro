@@ -25,11 +25,13 @@ import { dataManager, Appointment, Patient, MedicalRecord, Prescription } from '
 import { supabase } from '../../integrations/supabase/client';
 import { useToast } from '../../hooks/use-toast';
 import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
+import { useTimezone } from '@/hooks/useTimezone';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { getCurrentDate, formatDate, formatTime } = useTimezone();
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -110,8 +112,9 @@ const DoctorDashboard: React.FC = () => {
     }
   };
 
+  const todayDate = getCurrentDate();
   const todayAppointments = appointments.filter(apt => 
-    new Date(apt.appointment_date).toDateString() === new Date().toDateString()
+    apt.appointment_date === todayDate
   );
 
   const todayStats = [
