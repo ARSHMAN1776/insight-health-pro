@@ -37,29 +37,11 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <button 
-              onClick={() => navigate('/about')}
-              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-            >
-              About Us
-            </button>
-            <button 
-              onClick={() => navigate('/services')}
-              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-            >
-              Services
-            </button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/login')}
-            >
-              Staff Portal
-            </Button>
             <Button 
               onClick={() => navigate('/login')}
-              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary px-8"
             >
-              Patient Login
+              Login
             </Button>
           </div>
 
@@ -80,30 +62,11 @@ const Navbar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
             <div className="flex flex-col space-y-4">
-              <button 
-                onClick={() => { navigate('/about'); setIsMobileMenuOpen(false); }}
-                className="text-left py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
-              >
-                About Us
-              </button>
-              <button 
-                onClick={() => { navigate('/services'); setIsMobileMenuOpen(false); }}
-                className="text-left py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
-              >
-                Services
-              </button>
-              <Button 
-                variant="outline" 
-                onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}
-                className="w-full"
-              >
-                Staff Portal
-              </Button>
               <Button 
                 onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}
                 className="w-full bg-gradient-to-r from-primary to-primary/90"
               >
-                Patient Login
+                Login
               </Button>
             </div>
           </div>
