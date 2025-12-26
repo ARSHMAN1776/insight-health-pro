@@ -12,8 +12,10 @@ import { dataManager, LabTest, Patient, Doctor } from '../../lib/dataManager';
 import { supabase } from '@/integrations/supabase/client';
 import { TestTube, Plus, Clock, CheckCircle, AlertCircle, Upload, Image, X, Eye } from 'lucide-react';
 import DataTable from '../shared/DataTable';
+import { useTimezone } from '@/hooks/useTimezone';
 
 const LabTestManagement: React.FC = () => {
+  const { formatDate, getCurrentDate } = useTimezone();
   const [labTests, setLabTests] = useState<LabTest[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -53,12 +55,12 @@ const LabTestManagement: React.FC = () => {
     }
   };
 
-  const [formData, setFormData] = useState({
+  const getInitialFormData = () => ({
     patient_id: '',
     doctor_id: '',
     test_name: '',
     test_type: '',
-    test_date: new Date().toISOString().split('T')[0],
+    test_date: getCurrentDate(),
     priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
     status: 'pending' as 'pending' | 'in_progress' | 'completed' | 'cancelled',
     results: '',
@@ -68,6 +70,8 @@ const LabTestManagement: React.FC = () => {
     lab_technician: '',
     report_image_url: '',
   });
+
+  const [formData, setFormData] = useState(getInitialFormData());
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -173,21 +177,7 @@ const LabTestManagement: React.FC = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      patient_id: '',
-      doctor_id: '',
-      test_name: '',
-      test_type: '',
-      test_date: new Date().toISOString().split('T')[0],
-      priority: 'normal',
-      status: 'pending',
-      results: '',
-      normal_range: '',
-      notes: '',
-      cost: 0,
-      lab_technician: '',
-      report_image_url: '',
-    });
+    setFormData(getInitialFormData());
     setSelectedLabTest(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';

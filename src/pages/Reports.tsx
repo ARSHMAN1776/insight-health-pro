@@ -20,9 +20,11 @@ import { Calendar, TrendingUp, Users, Activity, DollarSign, FileText } from 'luc
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTimezone } from '@/hooks/useTimezone';
 
 const Reports: React.FC = () => {
   const { user } = useAuth();
+  const { getCurrentDate } = useTimezone();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
   const [stats, setStats] = useState({
@@ -42,8 +44,10 @@ const Reports: React.FC = () => {
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      const daysAgo = new Date();
+      const currentDate = getCurrentDate();
+      const daysAgo = new Date(currentDate);
       daysAgo.setDate(daysAgo.getDate() - parseInt(timeRange));
+      const daysAgoStr = daysAgo.toISOString().split('T')[0];
 
       // Fetch patients count
       const { count: patientsCount } = await supabase
@@ -54,13 +58,13 @@ const Reports: React.FC = () => {
       const { data: appointments } = await supabase
         .from('appointments')
         .select('*')
-        .gte('appointment_date', daysAgo.toISOString().split('T')[0]);
+        .gte('appointment_date', daysAgoStr);
 
       // Fetch payments
       const { data: payments } = await supabase
         .from('payments')
         .select('*')
-        .gte('payment_date', daysAgo.toISOString().split('T')[0]);
+        .gte('payment_date', daysAgoStr);
 
       // Fetch pending lab tests
       const { count: pendingTestsCount } = await supabase

@@ -24,6 +24,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import StaffScheduleManager from './StaffScheduleManager';
+import { useTimezone } from '@/hooks/useTimezone';
 
 interface StaffMember {
   id: string;
@@ -56,6 +57,7 @@ const roleColors: Record<string, string> = {
 
 const StaffList: React.FC = () => {
   const { isRole } = useAuth();
+  const { formatDate } = useTimezone();
   const isAdmin = isRole('admin');
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,14 +143,7 @@ const StaffList: React.FC = () => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  // formatDate is now provided by useTimezone hook
 
   const roleCounts = staff.reduce((acc, member) => {
     acc[member.role] = (acc[member.role] || 0) + 1;

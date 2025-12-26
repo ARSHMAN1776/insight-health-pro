@@ -32,7 +32,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Plus, Search, Droplets, RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { BLOOD_TYPES, getBloodTypeColor, generateBagNumber, calculateNextEligibleDate } from '@/lib/bloodCompatibility';
 
 const donationSchema = z.object({
@@ -54,14 +54,17 @@ const donationSchema = z.object({
 const DonationRecords: React.FC = () => {
   const { donations, loading, refetch } = useBloodDonations();
   const { donors } = useBloodDonors();
+  const { formatDate, formatTime, getCurrentDate } = useTimezone();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState<any>(null);
+  
+  const currentDate = getCurrentDate();
   const [formData, setFormData] = useState({
     donor_id: '',
-    donation_date: new Date().toISOString().split('T')[0],
+    donation_date: currentDate,
     donation_time: new Date().toTimeString().slice(0, 5),
     blood_type: 'O+' as const,
     volume_ml: 450,
@@ -492,7 +495,7 @@ const DonationRecords: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div>
-                        {format(new Date(donation.donation_date), 'MMM dd, yyyy')}
+                        {formatDate(donation.donation_date)}
                       </div>
                       <div className="text-xs text-muted-foreground">{donation.donation_time}</div>
                     </TableCell>

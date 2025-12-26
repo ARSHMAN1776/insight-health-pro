@@ -5,11 +5,13 @@ import { Button } from '../ui/button';
 import { DollarSign, Calendar, CreditCard, Receipt, Eye } from 'lucide-react';
 import { dataManager } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
+import { useTimezone } from '@/hooks/useTimezone';
 
 const PaymentsList: React.FC = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { formatDate } = useTimezone();
 
   useEffect(() => {
     loadPayments();
@@ -123,7 +125,7 @@ const PaymentsList: React.FC = () => {
                       <div className="flex items-center space-x-4 text-xs text-muted-foreground mt-1">
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{new Date(payment.payment_date).toLocaleDateString()}</span>
+                          <span>{formatDate(payment.payment_date)}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Receipt className="h-3 w-3" />
