@@ -83,6 +83,7 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [noScheduleMessage, setNoScheduleMessage] = useState<string | null>(null);
+  const [departmentDoctorsMap, setDepartmentDoctorsMap] = useState<{department_id: string; doctor_id: string}[]>([]);
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -102,7 +103,7 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
     const loadData = async () => {
       try {
         setLoading(true);
-        const [deptResult, doctorResult] = await Promise.all([
+        const [deptResult, doctorResult, deptDoctorsResult] = await Promise.all([
           supabase
             .from('departments')
             .select('department_id, department_name')
@@ -112,7 +113,10 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
             .from('doctors')
             .select('id, first_name, last_name, specialization, department_id, consultation_fee')
             .eq('status', 'active')
-            .order('last_name')
+            .order('last_name'),
+          supabase
+            .from('department_doctors')
+            .select('department_id, doctor_id')
         ]);
 
         if (deptResult.data) setDepartments(deptResult.data);
@@ -120,6 +124,7 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
           setDoctors(doctorResult.data);
           setFilteredDoctors(doctorResult.data);
         }
+        if (deptDoctorsResult.data) setDepartmentDoctorsMap(deptDoctorsResult.data);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -141,8 +146,17 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
     setNoScheduleMessage(null);
     
     if (departmentId) {
-      const filtered = doctors.filter(d => d.department_id === departmentId);
-      setFilteredDoctors(filtered.length > 0 ? filtered : doctors);
+      // Get doctor IDs assigned to this department from junction table
+      const assignedDoctorIds = departmentDoctorsMap
+        .filter(dd => dd.department_id === departmentId)
+        .map(dd => dd.doctor_id);
+      
+      // Filter doctors: either directly assigned via department_id OR in junction table
+      const filtered = doctors.filter(d => 
+        d.department_id === departmentId || 
+        assignedDoctorIds.includes(d.id)
+      );
+      setFilteredDoctors(filtered.length > 0 ? filtered : []);
     } else {
       setFilteredDoctors(doctors);
     }
