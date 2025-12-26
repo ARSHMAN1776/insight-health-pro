@@ -1,52 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Menu, X, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Heart, Menu, X } from 'lucide-react';
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      setIsScrolled(window.scrollY > 50);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${
       isScrolled 
-        ? 'bg-background/80 backdrop-blur-2xl shadow-lg border-b border-border/50' 
+        ? 'backdrop-blur-xl bg-background/95 border-b border-border/50 shadow-sm' 
         : 'bg-transparent'
     }`}>
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <button 
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-3 group"
-          >
-            <div className="relative">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg group-hover:shadow-glow transition-all duration-500 group-hover:scale-110">
-                <Heart className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-primary to-info rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+              <Heart className="w-7 h-7 text-primary-foreground" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold text-foreground tracking-tight">HealthCare</span>
-              <span className="text-xs text-muted-foreground font-medium">HMS Platform</span>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">HealthCare HMS</h1>
+              <p className="text-xs text-muted-foreground">Hospital Management System</p>
             </div>
-          </button>
+          </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-6">
             <Button 
               onClick={() => navigate('/login')}
-              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary px-8 py-6 text-base font-semibold rounded-2xl shadow-lg hover:shadow-glow transition-all duration-500 hover:scale-105"
+              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary px-8"
             >
               Login
             </Button>
@@ -54,7 +47,7 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <button 
-            className="md:hidden w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+            className="md:hidden p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? (
@@ -67,11 +60,11 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-6 border-t border-border/50 animate-fade-in">
+          <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
             <div className="flex flex-col space-y-4">
               <Button 
                 onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}
-                className="w-full bg-gradient-to-r from-primary to-primary/90 py-6 text-base font-semibold rounded-2xl"
+                className="w-full bg-gradient-to-r from-primary to-primary/90"
               >
                 Login
               </Button>

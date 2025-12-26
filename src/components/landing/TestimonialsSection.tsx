@@ -1,166 +1,157 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
-import ScrollAnimationWrapper from './ScrollAnimationWrapper';
+import { Button } from '@/components/ui/button';
 
 const testimonials = [
   {
-    name: 'Dr. Sarah Mitchell',
-    role: 'Chief Medical Officer',
-    organization: 'Metro General Hospital',
-    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&q=80',
+    id: 1,
+    name: 'Sarah Johnson',
+    role: 'Patient',
+    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&q=80',
     rating: 5,
-    text: 'This HMS has revolutionized how we manage patient care. The intuitive interface and comprehensive features have significantly improved our efficiency.',
+    text: 'The appointment booking system is incredibly easy to use. I love being able to access my medical records anytime. The doctors are always responsive through the messaging feature.',
   },
   {
-    name: 'James Rodriguez',
+    id: 2,
+    name: 'Dr. Michael Chen',
+    role: 'Cardiologist',
+    image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&q=80',
+    rating: 5,
+    text: 'As a physician, this system has transformed how I manage patient care. The integrated EHR system saves me hours each week, allowing me to focus more on my patients.',
+  },
+  {
+    id: 3,
+    name: 'Emily Rodriguez',
+    role: 'Patient',
+    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&q=80',
+    rating: 5,
+    text: 'I was nervous about switching to a new healthcare provider, but this platform made everything seamless. The prescription refill feature is a lifesaver!',
+  },
+  {
+    id: 4,
+    name: 'James Thompson',
     role: 'Hospital Administrator',
-    organization: 'Sunrise Medical Center',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&q=80',
     rating: 5,
-    text: 'The implementation was seamless. We\'ve seen a 40% reduction in administrative overhead since switching to this platform.',
-  },
-  {
-    name: 'Dr. Emily Chen',
-    role: 'Head of Pediatrics',
-    organization: 'Children\'s Health Network',
-    image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=150&h=150&fit=crop&q=80',
-    rating: 5,
-    text: 'The patient portal has transformed how families interact with our clinic. Parents love being able to access records online.',
-  },
-  {
-    name: 'Michael Thompson',
-    role: 'IT Director',
-    organization: 'Regional Healthcare System',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&q=80',
-    rating: 5,
-    text: 'From a technical standpoint, this is the most robust and secure HMS we\'ve evaluated. Outstanding API integrations.',
+    text: 'The analytics and reporting features have helped us optimize our operations significantly. Staff scheduling is now a breeze. Highly recommend!',
   },
 ];
 
 const TestimonialsSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-
-  useEffect(() => {
-    if (!isAutoPlaying) return;
-    
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isAutoPlaying]);
 
   const nextTestimonial = () => {
-    setIsAutoPlaying(false);
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
   };
 
   const prevTestimonial = () => {
-    setIsAutoPlaying(false);
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background via-muted/20 to-background relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-dots opacity-10"></div>
-      <div className="absolute top-1/2 left-0 w-1/3 h-96 bg-gradient-to-r from-primary/5 to-transparent blur-3xl -translate-y-1/2"></div>
-      <div className="absolute top-1/2 right-0 w-1/3 h-96 bg-gradient-to-l from-info/5 to-transparent blur-3xl -translate-y-1/2"></div>
+    <section className="py-20 bg-gradient-to-b from-muted/30 to-background relative overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-medical-green/5 rounded-full blur-3xl"></div>
       
       <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <ScrollAnimationWrapper className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-5 py-2.5 rounded-full text-sm font-semibold mb-6">
-            <Star className="w-4 h-4 fill-primary" />
+        <div className="text-center mb-16">
+          <span className="inline-block bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
             Testimonials
           </span>
-          <h2 className="text-4xl lg:text-6xl font-bold text-foreground mb-4">
-            Loved by Healthcare
-            <span className="text-gradient-mesh block mt-2">Professionals</span>
+          <h2 className="text-4xl lg:text-5xl font-bold text-foreground mb-4">
+            What Our Community Says
           </h2>
-        </ScrollAnimationWrapper>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Hear from patients and healthcare professionals who trust our platform
+          </p>
+        </div>
 
-        {/* Featured Testimonial Carousel */}
-        <div className="max-w-4xl mx-auto">
-          <div 
-            className="relative"
-            onMouseEnter={() => setIsAutoPlaying(false)}
-            onMouseLeave={() => setIsAutoPlaying(true)}
-          >
-            <div className="glass-card p-8 lg:p-12 rounded-3xl relative overflow-hidden">
-              {/* Quote Icon */}
-              <div className="absolute top-6 right-6 opacity-10">
-                <Quote className="w-24 h-24 text-primary" />
-              </div>
-              
-              <div className="flex flex-col lg:flex-row gap-8 items-center relative z-10">
-                {/* Avatar */}
-                <div className="relative flex-shrink-0">
-                  <div className="w-28 h-28 rounded-2xl overflow-hidden ring-4 ring-primary/20 shadow-xl">
-                    <img 
-                      src={testimonials[currentIndex].image} 
-                      alt={testimonials[currentIndex].name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-                    <Star className="w-5 h-5 text-white fill-white" />
-                  </div>
-                </div>
+        {/* Desktop Grid */}
+        <div className="hidden lg:grid grid-cols-2 gap-8">
+          {testimonials.map((testimonial, index) => (
+            <Card 
+              key={testimonial.id} 
+              className="group hover:shadow-xl transition-all duration-500 hover:-translate-y-2 border-2 hover:border-primary/20 bg-card/80 backdrop-blur-sm"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <CardContent className="p-8">
+                <Quote className="w-10 h-10 text-primary/20 mb-4" />
                 
-                {/* Content */}
-                <div className="flex-1 text-center lg:text-left">
-                  {/* Stars */}
-                  <div className="flex justify-center lg:justify-start gap-1 mb-4">
-                    {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-warning fill-warning" />
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                  "{testimonial.text}"
+                </p>
+                
+                <div className="flex items-center gap-4">
+                  <img 
+                    src={testimonial.image} 
+                    alt={testimonial.name}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-primary/20 group-hover:border-primary/50 transition-colors"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground">{testimonial.name}</h4>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  
-                  {/* Quote */}
-                  <blockquote className="text-xl lg:text-2xl text-foreground font-medium mb-6 leading-relaxed">
-                    "{testimonials[currentIndex].text}"
-                  </blockquote>
-                  
-                  {/* Author */}
-                  <div>
-                    <div className="font-bold text-foreground text-lg">{testimonials[currentIndex].name}</div>
-                    <div className="text-muted-foreground">{testimonials[currentIndex].role}</div>
-                    <div className="text-primary font-medium">{testimonials[currentIndex].organization}</div>
-                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Mobile Carousel */}
+        <div className="lg:hidden">
+          <Card className="border-2 bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-8">
+              <Quote className="w-10 h-10 text-primary/20 mb-4" />
+              
+              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                "{testimonials[currentIndex].text}"
+              </p>
+              
+              <div className="flex items-center gap-4 mb-6">
+                <img 
+                  src={testimonials[currentIndex].image} 
+                  alt={testimonials[currentIndex].name}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-primary/20"
+                />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-foreground">{testimonials[currentIndex].name}</h4>
+                  <p className="text-sm text-muted-foreground">{testimonials[currentIndex].role}</p>
+                </div>
+                <div className="flex gap-1">
+                  {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
                 </div>
               </div>
-            </div>
-            
-            {/* Navigation Buttons */}
-            <button 
-              onClick={prevTestimonial}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-card border border-border shadow-lg flex items-center justify-center hover:bg-muted hover:border-primary/30 transition-all duration-300 hover:scale-110 hidden lg:flex"
-            >
-              <ChevronLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <button 
-              onClick={nextTestimonial}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-12 h-12 rounded-full bg-card border border-border shadow-lg flex items-center justify-center hover:bg-muted hover:border-primary/30 transition-all duration-300 hover:scale-110 hidden lg:flex"
-            >
-              <ChevronRight className="w-5 h-5 text-foreground" />
-            </button>
-          </div>
-          
-          {/* Dots Indicator */}
-          <div className="flex justify-center gap-3 mt-8">
-            {testimonials.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => { setCurrentIndex(index); setIsAutoPlaying(false); }}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex 
-                    ? 'w-8 bg-primary' 
-                    : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                }`}
-              />
-            ))}
-          </div>
+
+              <div className="flex justify-center gap-2">
+                <Button variant="outline" size="icon" onClick={prevTestimonial}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div className="flex items-center gap-2">
+                  {testimonials.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentIndex(index)}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        index === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <Button variant="outline" size="icon" onClick={nextTestimonial}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
