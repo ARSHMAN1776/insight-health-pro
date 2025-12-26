@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Calendar, Clock, User, Stethoscope, Plus, Building2, Filter } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, Plus, Building2, Filter, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Alert, AlertDescription } from '../ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Dialog, 
   DialogContent, 
@@ -61,6 +63,10 @@ const AppointmentScheduler: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>('all');
   const { toast } = useToast();
+  const { isRole } = useAuth();
+  
+  // Only administrators can approve/change appointment status
+  const isAdmin = isRole('admin');
 
   useEffect(() => {
     const loadData = async () => {
@@ -334,22 +340,33 @@ const AppointmentScheduler: React.FC = () => {
       key: 'status',
       label: 'Status',
       render: (_, appointment) => (
-        <Select
-          value={appointment.status}
-          onValueChange={(value) => handleStatusUpdate(appointment.id, value as Appointment['status'])}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-popover z-50">
-            <SelectItem value="scheduled">Scheduled</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="no_show">No Show</SelectItem>
-          </SelectContent>
-        </Select>
+        isAdmin ? (
+          <Select
+            value={appointment.status}
+            onValueChange={(value) => handleStatusUpdate(appointment.id, value as Appointment['status'])}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="no_show">No Show</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <Badge variant={
+            appointment.status === 'confirmed' ? 'default' :
+            appointment.status === 'completed' ? 'secondary' :
+            appointment.status === 'cancelled' ? 'destructive' :
+            'outline'
+          }>
+            {appointment.status}
+          </Badge>
+        )
       ),
     },
   ];
@@ -367,6 +384,25 @@ const AppointmentScheduler: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Authorization Status */}
+      {!isAdmin && (
+        <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertDescription>
+            Only administrators can approve or change appointment status. You have view-only access to appointment records.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isAdmin && (
+        <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+          <ShieldCheck className="h-4 w-4" />
+          <AlertDescription>
+            Authorized as <strong>Administrator</strong> for appointment management. You can approve and manage all appointments.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
