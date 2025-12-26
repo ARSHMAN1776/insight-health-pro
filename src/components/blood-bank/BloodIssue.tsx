@@ -91,8 +91,8 @@ interface BloodIssueRecord {
   blood_group?: BloodGroup;
 }
 
-// Allowed roles for blood issue operations
-const AUTHORIZED_ROLES = ['admin', 'doctor', 'nurse'] as const;
+// Only administrators can issue blood
+const AUTHORIZED_ROLES = ['admin'] as const;
 
 const BloodIssue: React.FC = () => {
   const { user, isRole } = useAuth();
@@ -481,12 +481,12 @@ const BloodIssue: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Authorization Status */}
+      {/* Authorization Status - only show for non-admins */}
       {!isAuthorized && (
-        <Alert variant="destructive">
+        <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
           <ShieldAlert className="h-4 w-4" />
           <AlertDescription>
-            {user ? getAuthorizationError(userRole) : ERROR_MESSAGES.NOT_AUTHENTICATED}
+            Only administrators can issue blood. You have view-only access to blood issue records.
           </AlertDescription>
         </Alert>
       )}
@@ -495,12 +495,12 @@ const BloodIssue: React.FC = () => {
         <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
           <ShieldCheck className="h-4 w-4" />
           <AlertDescription>
-            Authorized as <strong>{userRole}</strong> for blood bank operations. All actions are logged.
+            Authorized as <strong>Administrator</strong> for blood issue operations. All actions are logged.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Issue Blood Card */}
+      {/* Issue Blood Card - only show button for admins */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -508,19 +508,22 @@ const BloodIssue: React.FC = () => {
               <Droplets className="h-5 w-5" />
               Issue Blood
             </CardTitle>
-            <Button 
-              onClick={handleOpenDialog} 
-              className="gap-2"
-              disabled={!isAuthorized}
-            >
-              <Droplets className="h-4 w-4" />
-              New Blood Issue
-            </Button>
+            {isAuthorized && (
+              <Button 
+                onClick={handleOpenDialog} 
+                className="gap-2"
+              >
+                <Droplets className="h-4 w-4" />
+                New Blood Issue
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm mb-4">
-            Issue blood to patients with stock validation and complete audit trail.
+            {isAuthorized 
+              ? 'Issue blood to patients with stock validation and complete audit trail.'
+              : 'View blood issue history. Only administrators can issue blood.'}
           </p>
         </CardContent>
       </Card>
