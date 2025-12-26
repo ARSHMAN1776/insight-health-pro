@@ -232,6 +232,48 @@ export type Database = {
           },
         ]
       }
+      department_doctors: {
+        Row: {
+          assigned_at: string | null
+          department_id: string
+          doctor_id: string
+          id: string
+          notes: string | null
+          role: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          department_id: string
+          doctor_id: string
+          id?: string
+          notes?: string | null
+          role?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          department_id?: string
+          doctor_id?: string
+          id?: string
+          notes?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_doctors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "department_doctors_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string | null

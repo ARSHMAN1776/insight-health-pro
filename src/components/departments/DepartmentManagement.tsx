@@ -43,7 +43,11 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Users,
+  UserPlus,
+  X,
+  Stethoscope
 } from 'lucide-react';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
@@ -67,6 +71,16 @@ const departmentSchema = z.object({
   status: z.enum(['Active', 'Inactive']).default('Active'),
 });
 
+interface DepartmentDoctor {
+  id: string;
+  department_id: string;
+  doctor_id: string;
+  role: string;
+  assigned_at: string;
+  notes: string | null;
+  doctor?: Doctor;
+}
+
 interface Department {
   department_id: string;
   department_name: string;
@@ -81,6 +95,7 @@ interface Department {
     last_name: string;
     specialization: string;
   } | null;
+  assigned_doctors?: DepartmentDoctor[];
 }
 
 interface Doctor {
@@ -108,7 +123,11 @@ const DepartmentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [doctorsDialogOpen, setDoctorsDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [selectedDeptForDoctors, setSelectedDeptForDoctors] = useState<Department | null>(null);
+  const [departmentDoctors, setDepartmentDoctors] = useState<DepartmentDoctor[]>([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ dept: Department; newStatus: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -118,6 +137,7 @@ const DepartmentManagement: React.FC = () => {
     department_head: '',
     status: 'Active',
   });
+  const [selectedDoctorToAdd, setSelectedDoctorToAdd] = useState('');
 
   const fetchDepartments = useCallback(async () => {
     setLoading(true);
@@ -170,6 +190,113 @@ const DepartmentManagement: React.FC = () => {
     fetchDepartments();
     fetchDoctors();
   }, [fetchDepartments, fetchDoctors]);
+
+  // Fetch doctors assigned to a specific department
+  const fetchDepartmentDoctors = async (departmentId: string) => {
+    setLoadingDoctors(true);
+    try {
+      const { data, error } = await supabase
+        .from('department_doctors')
+        .select(`
+          id,
+          department_id,
+          doctor_id,
+          role,
+          assigned_at,
+          notes
+        `)
+        .eq('department_id', departmentId);
+
+      if (error) throw error;
+
+      // Map doctor info to each assignment
+      const doctorsWithInfo = (data || []).map((dd: any) => ({
+        ...dd,
+        doctor: doctors.find(d => d.id === dd.doctor_id)
+      }));
+
+      setDepartmentDoctors(doctorsWithInfo);
+    } catch (error) {
+      console.error('Failed to fetch department doctors:', error);
+      toast.error('Failed to load assigned doctors');
+    } finally {
+      setLoadingDoctors(false);
+    }
+  };
+
+  // Add doctor to department
+  const handleAddDoctorToDepartment = async () => {
+    if (!selectedDeptForDoctors || !selectedDoctorToAdd) return;
+
+    if (!isAdmin || !hasRealSession) {
+      toast.error('You need admin privileges to perform this action.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('department_doctors')
+        .insert({
+          department_id: selectedDeptForDoctors.department_id,
+          doctor_id: selectedDoctorToAdd,
+          role: 'member'
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('This doctor is already assigned to this department');
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      toast.success('Doctor added to department');
+      setSelectedDoctorToAdd('');
+      fetchDepartmentDoctors(selectedDeptForDoctors.department_id);
+    } catch (error: any) {
+      console.error('Failed to add doctor:', error);
+      toast.error('Failed to add doctor to department');
+    }
+  };
+
+  // Remove doctor from department
+  const handleRemoveDoctorFromDepartment = async (assignmentId: string) => {
+    if (!isAdmin || !hasRealSession) {
+      toast.error('You need admin privileges to perform this action.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('department_doctors')
+        .delete()
+        .eq('id', assignmentId);
+
+      if (error) throw error;
+
+      toast.success('Doctor removed from department');
+      if (selectedDeptForDoctors) {
+        fetchDepartmentDoctors(selectedDeptForDoctors.department_id);
+      }
+    } catch (error) {
+      console.error('Failed to remove doctor:', error);
+      toast.error('Failed to remove doctor from department');
+    }
+  };
+
+  // Open doctors management dialog
+  const handleManageDoctors = (dept: Department) => {
+    setSelectedDeptForDoctors(dept);
+    setDoctorsDialogOpen(true);
+    fetchDepartmentDoctors(dept.department_id);
+  };
+
+  // Get available doctors (not already assigned to department)
+  const getAvailableDoctors = () => {
+    const assignedDoctorIds = departmentDoctors.map(dd => dd.doctor_id);
+    return doctors.filter(d => !assignedDoctorIds.includes(d.id));
+  };
 
 
   // Validate form data
@@ -751,15 +878,26 @@ const DepartmentManagement: React.FC = () => {
                       </TableCell>
                       {isAdmin && (
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(dept)}
-                            className="gap-2"
-                          >
-                            <Pencil className="h-4 w-4" />
-                            Edit
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleManageDoctors(dept)}
+                              className="gap-1"
+                            >
+                              <Users className="h-4 w-4" />
+                              Doctors
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(dept)}
+                              className="gap-1"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </Button>
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
@@ -785,6 +923,133 @@ const DepartmentManagement: React.FC = () => {
         confirmText={submitting ? 'Processing...' : (pendingStatusChange?.newStatus === 'Inactive' ? 'Deactivate' : 'Activate')}
         variant={pendingStatusChange?.newStatus === 'Inactive' ? 'destructive' : 'default'}
       />
+
+      {/* Manage Doctors Dialog */}
+      <Dialog open={doctorsDialogOpen} onOpenChange={(open) => {
+        setDoctorsDialogOpen(open);
+        if (!open) {
+          setSelectedDeptForDoctors(null);
+          setDepartmentDoctors([]);
+          setSelectedDoctorToAdd('');
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Manage Doctors - {selectedDeptForDoctors?.department_name}
+            </DialogTitle>
+            <DialogDescription>
+              Add or remove doctors assigned to this department.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Separator />
+
+          {/* Add Doctor Section */}
+          <div className="space-y-4">
+            <Label className="text-sm font-medium">Add Doctor to Department</Label>
+            <div className="flex gap-2">
+              <Select value={selectedDoctorToAdd} onValueChange={setSelectedDoctorToAdd}>
+                <SelectTrigger className="flex-1 bg-card">
+                  <SelectValue placeholder="Select a doctor to add" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {getAvailableDoctors().length === 0 ? (
+                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                      All doctors are already assigned
+                    </div>
+                  ) : (
+                    getAvailableDoctors().map((doctor) => (
+                      <SelectItem key={doctor.id} value={doctor.id}>
+                        <div className="flex items-center gap-2">
+                          <Stethoscope className="h-4 w-4 text-muted-foreground" />
+                          Dr. {doctor.first_name} {doctor.last_name}
+                          <span className="text-xs text-muted-foreground">
+                            ({doctor.specialization})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleAddDoctorToDepartment} 
+                disabled={!selectedDoctorToAdd}
+                className="gap-1"
+              >
+                <UserPlus className="h-4 w-4" />
+                Add
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Assigned Doctors List */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">
+              Assigned Doctors ({departmentDoctors.length})
+            </Label>
+            
+            {loadingDoctors ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : departmentDoctors.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No doctors assigned to this department yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {departmentDoctors.map((dd) => (
+                  <div 
+                    key={dd.id} 
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Stethoscope className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">
+                          Dr. {dd.doctor?.first_name} {dd.doctor?.last_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {dd.doctor?.specialization || 'Specialization not set'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="capitalize">
+                        {dd.role}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveDoctorFromDepartment(dd.id)}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setDoctorsDialogOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
