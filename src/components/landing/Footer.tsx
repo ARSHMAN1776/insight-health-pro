@@ -9,29 +9,6 @@ const Footer = () => {
 
   return (
     <footer className="bg-foreground text-background relative overflow-hidden">
-      {/* Newsletter Section */}
-      <div className="border-b border-background/10">
-        <div className="container mx-auto px-4 lg:px-8 py-12">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Stay Updated</h3>
-              <p className="text-background/70">Get the latest health tips and updates delivered to your inbox.</p>
-            </div>
-            <div className="flex w-full lg:w-auto gap-3">
-              <Input 
-                type="email" 
-                placeholder="Enter your email" 
-                className="bg-background/10 border-background/20 text-background placeholder:text-background/50 min-w-[300px]"
-              />
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                Subscribe
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Footer */}
       <div className="container mx-auto px-4 lg:px-8 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
