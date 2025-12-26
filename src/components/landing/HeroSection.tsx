@@ -18,19 +18,19 @@ const HeroSection = () => {
       {/* Full Background Image */}
       <div className="absolute inset-0">
         <img 
-          src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1920&h=1080&fit=crop&q=80" 
-          alt="Medical professionals in modern hospital"
+          src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=1920&h=1080&fit=crop&q=90" 
+          alt="Confident medical team standing together"
           className="w-full h-full object-cover"
         />
         {/* Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/20"></div>
       </div>
       
-      <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <div className="max-w-2xl">
-          {/* Glassmorphic Content Card */}
-          <div className="bg-card/30 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border border-border/30 shadow-2xl animate-fade-in">
+      <div className="w-full relative z-10">
+        <div className="max-w-3xl pl-4 sm:pl-8 lg:pl-16">
+          {/* Glassmorphic Content Card - Full width left aligned */}
+          <div className="bg-card/30 backdrop-blur-xl rounded-r-3xl p-8 lg:p-12 border-y border-r border-border/30 shadow-2xl animate-fade-in">
             <div className="inline-block mb-6">
               <span className="inline-flex items-center space-x-2 bg-primary/20 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/30">
                 <CheckCircle className="w-4 h-4" />
