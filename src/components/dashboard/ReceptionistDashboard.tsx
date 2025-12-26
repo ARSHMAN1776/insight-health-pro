@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Users, Calendar, DollarSign, Phone, Clock, Edit, FileText, UserCheck, Stethoscope } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import { Users, Calendar, DollarSign, Phone, Edit, FileText } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import { useAuth } from '../../contexts/AuthContext';
-import DoctorRegistrationForm from '../forms/DoctorRegistrationForm';
-import NurseRegistrationForm from '../forms/NurseRegistrationForm';
 import PaymentManagementForm from '../forms/PaymentManagementForm';
 import RecordUpdateForm from '../forms/RecordUpdateForm';
 import PendingVerificationsWidget from './PendingVerificationsWidget';
@@ -21,8 +18,6 @@ const ReceptionistDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ patients: 0, appointments: 0, payments: 0, totalRevenue: 0 });
   const [openModals, setOpenModals] = useState({
-    doctorRegistration: false,
-    nurseRegistration: false,
     paymentManagement: false,
     recordUpdate: false,
   });
@@ -95,47 +90,9 @@ const ReceptionistDashboard: React.FC = () => {
         })}
       </div>
 
+
       {/* Pending Patient Verifications */}
       <PendingVerificationsWidget />
-
-      <Card className="card-gradient">
-        <CardHeader>
-          <CardTitle>Staff Registration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 p-3 bg-info/10 rounded-lg border border-info/20">
-            <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Note:</strong> Patients can now self-register through the login page. Use these forms to register medical staff only.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Dialog open={openModals.doctorRegistration} onOpenChange={(open) => setOpenModals(prev => ({ ...prev, doctorRegistration: open }))}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
-                  <Stethoscope className="w-6 h-6" />
-                  <span className="text-sm">Register Doctor</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
-                <DoctorRegistrationForm onClose={() => handleModalClose('doctorRegistration')} />
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={openModals.nurseRegistration} onOpenChange={(open) => setOpenModals(prev => ({ ...prev, nurseRegistration: open }))}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex flex-col items-center space-y-2 h-20">
-                  <UserCheck className="w-6 h-6" />
-                  <span className="text-sm">Register Nurse</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scroll-smooth">
-                <NurseRegistrationForm onClose={() => handleModalClose('nurseRegistration')} />
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card className="card-gradient">
         <CardHeader>
