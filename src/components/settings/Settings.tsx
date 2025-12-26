@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/hooks/useSettings';
-import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Mail, Phone, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Mail, Phone, Loader2, Globe } from 'lucide-react';
+import { TIMEZONES, getTimezoneLabel, getCurrentTimeInTimezone, clearTimezoneCache } from '@/lib/timezoneUtils';
+import { format } from 'date-fns';
 
 const Settings: React.FC = () => {
   const { toast } = useToast();
@@ -171,6 +173,7 @@ const Settings: React.FC = () => {
   const handleSaveRegionalSettings = async () => {
     const success = await saveHospitalSetting('regional_settings', regionalSettings, 'hospital');
     if (success) {
+      clearTimezoneCache(); // Clear cached timezone so it reloads
       toast({ title: 'Success', description: 'Regional settings saved successfully' });
       await refreshSettings();
     }
@@ -372,18 +375,32 @@ const Settings: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
+                  <Label htmlFor="timezone" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Timezone
+                  </Label>
                   <Select value={regionalSettings.timezone} onValueChange={(value) => setRegionalSettings({...regionalSettings, timezone: value})}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select timezone" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                      <SelectItem value="America/Chicago">Central Time</SelectItem>
-                      <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                    <SelectContent className="max-h-[300px]">
+                      {Object.entries(TIMEZONES).map(([region, zones]) => (
+                        <SelectGroup key={region}>
+                          <SelectLabel className="font-semibold text-primary">{region}</SelectLabel>
+                          {zones.map((tz) => (
+                            <SelectItem key={tz.value} value={tz.value}>
+                              {tz.label} ({tz.offset})
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
                     </SelectContent>
                   </Select>
+                  {regionalSettings.timezone && (
+                    <p className="text-xs text-muted-foreground">
+                      Current time: {format(getCurrentTimeInTimezone(regionalSettings.timezone), 'h:mm a')}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>
@@ -395,6 +412,11 @@ const Settings: React.FC = () => {
                       <SelectItem value="en">English</SelectItem>
                       <SelectItem value="es">Spanish</SelectItem>
                       <SelectItem value="fr">French</SelectItem>
+                      <SelectItem value="ar">Arabic</SelectItem>
+                      <SelectItem value="ur">Urdu</SelectItem>
+                      <SelectItem value="hi">Hindi</SelectItem>
+                      <SelectItem value="zh">Chinese</SelectItem>
+                      <SelectItem value="ja">Japanese</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -405,9 +427,17 @@ const Settings: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="USD">USD ($) - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR (€) - Euro</SelectItem>
+                      <SelectItem value="GBP">GBP (£) - British Pound</SelectItem>
+                      <SelectItem value="AED">AED (د.إ) - UAE Dirham</SelectItem>
+                      <SelectItem value="SAR">SAR (﷼) - Saudi Riyal</SelectItem>
+                      <SelectItem value="PKR">PKR (₨) - Pakistani Rupee</SelectItem>
+                      <SelectItem value="INR">INR (₹) - Indian Rupee</SelectItem>
+                      <SelectItem value="JPY">JPY (¥) - Japanese Yen</SelectItem>
+                      <SelectItem value="CNY">CNY (¥) - Chinese Yuan</SelectItem>
+                      <SelectItem value="AUD">AUD ($) - Australian Dollar</SelectItem>
+                      <SelectItem value="CAD">CAD ($) - Canadian Dollar</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
