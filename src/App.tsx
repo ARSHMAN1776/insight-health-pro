@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Index from './pages/Index';
 import AboutUs from './pages/AboutUs';
 import Services from './pages/Services';
+import Contact from './pages/Contact';
 
 // Lazy load components
 const AppointmentScheduler = React.lazy(() => import('./components/appointments/AppointmentScheduler'));
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <MainLayout>
