@@ -24,11 +24,13 @@ export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'
 export const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /**
- * Get the day of week (0-6) from a date string
+ * Get the day of week (0-6) from a date string (YYYY-MM-DD)
+ * Uses local calendar day (avoids timezone parsing issues).
  */
 export const getDayOfWeek = (dateString: string): number => {
-  const date = new Date(dateString);
-  return date.getDay();
+  const [year, month, day] = dateString.split('-').map(Number);
+  if (!year || !month || !day) return new Date(dateString).getDay();
+  return new Date(year, month - 1, day).getDay();
 };
 
 /**
