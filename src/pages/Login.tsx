@@ -58,8 +58,22 @@ const Login: React.FC = () => {
   };
 
   const validatePhone = (phone: string): boolean => {
-    const phoneRegex = /^[\d\s\-+()]{10,}$/;
+    // Must have at least 10 digits
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) return false;
+    // Must match phone format
+    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/;
     return phoneRegex.test(phone);
+  };
+
+  const normalizePhoneInput = (phone: string): string => {
+    // Allow typing with formatting characters
+    return phone.replace(/[^\d\s\-+()]/g, '');
+  };
+
+  const getTodayDateString = (): string => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -278,13 +292,14 @@ const Login: React.FC = () => {
                           <Input
                             id="phone"
                             type="tel"
-                            placeholder="+1234567890"
+                            placeholder="+1 (555) 123-4567"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            onChange={(e) => setPhone(normalizePhoneInput(e.target.value))}
                             className="pl-10"
                             required
                           />
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">Include country code (e.g., +1 for US)</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -297,10 +312,12 @@ const Login: React.FC = () => {
                               type="date"
                               value={dateOfBirth}
                               onChange={(e) => setDateOfBirth(e.target.value)}
+                              max={getTodayDateString()}
                               className="pl-10"
                               required
                             />
                           </div>
+                          <p className="text-xs text-muted-foreground">Must be a past date</p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="gender">Gender *</Label>

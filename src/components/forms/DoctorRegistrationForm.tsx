@@ -16,8 +16,17 @@ import {
   FormField, 
   FormItem, 
   FormLabel, 
-  FormMessage 
+  FormMessage,
+  FormDescription
 } from '../ui/form';
+import {
+  phoneSchema,
+  licenseNumberSchema,
+  emailSchema,
+  nameSchema,
+  normalizePhoneInput,
+  getLicenseFormatHint
+} from '../../lib/formValidation';
 
 interface Department {
   department_id: string;
@@ -26,17 +35,22 @@ interface Department {
 }
 
 const doctorSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 characters'),
-  licenseNumber: z.string().min(5, 'License number must be at least 5 characters'),
+  firstName: nameSchema,
+  lastName: nameSchema,
+  email: emailSchema,
+  phone: phoneSchema,
+  licenseNumber: licenseNumberSchema,
   specialty: z.string().min(2, 'Specialty is required'),
   departmentId: z.string().min(1, 'Department is required'),
-  experience: z.string().min(1, 'Experience is required'),
-  education: z.string().min(5, 'Education background is required'),
-  schedule: z.string().optional(),
-  consultationFee: z.string().min(1, 'Consultation fee is required'),
+  experience: z.string()
+    .min(1, 'Experience is required')
+    .regex(/^\d+$/, 'Experience must be a number')
+    .refine((val) => parseInt(val) >= 0 && parseInt(val) <= 70, 'Experience must be between 0 and 70 years'),
+  education: z.string().min(5, 'Education background is required').max(500, 'Education is too long'),
+  schedule: z.string().max(200, 'Schedule is too long').optional(),
+  consultationFee: z.string()
+    .min(1, 'Consultation fee is required')
+    .regex(/^\d+(\.\d{1,2})?$/, 'Please enter a valid amount'),
 });
 
 type DoctorFormData = z.infer<typeof doctorSchema>;
@@ -223,8 +237,15 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1 (555) 123-4567" {...field} />
+                      <Input 
+                        placeholder="+1 (555) 123-4567" 
+                        {...field}
+                        onChange={(e) => field.onChange(normalizePhoneInput(e.target.value))}
+                      />
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      Include country code
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -239,8 +260,15 @@ const DoctorRegistrationForm: React.FC<DoctorRegistrationFormProps> = ({ onClose
                   <FormItem>
                     <FormLabel>License Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="MD123456" {...field} />
+                      <Input 
+                        placeholder="MD123456" 
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                      />
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      {getLicenseFormatHint('doctor')}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
