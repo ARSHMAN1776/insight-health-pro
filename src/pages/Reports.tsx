@@ -30,7 +30,6 @@ const Reports: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { getCurrentDate } = useTimezone();
-  const { getCurrentDate } = useTimezone();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
   const [stats, setStats] = useState({
