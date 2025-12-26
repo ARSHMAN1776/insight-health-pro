@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
-import { dataManager } from '../../lib/dataManager';
+import { dataManager, Patient } from '../../lib/dataManager';
 import PaymentsList from '../payments/PaymentsList';
 import { 
   Form, 
@@ -20,8 +20,7 @@ import {
 } from '../ui/form';
 
 const paymentSchema = z.object({
-  patientName: z.string().min(2, 'Patient name is required'),
-  patientId: z.string().min(1, 'Patient ID is required'),
+  patientId: z.string().min(1, 'Please select a patient'),
   serviceType: z.string().min(2, 'Service type is required'),
   amount: z.string().min(1, 'Amount is required'),
   paymentMethod: z.string().min(2, 'Payment method is required'),
@@ -29,8 +28,8 @@ const paymentSchema = z.object({
   insuranceCovered: z.string().optional(),
   copayAmount: z.string().optional(),
   notes: z.string().optional(),
-  billingDate: z.string(),
-  dueDate: z.string(),
+  billingDate: z.string().min(1, 'Billing date is required'),
+  dueDate: z.string().optional(),
 });
 
 type PaymentFormData = z.infer<typeof paymentSchema>;
@@ -41,11 +40,12 @@ interface PaymentManagementFormProps {
 
 const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }) => {
   const { toast } = useToast();
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(true);
   
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      patientName: '',
       patientId: '',
       serviceType: '',
       amount: '',
@@ -54,23 +54,41 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
       insuranceCovered: '',
       copayAmount: '',
       notes: '',
-      billingDate: '',
+      billingDate: new Date().toISOString().split('T')[0],
       dueDate: '',
     },
   });
 
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const patientsData = await dataManager.getPatients();
+        setPatients(patientsData);
+      } catch (error) {
+        console.error('Failed to load patients:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load patients list',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoadingPatients(false);
+      }
+    };
+    loadPatients();
+  }, [toast]);
+
   const onSubmit = async (data: PaymentFormData) => {
     try {
-      // Map form data to database schema
       const paymentData = {
-        patient_id: data.patientId, // This should ideally be a UUID from patient selection
+        patient_id: data.patientId,
         amount: parseFloat(data.amount),
         payment_method: data.paymentMethod as 'cash' | 'credit_card' | 'debit_card' | 'check' | 'insurance' | 'bank_transfer',
         payment_status: data.paymentStatus as 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded',
-        description: `${data.serviceType} - ${data.notes || 'Payment processed'}`,
+        description: `${data.serviceType}${data.notes ? ' - ' + data.notes : ''}`,
         payment_date: data.billingDate,
-        invoice_number: `INV-${Date.now()}`, // Generate invoice number
-        transaction_id: `TXN-${Date.now()}`, // Generate transaction ID
+        invoice_number: `INV-${Date.now()}`,
+        transaction_id: `TXN-${Date.now()}`,
       };
 
       await dataManager.createPayment(paymentData);
@@ -86,7 +104,7 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
       console.error('Payment creation error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save payment record',
+        description: 'Failed to save payment record. Please try again.',
         variant: 'destructive',
       });
     }
@@ -100,35 +118,30 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="patientName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Patient Name</FormLabel>
+            <FormField
+              control={form.control}
+              name="patientId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Select Patient</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingPatients ? "Loading patients..." : "Select a patient"} />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="patientId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Patient ID</FormLabel>
-                    <FormControl>
-                      <Input placeholder="PT001" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {patients.map((patient) => (
+                        <SelectItem key={patient.id} value={patient.id}>
+                          {patient.first_name} {patient.last_name} {patient.email ? `(${patient.email})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -137,7 +150,7 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Service Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select service" />
@@ -167,7 +180,7 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
                   <FormItem>
                     <FormLabel>Amount</FormLabel>
                     <FormControl>
-                      <Input placeholder="$250.00" {...field} />
+                      <Input type="number" step="0.01" placeholder="250.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -182,7 +195,7 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Payment Method</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select method" />
@@ -190,12 +203,11 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="credit-card">Credit Card</SelectItem>
-                        <SelectItem value="debit-card">Debit Card</SelectItem>
+                        <SelectItem value="credit_card">Credit Card</SelectItem>
+                        <SelectItem value="debit_card">Debit Card</SelectItem>
                         <SelectItem value="check">Check</SelectItem>
                         <SelectItem value="insurance">Insurance</SelectItem>
-                        <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="mobile-payment">Mobile Payment</SelectItem>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -209,51 +221,20 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Payment Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="completed">Paid</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
-                        <SelectItem value="partial">Partial Payment</SelectItem>
-                        <SelectItem value="refunded">Refunded</SelectItem>
+                        <SelectItem value="failed">Failed</SelectItem>
                         <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="refunded">Refunded</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="insuranceCovered"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Insurance Covered</FormLabel>
-                    <FormControl>
-                      <Input placeholder="$150.00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="copayAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Copay Amount</FormLabel>
-                    <FormControl>
-                      <Input placeholder="$25.00" {...field} />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -280,7 +261,7 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Due Date</FormLabel>
+                    <FormLabel>Due Date (Optional)</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -295,7 +276,7 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>Notes (Optional)</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Additional notes..." {...field} />
                   </FormControl>
@@ -315,9 +296,8 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
           </form>
         </Form>
         
-        {/* Add Recent Payments List */}
         <div className="mt-6 pt-6 border-t">
-          <h3 className="text-lg font-semibold mb-4 text-medical-blue">Recent Payments</h3>
+          <h3 className="text-lg font-semibold mb-4 text-foreground">Recent Payments</h3>
           <div className="max-h-60 overflow-y-auto">
             <PaymentsList />
           </div>
