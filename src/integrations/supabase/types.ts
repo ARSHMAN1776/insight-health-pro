@@ -19,6 +19,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at: string | null
+          deleted_at: string | null
           department_id: string | null
           doctor_id: string
           duration: number | null
@@ -34,6 +35,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at?: string | null
+          deleted_at?: string | null
           department_id?: string | null
           doctor_id: string
           duration?: number | null
@@ -49,6 +51,7 @@ export type Database = {
           appointment_date?: string
           appointment_time?: string
           created_at?: string | null
+          deleted_at?: string | null
           department_id?: string | null
           doctor_id?: string
           duration?: number | null
@@ -506,6 +509,7 @@ export type Database = {
         Row: {
           cost: number | null
           created_at: string | null
+          deleted_at: string | null
           doctor_id: string
           id: string
           lab_technician: string | null
@@ -524,6 +528,7 @@ export type Database = {
         Insert: {
           cost?: number | null
           created_at?: string | null
+          deleted_at?: string | null
           doctor_id: string
           id?: string
           lab_technician?: string | null
@@ -542,6 +547,7 @@ export type Database = {
         Update: {
           cost?: number | null
           created_at?: string | null
+          deleted_at?: string | null
           doctor_id?: string
           id?: string
           lab_technician?: string | null
@@ -577,6 +583,7 @@ export type Database = {
       medical_records: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           diagnosis: string | null
           doctor_id: string
           follow_up_date: string | null
@@ -591,6 +598,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           diagnosis?: string | null
           doctor_id: string
           follow_up_date?: string | null
@@ -605,6 +613,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           diagnosis?: string | null
           doctor_id?: string
           follow_up_date?: string | null
@@ -823,6 +832,7 @@ export type Database = {
           blood_type: string | null
           created_at: string | null
           date_of_birth: string
+          deleted_at: string | null
           department_id: string | null
           email: string | null
           emergency_contact_name: string | null
@@ -845,6 +855,7 @@ export type Database = {
           blood_type?: string | null
           created_at?: string | null
           date_of_birth: string
+          deleted_at?: string | null
           department_id?: string | null
           email?: string | null
           emergency_contact_name?: string | null
@@ -867,6 +878,7 @@ export type Database = {
           blood_type?: string | null
           created_at?: string | null
           date_of_birth?: string
+          deleted_at?: string | null
           department_id?: string | null
           email?: string | null
           emergency_contact_name?: string | null
@@ -897,6 +909,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           invoice_number: string | null
@@ -910,6 +923,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           invoice_number?: string | null
@@ -923,6 +937,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           invoice_number?: string | null
@@ -994,6 +1009,7 @@ export type Database = {
         Row: {
           created_at: string | null
           date_prescribed: string | null
+          deleted_at: string | null
           doctor_id: string
           dosage: string | null
           drug_interactions: string | null
@@ -1011,6 +1027,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           date_prescribed?: string | null
+          deleted_at?: string | null
           doctor_id: string
           dosage?: string | null
           drug_interactions?: string | null
@@ -1028,6 +1045,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           date_prescribed?: string | null
+          deleted_at?: string | null
           doctor_id?: string
           dosage?: string | null
           drug_interactions?: string | null
@@ -1400,6 +1418,10 @@ export type Database = {
       doctor_has_patient_relationship: {
         Args: { _doctor_id: string; _patient_id: string }
         Returns: boolean
+      }
+      get_doctor_departments: {
+        Args: { _doctor_id: string }
+        Returns: string[]
       }
       get_doctor_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_patient_id_for_user: { Args: { _user_id: string }; Returns: string }

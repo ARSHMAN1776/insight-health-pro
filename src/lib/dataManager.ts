@@ -216,6 +216,7 @@ class DataManager {
     const { data, error } = await supabase
       .from('patients')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -246,9 +247,10 @@ class DataManager {
   }
 
   async deletePatient(id: string): Promise<boolean> {
+    // Soft delete - set deleted_at instead of actual deletion
     const { error } = await supabase
       .from('patients')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
 
     return !error;
@@ -258,6 +260,7 @@ class DataManager {
     const { data, error } = await supabase
       .from('patients')
       .select('*')
+      .is('deleted_at', null)
       .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`);
 
     if (error) throw error;
@@ -460,6 +463,7 @@ class DataManager {
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
+      .is('deleted_at', null)
       .order('appointment_date', { ascending: true });
 
     if (error) throw error;
@@ -471,6 +475,7 @@ class DataManager {
       .from('appointments')
       .select('*')
       .eq('patient_id', patientId)
+      .is('deleted_at', null)
       .order('appointment_date', { ascending: true });
 
     if (error) throw error;
@@ -482,6 +487,7 @@ class DataManager {
       .from('appointments')
       .select('*')
       .eq('doctor_id', doctorId)
+      .is('deleted_at', null)
       .order('appointment_date', { ascending: true });
 
     if (error) throw error;
@@ -525,6 +531,7 @@ class DataManager {
     const { data, error } = await supabase
       .from('medical_records')
       .select('*')
+      .is('deleted_at', null)
       .order('visit_date', { ascending: false });
 
     if (error) throw error;
@@ -536,6 +543,7 @@ class DataManager {
       .from('medical_records')
       .select('*')
       .eq('patient_id', patientId)
+      .is('deleted_at', null)
       .order('visit_date', { ascending: false });
 
     if (error) throw error;
@@ -579,6 +587,7 @@ class DataManager {
     const { data, error } = await supabase
       .from('prescriptions')
       .select('*')
+      .is('deleted_at', null)
       .order('date_prescribed', { ascending: false });
 
     if (error) throw error;
@@ -590,6 +599,7 @@ class DataManager {
       .from('prescriptions')
       .select('*')
       .eq('patient_id', patientId)
+      .is('deleted_at', null)
       .order('date_prescribed', { ascending: false });
 
     if (error) throw error;
@@ -633,6 +643,7 @@ class DataManager {
     const { data, error } = await supabase
       .from('lab_tests')
       .select('*')
+      .is('deleted_at', null)
       .order('test_date', { ascending: false });
 
     if (error) throw error;
@@ -644,6 +655,7 @@ class DataManager {
       .from('lab_tests')
       .select('*')
       .eq('patient_id', patientId)
+      .is('deleted_at', null)
       .order('test_date', { ascending: false });
 
     if (error) throw error;
@@ -773,6 +785,7 @@ class DataManager {
     const { data, error } = await supabase
       .from('payments')
       .select('*')
+      .is('deleted_at', null)
       .order('payment_date', { ascending: false });
 
     if (error) throw error;
@@ -784,6 +797,7 @@ class DataManager {
       .from('payments')
       .select('*')
       .eq('patient_id', patientId)
+      .is('deleted_at', null)
       .order('payment_date', { ascending: false });
 
     if (error) throw error;
