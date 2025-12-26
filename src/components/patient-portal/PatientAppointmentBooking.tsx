@@ -496,15 +496,28 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                                       key={slot.time} 
                                       value={slot.time}
                                       disabled={!slot.available}
+                                      className={!slot.available ? 'opacity-60' : ''}
                                     >
-                                      <span className={!slot.available ? 'line-through text-muted-foreground' : ''}>
-                                        {slot.time}
-                                      </span>
-                                      {!slot.available && (
-                                        <span className="ml-2 text-xs text-muted-foreground">
-                                          ({slot.reason})
+                                      <div className="flex items-center gap-2">
+                                        <span className={!slot.available ? 'line-through text-muted-foreground' : ''}>
+                                          {slot.time}
                                         </span>
-                                      )}
+                                        {!slot.available && slot.reason === 'Break time' && (
+                                          <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-700">
+                                            Break
+                                          </Badge>
+                                        )}
+                                        {!slot.available && slot.reason === 'Already booked' && (
+                                          <Badge variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700">
+                                            Booked
+                                          </Badge>
+                                        )}
+                                        {!slot.available && slot.reason && slot.reason !== 'Break time' && slot.reason !== 'Already booked' && (
+                                          <span className="text-xs text-muted-foreground">
+                                            ({slot.reason})
+                                          </span>
+                                        )}
+                                      </div>
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
