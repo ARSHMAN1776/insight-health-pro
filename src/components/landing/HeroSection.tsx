@@ -15,22 +15,19 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-      {/* Full Background Image - More visible */}
+      {/* Full Background Image - Hospital Building */}
       <div className="absolute inset-0">
         <img 
-          src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=1920&h=1080&fit=crop&q=90" 
-          alt="Confident medical team standing together"
+          src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&h=1080&fit=crop&q=90" 
+          alt="Modern hospital building exterior"
           className="w-full h-full object-cover"
         />
-        {/* Lighter overlay to show more of the image */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent"></div>
+        {/* Minimal overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/40 to-transparent"></div>
       </div>
       
       <div className="w-full relative z-10">
-        <div className="max-w-2xl">
-          {/* Edge-to-edge glassmorphic box - no left rounded corners, more blur */}
-          <div className="bg-background/20 backdrop-blur-2xl py-10 pl-4 sm:pl-8 lg:pl-16 pr-8 lg:pr-12 rounded-r-3xl border-y border-r border-white/10 shadow-2xl animate-fade-in">
+        <div className="max-w-2xl py-10 pl-4 sm:pl-8 lg:pl-16 pr-8 animate-fade-in">
             <div className="inline-block mb-6">
               <span className="inline-flex items-center space-x-2 bg-primary/20 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/30">
                 <CheckCircle className="w-4 h-4" />
@@ -82,7 +79,6 @@ const HeroSection = () => {
               <div>
                 <p className="font-semibold text-sm text-foreground">HIPAA Compliant</p>
                 <p className="text-xs text-muted-foreground">100% Secure</p>
-              </div>
             </div>
           </div>
         </div>
