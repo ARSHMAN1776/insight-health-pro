@@ -22,6 +22,8 @@ const assignmentSchema = z.object({
   patient_id: z.string().min(1, 'Patient is required'),
   bed_number: z.number().min(1, 'Bed number is required'),
   admission_date: z.string().min(1, 'Admission date is required'),
+  admission_reason: z.enum(['general', 'post_surgery', 'emergency', 'observation', 'planned']),
+  surgery_id: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -35,9 +37,19 @@ interface RoomAssignment {
   admission_date: string;
   discharge_date?: string;
   status: string;
+  admission_reason?: string;
+  surgery_id?: string;
   notes?: string;
   room?: Room;
   patient?: Patient;
+}
+
+interface Surgery {
+  id: string;
+  surgery_type: string;
+  surgery_date: string;
+  patient_id: string;
+  status: string;
 }
 
 const BedAssignment: React.FC = () => {
@@ -46,6 +58,7 @@ const BedAssignment: React.FC = () => {
   const [assignments, setAssignments] = useState<RoomAssignment[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [completedSurgeries, setCompletedSurgeries] = useState<Surgery[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -57,6 +70,8 @@ const BedAssignment: React.FC = () => {
       patient_id: '',
       bed_number: 1,
       admission_date: new Date().toISOString().split('T')[0],
+      admission_reason: 'general',
+      surgery_id: '',
       notes: '',
     },
   });
@@ -76,6 +91,24 @@ const BedAssignment: React.FC = () => {
       // Load patients (only active ones for assignment)
       const patientsData = await dataManager.getPatients();
       setPatients(patientsData.filter(p => p.status === 'active'));
+
+      // Load completed surgeries without room assignment
+      const { data: surgeriesData } = await supabase
+        .from('surgeries')
+        .select('id, surgery_type, surgery_date, patient_id, status')
+        .eq('status', 'Completed');
+
+      // Get surgeries that already have room assignments
+      const { data: existingAssignments } = await supabase
+        .from('room_assignments')
+        .select('surgery_id')
+        .not('surgery_id', 'is', null);
+
+      const assignedSurgeryIds = existingAssignments?.map(a => a.surgery_id) || [];
+      const unassignedSurgeries = (surgeriesData || []).filter(
+        s => !assignedSurgeryIds.includes(s.id)
+      );
+      setCompletedSurgeries(unassignedSurgeries as Surgery[]);
 
       // Load active assignments
       const { data: assignmentsData } = await supabase
@@ -125,6 +158,8 @@ const BedAssignment: React.FC = () => {
           patient_id: data.patient_id,
           bed_number: data.bed_number,
           admission_date: data.admission_date,
+          admission_reason: data.admission_reason,
+          surgery_id: data.surgery_id || null,
           notes: data.notes,
           assigned_by: user?.id,
         }]);
@@ -292,6 +327,7 @@ const BedAssignment: React.FC = () => {
                   <TableHead>Room</TableHead>
                   <TableHead>Bed #</TableHead>
                   <TableHead>Admission Date</TableHead>
+                  <TableHead>Reason</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -311,6 +347,14 @@ const BedAssignment: React.FC = () => {
                       <Badge variant="outline">Bed {assignment.bed_number}</Badge>
                     </TableCell>
                     <TableCell>{assignment.admission_date}</TableCell>
+                    <TableCell>
+                      <Badge variant={assignment.admission_reason === 'post_surgery' ? 'default' : 'secondary'}>
+                        {assignment.admission_reason === 'post_surgery' ? 'Post-Surgery' :
+                         assignment.admission_reason === 'emergency' ? 'Emergency' :
+                         assignment.admission_reason === 'observation' ? 'Observation' :
+                         assignment.admission_reason === 'planned' ? 'Planned' : 'General'}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge className="bg-green-500 text-white">Active</Badge>
                     </TableCell>
@@ -444,6 +488,74 @@ const BedAssignment: React.FC = () => {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="admission_reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Admission Reason</FormLabel>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      // If post-surgery, show surgery selection
+                      if (value !== 'post_surgery') {
+                        form.setValue('surgery_id', '');
+                      }
+                    }} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select reason" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="general">General Admission</SelectItem>
+                        <SelectItem value="post_surgery">Post-Surgery Recovery</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="observation">Observation</SelectItem>
+                        <SelectItem value="planned">Planned Procedure</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {form.watch('admission_reason') === 'post_surgery' && (
+                <FormField
+                  control={form.control}
+                  name="surgery_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Link to Surgery</FormLabel>
+                      <Select onValueChange={(value) => {
+                        field.onChange(value);
+                        // Auto-select patient from surgery
+                        const surgery = completedSurgeries.find(s => s.id === value);
+                        if (surgery) {
+                          form.setValue('patient_id', surgery.patient_id);
+                        }
+                      }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select completed surgery" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {completedSurgeries.map((surgery) => {
+                            const patient = patients.find(p => p.id === surgery.patient_id);
+                            return (
+                              <SelectItem key={surgery.id} value={surgery.id}>
+                                {surgery.surgery_type} - {patient?.first_name} {patient?.last_name} ({surgery.surgery_date})
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
