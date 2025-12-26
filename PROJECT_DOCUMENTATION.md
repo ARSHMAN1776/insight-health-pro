@@ -609,16 +609,21 @@ Cancelled  Cancelled   Cancelled
 
 **Page:** `src/pages/BloodBank.tsx`
 
+The Blood Bank module is a comprehensive system for managing all aspects of blood donation, storage, and distribution. It includes donor registration, stock management, blood requests, transfusion records, compatibility checking, and detailed reporting.
+
 ### 7.1 Blood Bank Dashboard
 
 **File:** `src/components/blood-bank/BloodBankDashboard.tsx`
 
 | Feature | Description |
 |---------|-------------|
-| Stock Overview | Visual display of all blood group levels |
-| Quick Stats | Total donors, pending requests, recent donations |
-| Low Stock Alerts | Warning for blood groups below threshold |
-| Recent Activity | Latest donations and issues |
+| Stock Overview | Visual display of all blood group levels with color-coded status |
+| Quick Stats Cards | Total donors, pending requests, recent donations, issued units |
+| Low Stock Alerts | Warning indicators for blood groups below threshold |
+| Recent Activity Feed | Latest donations, issues, and requests timeline |
+| Blood Group Distribution Chart | Pie chart showing stock distribution |
+| Critical Alerts Banner | Urgent notifications for out-of-stock groups |
+| Quick Actions | Fast access to common operations |
 
 ### 7.2 Blood Groups Management
 
@@ -626,12 +631,24 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| View Blood Groups | List all blood group types |
+| View Blood Groups | List all 8 blood group types with current stock |
 | Add Blood Group | Create new blood group entry |
 | Edit Blood Group | Modify blood group details |
+| Stock Level Indicators | Visual bars showing current vs. target levels |
+| Compatibility Display | Quick reference for each group's compatibility |
 
 **Blood Groups Supported:**
-- A+, A-, B+, B-, AB+, AB-, O+, O-
+
+| Blood Group | Can Donate To | Can Receive From |
+|-------------|---------------|------------------|
+| A+ | A+, AB+ | A+, A-, O+, O- |
+| A- | A+, A-, AB+, AB- | A-, O- |
+| B+ | B+, AB+ | B+, B-, O+, O- |
+| B- | B+, B-, AB+, AB- | B-, O- |
+| AB+ | AB+ (Universal Recipient) | All Types |
+| AB- | AB+, AB- | A-, B-, AB-, O- |
+| O+ | A+, B+, AB+, O+ | O+, O- |
+| O- | All Types (Universal Donor) | O- |
 
 ### 7.3 Blood Stock Management
 
@@ -639,10 +656,25 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| View Stock | Current units per blood group |
-| Add Stock | Record new blood units |
-| Deduct Stock | Remove units from stock |
-| Stock History | Transaction log |
+| View Current Stock | Real-time units per blood group |
+| Add Stock | Record new blood units received |
+| Deduct Stock | Remove units (manual adjustment) |
+| Expire Stock | Mark units as expired |
+| Stock History | Complete transaction log with filters |
+| Threshold Configuration | Set minimum/maximum stock levels |
+| Batch Tracking | Track blood units by batch/collection date |
+| Auto-Alerts | Notifications when stock falls below minimum |
+
+#### Stock Transaction Types:
+
+| Type | Description |
+|------|-------------|
+| `add` | New units added (donation, transfer in) |
+| `issue` | Units issued to patient |
+| `expired` | Units removed due to expiration |
+| `adjustment` | Manual stock correction |
+| `disposed` | Units disposed (contamination, damage) |
+| `transfer_out` | Units transferred to other facility |
 
 ### 7.4 Blood Inventory
 
@@ -650,9 +682,13 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Inventory Grid | Visual blood group availability |
-| Expiry Tracking | Units nearing expiration |
-| Compatibility Chart | Blood type compatibility display |
+| Inventory Grid | Visual blood group availability matrix |
+| Expiry Tracking | Units nearing expiration with countdown |
+| Compatibility Chart | Interactive blood type compatibility display |
+| Stock Level Colors | Green (adequate), Yellow (low), Red (critical) |
+| Quick Issue | Fast-access buttons for common operations |
+| Inventory Export | Export current inventory to CSV/PDF |
+| Batch Details | View collection date, expiry, source for each batch |
 
 ### 7.5 Donor Management
 
@@ -660,21 +696,40 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Register Donor | Add new blood donor |
+| Register Donor | Add new blood donor with full details |
 | Edit Donor | Update donor information |
-| Delete Donor | Remove donor record |
-| Donor Status | Active/Inactive/Deferred |
-| Last Donation | Track donation history |
+| Delete Donor | Soft delete donor record |
+| Donor Status | Eligible/Deferred/Ineligible with reasons |
+| Last Donation | Track donation history per donor |
+| Donation Eligibility | Auto-calculate next eligible date |
+| Donor Search | Search by name, blood group, contact |
+| Donor History | Complete donation timeline per donor |
+| Contact Donors | Quick access to eligible donors for urgent needs |
+| Donor Statistics | Donation frequency, total contributions |
 
 #### Donor Data Fields:
 
-| Field | Type | Required |
-|-------|------|----------|
-| Name | Text | ✅ |
-| Blood Group | Select | ✅ |
-| Contact | Phone | ❌ |
-| Last Donation Date | Date | ❌ |
-| Status | Select | ✅ |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| Name | Text | ✅ | Full name of donor |
+| Blood Group | Select | ✅ | Donor's blood type |
+| Contact | Phone | ❌ | Phone number |
+| Email | Email | ❌ | Email address |
+| Date of Birth | Date | ❌ | For age verification |
+| Address | Text | ❌ | Donor address |
+| Last Donation Date | Date | ❌ | Most recent donation |
+| Status | Select | ✅ | Eligible/Deferred/Ineligible |
+| Deferral Reason | Text | ❌ | Reason if deferred |
+| Deferral Until | Date | ❌ | Deferral end date |
+| Notes | Textarea | ❌ | Additional notes |
+
+#### Donor Status Rules:
+
+| Status | Description |
+|--------|-------------|
+| Eligible | Can donate (56+ days since last donation) |
+| Deferred | Temporarily ineligible (medical reason, travel, etc.) |
+| Ineligible | Permanently cannot donate |
 
 ### 7.6 Donation Records
 
@@ -682,9 +737,27 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Record Donation | Log new blood donation |
-| Donation History | View all donations |
-| Donor Stats | Donations per donor |
+| Record Donation | Log new blood donation with all details |
+| Donation History | View all donations with filters |
+| Donor Stats | Donations per donor breakdown |
+| Blood Collection | Record collection date, volume, staff |
+| Health Screening | Pre-donation health check documentation |
+| Test Results | Blood testing status (HIV, Hep B, etc.) |
+| Certificate Generation | Generate donor appreciation certificates |
+| Bulk Recording | Record multiple donations at once |
+
+#### Donation Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Donor | Select | ✅ |
+| Blood Group | Select | ✅ |
+| Units Collected | Number | ✅ |
+| Collection Date | Date | ✅ |
+| Collected By | Text | ❌ |
+| Health Screening | Boolean | ✅ |
+| Test Results | Select | ❌ |
+| Notes | Textarea | ❌ |
 
 ### 7.7 Blood Requests
 
@@ -692,10 +765,28 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Create Request | New blood request |
-| Process Request | Fulfill or reject request |
-| Request Status | Pending/Approved/Fulfilled/Rejected |
-| Urgency Levels | Normal/Urgent/Emergency |
+| Create Request | New blood request from department/patient |
+| Process Request | Approve, fulfill, or reject request |
+| Request Status | Pending/Approved/Fulfilled/Rejected tracking |
+| Urgency Levels | Normal/Urgent/Emergency with color coding |
+| Patient Information | Link request to specific patient |
+| Compatibility Check | Auto-check patient blood type compatibility |
+| Request History | Complete request log with outcomes |
+| Cross-match Records | Document compatibility testing |
+
+#### Request Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Blood Group Needed | Select | ✅ |
+| Units Required | Number | ✅ |
+| Urgency | Select | ✅ |
+| Requesting Doctor | Select | ❌ |
+| Department | Select | ❌ |
+| Required By Date | Date | ❌ |
+| Reason | Textarea | ❌ |
+| Status | Select | ✅ |
 
 ### 7.8 Blood Issue
 
@@ -703,10 +794,14 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Issue Blood | Dispense blood to patient |
-| Record Details | Patient, units, blood group |
-| Cross-match | Compatibility verification |
+| Issue Blood | Dispense blood to patient from stock |
+| Patient Selection | Select patient with auto-fill blood type |
+| Compatibility Verification | Confirm cross-match before issue |
+| Stock Auto-Update | Automatically deduct from blood stock |
 | Issue History | Track all blood issues |
+| Receipt Generation | Print blood issue receipt |
+| Adverse Reaction Logging | Document any reactions |
+| Batch Selection | Choose specific batch to issue |
 
 #### Issue Data Fields:
 
@@ -717,6 +812,8 @@ Cancelled  Cancelled   Cancelled
 | Units Given | Number | ✅ |
 | Issued By | Text | ❌ |
 | Issue Date | Date | ✅ |
+| Batch Number | Text | ❌ |
+| Cross-match Verified | Boolean | ✅ |
 | Notes | Textarea | ❌ |
 
 ### 7.9 Transfusion Records
@@ -725,9 +822,29 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Record Transfusion | Log blood transfusion |
+| Record Transfusion | Log blood transfusion details |
 | Reaction Tracking | Document adverse reactions |
 | Transfusion History | Patient transfusion timeline |
+| Vital Signs Monitoring | Pre/post-transfusion vitals |
+| Staff Assignment | Nurse/doctor who administered |
+| Volume Tracking | Track actual volume transfused |
+| Incident Reporting | Report and track transfusion incidents |
+
+#### Transfusion Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Blood Issue Record | Select | ✅ |
+| Start Time | Datetime | ✅ |
+| End Time | Datetime | ❌ |
+| Volume Transfused | Number | ❌ |
+| Administered By | Select | ❌ |
+| Pre-Vitals | JSON | ❌ |
+| Post-Vitals | JSON | ❌ |
+| Adverse Reaction | Boolean | ✅ |
+| Reaction Details | Textarea | ❌ |
+| Notes | Textarea | ❌ |
 
 ### 7.10 Blood Availability Widget
 
@@ -736,39 +853,70 @@ Cancelled  Cancelled   Cancelled
 | Feature | Description |
 |---------|-------------|
 | Quick View | Dashboard widget for blood levels |
-| Color Coding | Green/Yellow/Red for availability |
-| Click to Expand | Opens detailed inventory |
+| Color Coding | Green (>75%), Yellow (25-75%), Red (<25%) |
+| Click to Expand | Opens detailed inventory modal |
+| Critical Alerts | Blinking indicator for out-of-stock |
+| Real-time Updates | Live stock level updates |
 
 ### 7.11 Blood Bank Reports
 
 **File:** `src/components/blood-bank/BloodBankReports.tsx`
 
-| Feature | Description |
-|---------|-------------|
-| Donation Reports | Donations by period |
-| Issue Reports | Blood issued by period |
-| Stock Reports | Inventory snapshots |
-| Donor Reports | Active donors, donation frequency |
+| Report Type | Description | Data Included |
+|-------------|-------------|---------------|
+| Donation Reports | Donations by period | Donor count, units collected, blood group breakdown |
+| Issue Reports | Blood issued by period | Patient count, units issued, by blood group |
+| Stock Reports | Inventory snapshots | Current stock, min/max, trends |
+| Donor Reports | Donor analytics | Active donors, frequency, demographics |
+| Expiry Reports | Expired units | Units lost, by blood group, cost impact |
+| Utilization Reports | Stock utilization | Usage rate, turnover, efficiency |
+| Compatibility Reports | Cross-match data | Success rate, issues |
+
+#### Report Filters:
+
+| Filter | Options |
+|--------|---------|
+| Date Range | Last 7/30/90 days, Year, Custom |
+| Blood Group | All, Specific group |
+| Transaction Type | All, Donations, Issues |
+| Donor Status | All, Active, Deferred |
 
 ### 7.12 Blood Compatibility Utilities
 
 **File:** `src/lib/bloodCompatibility.ts`
 
-| Function | Description |
-|----------|-------------|
-| `getCompatibleBloodTypes()` | Returns compatible donor types |
-| `canReceiveFrom()` | Check if recipient can receive from donor |
-| `canDonateTo()` | Check who can receive from donor |
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `getCompatibleBloodTypes(bloodGroup)` | Get compatible donor types for recipient | Array of blood groups |
+| `canReceiveFrom(recipient, donor)` | Check if recipient can receive from donor | Boolean |
+| `canDonateTo(donor, recipient)` | Check who can receive from donor | Boolean |
+| `getUniversalDonor()` | Get universal donor type | 'O-' |
+| `getUniversalRecipient()` | Get universal recipient type | 'AB+' |
+| `getCompatibilityMatrix()` | Get full compatibility matrix | Object |
+| `suggestAlternatives(bloodGroup)` | Suggest alternatives if unavailable | Array |
 
 ### 7.13 Blood Bank Validation
 
 **File:** `src/lib/bloodBankValidation.ts`
 
-| Function | Description |
-|----------|-------------|
-| `validateDonor()` | Validate donor eligibility |
-| `validateDonationInterval()` | Check minimum days between donations |
-| `validateBloodUnits()` | Validate stock levels |
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `validateDonor(donorData)` | Validate donor eligibility | { valid: boolean, errors: string[] } |
+| `validateDonationInterval(lastDonation)` | Check minimum 56 days between donations | Boolean |
+| `validateBloodUnits(units)` | Validate stock levels for issue | Boolean |
+| `validateAge(dateOfBirth)` | Verify donor age (18-65) | Boolean |
+| `validateCrossmatch(patient, bloodGroup)` | Verify blood compatibility | Boolean |
+| `checkDeferralStatus(donor)` | Check if donor is deferred | { deferred: boolean, until: Date } |
+
+### 7.14 Blood Bank Database Tables
+
+| Table | Description |
+|-------|-------------|
+| `blood_groups` | Blood type reference data (8 groups) |
+| `blood_stock` | Current stock levels per blood group |
+| `blood_stock_transactions` | Audit log of all stock changes |
+| `donors` | Blood donor information |
+| `blood_issues` | Blood dispensing records |
 
 ---
 
@@ -1027,27 +1175,58 @@ Cancelled  Cancelled   Cancelled
 
 **File:** `src/components/departments/DepartmentManagement.tsx`
 
-### Features:
+The Department Management module provides comprehensive control over hospital departments, including creation, staff assignment, performance tracking, and hierarchical organization.
+
+### 10.1 Core Features
 
 | Feature | Description |
 |---------|-------------|
-| Add Department | Create new department |
-| Edit Department | Update department details |
-| Delete Department | Remove department |
+| Add Department | Create new department with full configuration |
+| Edit Department | Update department details and settings |
+| Delete Department | Soft delete with reassignment options |
 | Assign Head | Assign department head (doctor) |
-| View Doctors | List doctors in department |
-| Status Management | Active/Inactive |
+| View Doctors | List all doctors in department |
+| View Staff | List all staff (doctors, nurses) in department |
+| Status Management | Active/Inactive status toggle |
+| Department Statistics | Patient count, appointments, revenue per department |
 
-### Department Data Fields:
+### 10.2 Department Data Fields
 
-| Field | Type | Required |
-|-------|------|----------|
-| Department Name | Text | ✅ |
-| Description | Textarea | ❌ |
-| Department Head | Select (Doctor) | ❌ |
-| Status | Select | ✅ |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| Department Name | Text | ✅ | Name of the department |
+| Description | Textarea | ❌ | Department description and services |
+| Department Head | Select (Doctor) | ❌ | Assigned head of department |
+| Status | Select | ✅ | Active/Inactive |
+| Location | Text | ❌ | Floor/Wing location |
+| Phone Extension | Text | ❌ | Internal phone extension |
+| Email | Email | ❌ | Department email |
+| Operating Hours | JSON | ❌ | Department specific hours |
 
-### Doctor-Department Assignment:
+### 10.3 Standard Hospital Departments
+
+| Department | Description |
+|------------|-------------|
+| Emergency | 24/7 emergency care and trauma |
+| Cardiology | Heart and cardiovascular conditions |
+| Neurology | Brain and nervous system disorders |
+| Orthopedics | Bone, joint, and muscle conditions |
+| Pediatrics | Child healthcare |
+| Gynecology | Women's reproductive health |
+| Oncology | Cancer diagnosis and treatment |
+| Radiology | Medical imaging and diagnostics |
+| Pathology | Laboratory testing and analysis |
+| General Medicine | Primary care and internal medicine |
+| Surgery | Surgical procedures and operations |
+| ICU | Intensive care unit |
+| Psychiatry | Mental health services |
+| Dermatology | Skin conditions and treatments |
+| ENT | Ear, nose, and throat |
+| Ophthalmology | Eye care and vision |
+| Dental | Dental and oral health |
+| Physiotherapy | Physical rehabilitation |
+
+### 10.4 Doctor-Department Assignment
 
 **Table:** `department_doctors`
 
@@ -1055,16 +1234,53 @@ Cancelled  Cancelled   Cancelled
 |---------|-------------|
 | Assign Doctor | Add doctor to department |
 | Remove Doctor | Remove from department |
-| Set Role | Primary/Consultant/Visiting |
-| Notes | Assignment notes |
+| Set Role | Primary/Consultant/Visiting designation |
+| Assignment Date | Track when assigned |
+| Notes | Assignment-specific notes |
+
+#### Assignment Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Department | Select | ✅ |
+| Doctor | Select | ✅ |
+| Role | Select | ❌ |
+| Notes | Textarea | ❌ |
+| Assigned At | Datetime | Auto |
+
+### 10.5 Department Dashboard Widgets
+
+| Widget | Description |
+|--------|-------------|
+| Patient Distribution | Pie chart of patients per department |
+| Appointment Load | Bar chart of appointments by department |
+| Staff Count | Doctors and nurses per department |
+| Revenue Breakdown | Financial contribution by department |
+| Bed Occupancy | Room utilization per department |
+
+### 10.6 Department API Functions
+
+| Function | Description |
+|----------|-------------|
+| `getDepartments()` | Fetch all departments |
+| `getDepartmentById(id)` | Get specific department |
+| `createDepartment(data)` | Create new department |
+| `updateDepartment(id, data)` | Update department |
+| `deleteDepartment(id)` | Delete department |
+| `getDepartmentDoctors(id)` | Get doctors in department |
+| `assignDoctorToDepartment(deptId, doctorId)` | Assign doctor |
+| `removeDoctorFromDepartment(deptId, doctorId)` | Remove doctor |
+| `getDepartmentStats(id)` | Get department statistics |
 
 ---
 
 ## 11. Staff Management Module
 
 **Pages:**
-- `src/pages/Staff.tsx`
-- `src/pages/StaffManagement.tsx`
+- `src/pages/Staff.tsx` - Staff listing and overview
+- `src/pages/StaffManagement.tsx` - Staff administration
+
+The Staff Management module handles all aspects of hospital personnel including doctors, nurses, and other clinical staff with registration, scheduling, and performance tracking.
 
 ### 11.1 Staff List
 
@@ -1072,44 +1288,74 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| View All Staff | List doctors, nurses, other staff |
-| Filter by Role | Doctor/Nurse filter |
-| Search | By name, department, specialization |
-| Status Filter | Active/Inactive/On Leave |
+| View All Staff | Comprehensive list of all staff members |
+| Filter by Role | Doctor/Nurse/Other filter options |
+| Search | Search by name, department, specialization, license |
+| Status Filter | Active/Inactive/On Leave filter |
+| Sort Options | By name, department, experience, join date |
+| Export | Export staff list to CSV/PDF |
+| Quick Actions | View profile, edit, schedule, status change |
+| Staff Cards | Visual card view with photo and key info |
+| Table View | Detailed table view with all fields |
 
-### 11.2 Doctor Registration
+### 11.2 Doctor Management
 
 **File:** `src/components/forms/DoctorRegistrationForm.tsx`
 
-| Field | Type | Required |
-|-------|------|----------|
-| First Name | Text | ✅ |
-| Last Name | Text | ✅ |
-| Email | Email | ❌ |
-| Phone | Phone | ❌ |
-| Specialization | Text | ✅ |
-| License Number | Text | ✅ |
-| Department | Select | ❌ |
-| Years of Experience | Number | ❌ |
-| Consultation Fee | Number | ❌ |
-| Status | Select | ✅ |
+| Feature | Description |
+|---------|-------------|
+| Register Doctor | Complete doctor registration form |
+| Edit Doctor | Update doctor information |
+| Department Assignment | Assign to one or more departments |
+| Availability Schedule | Configure working hours |
+| Consultation Fee | Set standard consultation fee |
+| User Account | Optional linked authentication account |
 
-### 11.3 Nurse Registration
+#### Doctor Data Fields:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| First Name | Text | ✅ | Doctor's first name |
+| Last Name | Text | ✅ | Doctor's last name |
+| Email | Email | ❌ | Contact email |
+| Phone | Phone | ❌ | Contact phone |
+| Specialization | Text | ✅ | Medical specialty |
+| License Number | Text | ✅ | Medical license number |
+| Department | Select | ❌ | Primary department |
+| Years of Experience | Number | ❌ | Years in practice |
+| Consultation Fee | Number | ❌ | Fee per consultation |
+| Education | Textarea | ❌ | Medical degrees and training |
+| Languages | Array | ❌ | Languages spoken |
+| Bio | Textarea | ❌ | Professional biography |
+| Status | Select | ✅ | Active/Inactive/On Leave |
+| User ID | UUID | ❌ | Linked auth account |
+
+### 11.3 Nurse Management
 
 **File:** `src/components/forms/NurseRegistrationForm.tsx`
 
-| Field | Type | Required |
-|-------|------|----------|
-| First Name | Text | ✅ |
-| Last Name | Text | ✅ |
-| Email | Email | ❌ |
-| Phone | Phone | ❌ |
-| Specialization | Text | ❌ |
-| License Number | Text | ✅ |
-| Department | Text | ❌ |
-| Shift Schedule | Text | ❌ |
-| Years of Experience | Number | ❌ |
-| Status | Select | ✅ |
+| Feature | Description |
+|---------|-------------|
+| Register Nurse | Complete nurse registration form |
+| Edit Nurse | Update nurse information |
+| Shift Assignment | Assign to day/night/rotating shifts |
+| Department Assignment | Assign to department |
+| Specialization | Nursing specialty (ICU, OR, Pediatric, etc.) |
+
+#### Nurse Data Fields:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| First Name | Text | ✅ | Nurse's first name |
+| Last Name | Text | ✅ | Nurse's last name |
+| Email | Email | ❌ | Contact email |
+| Phone | Phone | ❌ | Contact phone |
+| Specialization | Text | ❌ | Nursing specialty |
+| License Number | Text | ✅ | Nursing license number |
+| Department | Text | ❌ | Assigned department |
+| Shift Schedule | Select | ❌ | Day/Night/Rotating |
+| Years of Experience | Number | ❌ | Years in nursing |
+| Status | Select | ✅ | Active/Inactive/On Leave |
 
 ### 11.4 Staff Registration (Generic)
 
@@ -1117,9 +1363,11 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Role Selection | Choose staff type |
-| Dynamic Form | Form fields based on role |
-| Account Creation | Optional user account |
+| Role Selection | Choose staff type (doctor, nurse, pharmacist, receptionist) |
+| Dynamic Form | Form fields adapt based on selected role |
+| Account Creation | Option to create linked user account |
+| Department Selection | Multi-department assignment for doctors |
+| Credential Verification | License number validation |
 
 ### 11.5 Staff Schedule Manager
 
@@ -1127,24 +1375,75 @@ Cancelled  Cancelled   Cancelled
 
 | Feature | Description |
 |---------|-------------|
-| Set Schedule | Define working days/hours |
+| Set Schedule | Define working days and hours |
 | Break Times | Configure break periods |
-| Slot Duration | Appointment slot length |
-| View Schedule | Weekly schedule overview |
+| Slot Duration | Set appointment slot length |
+| Weekly View | Visual weekly schedule display |
+| Copy Schedule | Copy schedule to other days/staff |
+| Bulk Edit | Edit multiple staff schedules at once |
+| Calendar Integration | Sync with appointment system |
+| Leave Management | Mark days off/vacation |
+| On-Call Schedule | Configure on-call rotations |
 
 #### Schedule Data Fields:
 
-| Field | Type | Required |
-|-------|------|----------|
-| Staff ID | UUID | ✅ |
-| Staff Type | doctor/nurse | ✅ |
-| Day of Week | Number (0-6) | ✅ |
-| Start Time | Time | ✅ |
-| End Time | Time | ✅ |
-| Break Start | Time | ❌ |
-| Break End | Time | ❌ |
-| Slot Duration | Number (minutes) | ❌ |
-| Is Available | Boolean | ✅ |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| Staff ID | UUID | ✅ | Reference to staff member |
+| Staff Type | Select | ✅ | doctor/nurse/receptionist/pharmacist |
+| Day of Week | Number | ✅ | 0=Sunday through 6=Saturday |
+| Start Time | Time | ✅ | Shift start time |
+| End Time | Time | ✅ | Shift end time |
+| Break Start | Time | ❌ | Break start time |
+| Break End | Time | ❌ | Break end time |
+| Slot Duration | Number | ❌ | Minutes per appointment |
+| Is Available | Boolean | ✅ | Whether available this slot |
+| Notes | Textarea | ❌ | Schedule-specific notes |
+
+#### Schedule Utilities
+
+**File:** `src/lib/scheduleUtils.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getStaffSchedule(staffId)` | Get staff member's schedule |
+| `getAvailableSlots(staffId, date)` | Get available time slots for date |
+| `isTimeSlotAvailable(staffId, date, time)` | Check if specific slot is free |
+| `saveSchedule(scheduleData)` | Save schedule to database |
+| `getWeeklySchedule(staffId)` | Get full week schedule |
+| `copyScheduleToDay(fromDay, toDay)` | Copy schedule between days |
+| `getStaffOnDuty(date, time)` | Get all staff working at time |
+
+### 11.6 Staff Status Types
+
+| Status | Description | Can Work |
+|--------|-------------|----------|
+| Active | Currently employed and working | ✅ |
+| Inactive | Temporarily not working | ❌ |
+| On Leave | Approved leave of absence | ❌ |
+| Suspended | Pending investigation | ❌ |
+| Resigned | No longer employed | ❌ |
+
+### 11.7 Staff Performance Tracking
+
+| Metric | Description |
+|--------|-------------|
+| Appointments | Total appointments handled |
+| Patients | Unique patients treated |
+| Cancellation Rate | Cancelled appointments percentage |
+| Average Rating | Patient feedback rating |
+| Revenue Generated | Total billing from consultations |
+
+### 11.8 Staff Database Tables
+
+| Table | Description |
+|-------|-------------|
+| `doctors` | Doctor information and credentials |
+| `nurses` | Nursing staff information |
+| `staff_schedules` | Working hours and availability |
+| `department_doctors` | Doctor-department assignments |
+| `profiles` | Basic user profile (linked to auth) |
+| `user_roles` | Role assignments for access control |
 
 ---
 
@@ -1275,44 +1574,123 @@ Cancelled  Cancelled   Cancelled
 
 ### 14.1 User Settings
 
-| Setting | Description |
-|---------|-------------|
-| Profile | Update personal information |
-| Password | Change password |
-| Theme | Light/Dark mode toggle |
-| Notifications | Enable/disable notification types |
-| Language | Language preference (future) |
+| Setting | Description | Options |
+|---------|-------------|---------|
+| Profile | Update personal information | Name, phone, email |
+| Password | Change password | Current + new password |
+| Theme | Light/Dark mode toggle | Light, Dark, System |
+| Notifications | Enable/disable notification types | Email, Push, SMS per type |
+| Language | Language preference | English (expandable) |
+| Display Density | UI density preference | Comfortable, Compact |
 
 ### 14.2 Hospital Settings (Admin Only)
 
-| Setting | Description |
-|---------|-------------|
-| Hospital Name | Organization name |
-| Timezone | Hospital timezone |
-| Working Hours | Default operating hours |
-| Appointment Duration | Default slot duration |
-| Logo | Hospital logo upload |
-| Contact Info | Address, phone, email |
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Hospital Name | Organization name | Configurable |
+| Timezone | Hospital timezone | UTC (configurable) |
+| Working Hours | Default operating hours | 9:00 AM - 5:00 PM |
+| Appointment Duration | Default slot duration | 30 minutes |
+| Logo | Hospital logo upload | N/A |
+| Contact Info | Address, phone, email | Configurable |
+| Date Format | Date display format | MM/DD/YYYY |
+| Time Format | Time display format | 12-hour / 24-hour |
+| Currency | Currency for billing | USD |
+| Low Stock Threshold | Inventory alert threshold | 10 units |
+| Blood Stock Threshold | Blood bank alert level | 5 units |
 
-### 14.3 Settings Hook
+### 14.3 Timezone Configuration
+
+The system supports comprehensive timezone handling for hospitals operating across different geographic locations.
+
+#### Hospital Timezone Setting
+
+| Feature | Description |
+|---------|-------------|
+| Timezone Selection | Choose from 400+ IANA timezones |
+| Current Time Display | Show current time in hospital timezone |
+| Auto-detect | Option to auto-detect user's timezone |
+| DST Handling | Automatic Daylight Saving Time adjustments |
+
+#### Timezone Hook
+
+**File:** `src/hooks/useTimezone.ts`
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `getHospitalTimezone()` | Get configured hospital timezone | Timezone string (e.g., 'America/New_York') |
+| `formatInTimezone(date, format)` | Format date in hospital timezone | Formatted date string |
+| `convertToTimezone(date, targetTz)` | Convert date to specific timezone | Date object |
+| `getUserTimezone()` | Get user's browser timezone | Timezone string |
+| `getTimezoneOffset()` | Get offset from UTC | Number (hours) |
+| `isValidTimezone(tz)` | Validate timezone string | Boolean |
+
+#### Timezone Utilities
+
+**File:** `src/lib/timezoneUtils.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getHospitalTimezone()` | Fetch hospital timezone from settings |
+| `formatInTimezone(date, timezone, format)` | Format date in specific timezone |
+| `convertToTimezone(date, fromTz, toTz)` | Convert between timezones |
+| `getAvailableTimezones()` | Get list of all supported timezones |
+| `getCurrentTimeInTimezone(tz)` | Get current time in timezone |
+| `formatTimeForDisplay(time, timezone)` | Format time for UI display |
+| `parseDateInTimezone(dateStr, timezone)` | Parse date string in timezone |
+
+#### Common Timezone Use Cases
+
+| Scenario | Implementation |
+|----------|----------------|
+| Appointment Display | Show appointment times in hospital timezone |
+| Schedule Creation | Convert input to UTC for storage |
+| Report Generation | Use hospital timezone for date ranges |
+| User Display | Optionally show in user's local timezone |
+| Log Timestamps | Store in UTC, display in hospital timezone |
+
+#### Supported Timezone Regions
+
+| Region | Example Timezones |
+|--------|-------------------|
+| Americas | America/New_York, America/Los_Angeles, America/Chicago |
+| Europe | Europe/London, Europe/Paris, Europe/Berlin |
+| Asia | Asia/Tokyo, Asia/Shanghai, Asia/Kolkata |
+| Pacific | Pacific/Sydney, Pacific/Auckland, Pacific/Honolulu |
+| Middle East | Asia/Dubai, Asia/Jerusalem, Asia/Riyadh |
+| Africa | Africa/Cairo, Africa/Johannesburg, Africa/Lagos |
+
+### 14.4 Settings Hook
 
 **File:** `src/hooks/useSettings.ts`
 
 | Function | Description |
 |----------|-------------|
-| `getSetting()` | Get setting value |
-| `updateSetting()` | Update setting |
-| `getHospitalSettings()` | Get all hospital settings |
+| `getSetting(key)` | Get user setting by key |
+| `updateSetting(key, value)` | Update user setting |
+| `getHospitalSetting(category, key)` | Get hospital-wide setting |
+| `updateHospitalSetting(category, key, value)` | Update hospital setting (admin only) |
+| `getAllSettings()` | Get all user settings |
+| `resetToDefaults()` | Reset settings to defaults |
 
-### 14.4 Timezone Hook
+### 14.5 Settings Database Tables
 
-**File:** `src/hooks/useTimezone.ts`
+| Table | Description |
+|-------|-------------|
+| `user_settings` | Per-user preferences and settings |
+| `hospital_settings` | System-wide hospital configuration |
 
-| Function | Description |
-|----------|-------------|
-| `getHospitalTimezone()` | Get configured timezone |
-| `formatInTimezone()` | Format date in timezone |
-| `convertToTimezone()` | Convert date to timezone |
+### 14.6 Settings Categories
+
+| Category | Settings Included |
+|----------|-------------------|
+| `general` | Hospital name, timezone, date/time formats |
+| `appointments` | Default duration, buffer time, booking rules |
+| `notifications` | Email settings, SMS settings, push settings |
+| `billing` | Currency, tax settings, invoice templates |
+| `inventory` | Stock thresholds, expiry warnings |
+| `blood_bank` | Stock thresholds, donation intervals |
+| `security` | Session timeout, password policies |
 
 ---
 
