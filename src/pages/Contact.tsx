@@ -7,6 +7,7 @@ import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import { useToast } from '@/hooks/use-toast';
+import BackToTop from '@/components/shared/BackToTop';
 
 const Contact = () => {
   const { toast } = useToast();
@@ -160,6 +161,7 @@ const Contact = () => {
       </section>
 
       <Footer />
+      <BackToTop />
     </div>
   );
 };
