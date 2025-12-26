@@ -18,9 +18,12 @@ import {
   Mail,
   Phone,
   Building,
-  Filter
+  Filter,
+  Calendar
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
+import StaffScheduleManager from './StaffScheduleManager';
 
 interface StaffMember {
   id: string;
@@ -52,10 +55,19 @@ const roleColors: Record<string, string> = {
 };
 
 const StaffList: React.FC = () => {
+  const { isRole } = useAuth();
+  const isAdmin = isRole('admin');
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [selectedStaff, setSelectedStaff] = useState<{
+    id: string;
+    name: string;
+    type: 'doctor' | 'nurse';
+    specialization?: string;
+  } | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
   const fetchStaff = async () => {
     setLoading(true);
@@ -232,6 +244,7 @@ const StaffList: React.FC = () => {
                   <TableHead className="font-semibold hidden lg:table-cell">Contact</TableHead>
                   <TableHead className="font-semibold hidden xl:table-cell">License</TableHead>
                   <TableHead className="font-semibold hidden lg:table-cell">Joined</TableHead>
+                  {isAdmin && <TableHead className="font-semibold">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -332,6 +345,29 @@ const StaffList: React.FC = () => {
                             {formatDate(member.createdAt)}
                           </span>
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            {(member.role === 'doctor' || member.role === 'nurse') && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedStaff({
+                                    id: member.id,
+                                    name: `${member.firstName} ${member.lastName}`,
+                                    type: member.role as 'doctor' | 'nurse',
+                                    specialization: member.specialization || undefined
+                                  });
+                                  setScheduleDialogOpen(true);
+                                }}
+                                className="gap-1.5"
+                              >
+                                <Calendar className="w-3.5 h-3.5" />
+                                Schedule
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })
@@ -341,6 +377,16 @@ const StaffList: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Schedule Manager Dialog */}
+      <StaffScheduleManager
+        staff={selectedStaff || undefined}
+        isOpen={scheduleDialogOpen}
+        onClose={() => {
+          setScheduleDialogOpen(false);
+          setSelectedStaff(null);
+        }}
+      />
     </div>
   );
 };

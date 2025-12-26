@@ -1146,6 +1146,54 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_schedules: {
+        Row: {
+          break_end: string | null
+          break_start: string | null
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean | null
+          notes: string | null
+          slot_duration: number | null
+          staff_id: string
+          staff_type: string
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          break_end?: string | null
+          break_start?: string | null
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_available?: boolean | null
+          notes?: string | null
+          slot_duration?: number | null
+          staff_id: string
+          staff_type: string
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          break_end?: string | null
+          break_start?: string | null
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          notes?: string | null
+          slot_duration?: number | null
+          staff_id?: string
+          staff_type?: string
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       surgeries: {
         Row: {
           created_at: string | null
