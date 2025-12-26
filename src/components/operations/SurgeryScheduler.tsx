@@ -129,6 +129,16 @@ const SurgeryScheduler: React.FC<SurgerySchedulerProps> = ({ onSurgeryScheduled 
       return;
     }
 
+    // Validate end_time > start_time
+    if (formData.end_time <= formData.start_time) {
+      toast({
+        title: 'Validation Error',
+        description: 'End time must be after start time',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Check OT availability

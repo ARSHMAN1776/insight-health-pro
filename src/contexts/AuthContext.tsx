@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
+
+// Session timeout duration in milliseconds (30 minutes)
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 // User roles in the hospital system
 export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'receptionist' | 'pharmacist';
@@ -117,6 +120,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  // Reset the inactivity timer
+  const resetInactivityTimer = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Only set timeout if user is logged in
+    if (session) {
+      timeoutRef.current = setTimeout(async () => {
+        console.log('Session timeout due to inactivity');
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+      }, SESSION_TIMEOUT_MS);
+    }
+  }, [session]);
+
+  // Set up activity listeners for session timeout
+  useEffect(() => {
+    if (!session) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      return;
+    }
+
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    // Add listeners
+    activityEvents.forEach(event => {
+      document.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Start the timer
+    resetInactivityTimer();
+
+    return () => {
+      // Remove listeners
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+      
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [session, resetInactivityTimer]);
 
   const fetchUserData = async (userId: string, email: string, createdAt: string) => {
     try {
