@@ -1006,6 +1006,63 @@ export type Database = {
           },
         ]
       }
+      phi_audit_log: {
+        Row: {
+          action: string
+          changed_fields: string[] | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          patient_id: string | null
+          performed_by: string
+          performer_name: string | null
+          performer_role: string | null
+          reason: string | null
+          record_id: string
+          session_id: string | null
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          patient_id?: string | null
+          performed_by: string
+          performer_name?: string | null
+          performer_role?: string | null
+          reason?: string | null
+          record_id: string
+          session_id?: string | null
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          patient_id?: string | null
+          performed_by?: string
+          performer_name?: string | null
+          performer_role?: string | null
+          reason?: string | null
+          record_id?: string
+          session_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       post_operation: {
         Row: {
           complications: string | null
