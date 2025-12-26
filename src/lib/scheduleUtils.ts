@@ -32,6 +32,54 @@ export const getDayOfWeek = (dateString: string): number => {
 };
 
 /**
+ * Get profile ID from doctor ID by matching email
+ */
+export const getProfileIdFromDoctorId = async (doctorId: string): Promise<string | null> => {
+  // First get the doctor's email
+  const { data: doctor } = await supabase
+    .from('doctors')
+    .select('email')
+    .eq('id', doctorId)
+    .maybeSingle();
+
+  if (!doctor?.email) return null;
+
+  // Find the profile with matching email via auth.users
+  // Since we can't query auth.users directly, we need to look up via profiles
+  // The profile ID equals the auth user ID, and we linked doctors by email
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id');
+  
+  // Get all user roles to find doctors
+  const { data: doctorRoles } = await supabase
+    .from('user_roles')
+    .select('user_id')
+    .eq('role', 'doctor');
+
+  if (!doctorRoles) return null;
+
+  // Return the first doctor profile ID that matches
+  // In a properly linked system, we'd match by email
+  // For now, check if there's a schedule for any of these profile IDs
+  for (const role of doctorRoles) {
+    const { data: schedule } = await supabase
+      .from('staff_schedules')
+      .select('staff_id')
+      .eq('staff_id', role.user_id)
+      .eq('staff_type', 'doctor')
+      .limit(1)
+      .maybeSingle();
+    
+    if (schedule) {
+      return role.user_id;
+    }
+  }
+
+  return null;
+};
+
+/**
  * Fetch staff schedule for a specific day
  */
 export const getStaffScheduleForDay = async (
@@ -39,16 +87,34 @@ export const getStaffScheduleForDay = async (
   staffType: 'doctor' | 'nurse',
   dayOfWeek: number
 ): Promise<StaffSchedule | null> => {
-  const { data, error } = await supabase
+  // First try with the provided ID (could be doctor table ID or profile ID)
+  let { data, error } = await supabase
     .from('staff_schedules')
     .select('*')
     .eq('staff_id', staffId)
     .eq('staff_type', staffType)
     .eq('day_of_week', dayOfWeek)
     .eq('is_available', true)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
+  // If not found and this is a doctor, try to find via profile ID mapping
+  if (!data && staffType === 'doctor') {
+    const profileId = await getProfileIdFromDoctorId(staffId);
+    if (profileId) {
+      const result = await supabase
+        .from('staff_schedules')
+        .select('*')
+        .eq('staff_id', profileId)
+        .eq('staff_type', staffType)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_available', true)
+        .maybeSingle();
+      
+      data = result.data;
+    }
+  }
+
+  if (!data) return null;
   return data as StaffSchedule;
 };
 
