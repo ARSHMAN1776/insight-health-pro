@@ -16,8 +16,10 @@ import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Checkbox } from '../ui/checkbox';
 import { Switch } from '../ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DataTable from '../shared/DataTable';
 import ConfirmDialog from '../shared/ConfirmDialog';
+import BedAssignment from './BedAssignment';
 import { dataManager } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
 
@@ -279,11 +281,23 @@ const RoomManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold text-gradient">Room & Bed Management</h1>
-          <p className="text-muted-foreground mt-1">Manage hospital rooms, beds, and facilities</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-gradient">Room & Bed Management</h1>
+        <p className="text-muted-foreground mt-1">Manage hospital rooms, beds, and patient assignments</p>
+      </div>
+
+      <Tabs defaultValue="beds" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="beds">Bed Assignments</TabsTrigger>
+          <TabsTrigger value="rooms">Room Management</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="beds">
+          <BedAssignment />
+        </TabsContent>
+
+        <TabsContent value="rooms">
+          <div className="flex justify-end mb-4">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="btn-primary" onClick={() => { setSelectedRoom(null); form.reset(); }}>
@@ -749,6 +763,8 @@ const RoomManagement: React.FC = () => {
         }}
         addButtonText="Add Room"
       />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

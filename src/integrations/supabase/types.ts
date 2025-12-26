@@ -1266,6 +1266,7 @@ export type Database = {
       room_assignments: {
         Row: {
           admission_date: string
+          admission_reason: string | null
           assigned_by: string | null
           bed_number: number
           created_at: string | null
@@ -1275,10 +1276,12 @@ export type Database = {
           patient_id: string
           room_id: string
           status: string
+          surgery_id: string | null
           updated_at: string | null
         }
         Insert: {
           admission_date?: string
+          admission_reason?: string | null
           assigned_by?: string | null
           bed_number: number
           created_at?: string | null
@@ -1288,10 +1291,12 @@ export type Database = {
           patient_id: string
           room_id: string
           status?: string
+          surgery_id?: string | null
           updated_at?: string | null
         }
         Update: {
           admission_date?: string
+          admission_reason?: string | null
           assigned_by?: string | null
           bed_number?: number
           created_at?: string | null
@@ -1301,6 +1306,7 @@ export type Database = {
           patient_id?: string
           room_id?: string
           status?: string
+          surgery_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1316,6 +1322,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_assignments_surgery_id_fkey"
+            columns: ["surgery_id"]
+            isOneToOne: false
+            referencedRelation: "surgeries"
             referencedColumns: ["id"]
           },
         ]
