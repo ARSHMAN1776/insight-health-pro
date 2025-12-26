@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, CheckCircle, Loader2, Globe } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -31,6 +31,7 @@ import { Patient } from '../../lib/dataManager';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { TimeSlot, getAvailableTimeSlots, DAY_NAMES } from '@/lib/scheduleUtils';
+import { useTimezone } from '@/hooks/useTimezone';
 
 interface Department {
   department_id: string;
@@ -71,6 +72,7 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { timezone, getCurrentDate, getTimezoneDisplay, formatDate } = useTimezone();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -197,16 +199,18 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
     }
   };
 
-  // Get minimum date (tomorrow)
+  // Get minimum date (tomorrow in hospital timezone)
   const getMinDate = () => {
-    const tomorrow = new Date();
+    const currentDate = getCurrentDate();
+    const tomorrow = new Date(currentDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
   };
 
-  // Get maximum date (3 months from now)
+  // Get maximum date (3 months from now in hospital timezone)
   const getMaxDate = () => {
-    const maxDate = new Date();
+    const currentDate = getCurrentDate();
+    const maxDate = new Date(currentDate);
     maxDate.setMonth(maxDate.getMonth() + 3);
     return maxDate.toISOString().split('T')[0];
   };
@@ -344,6 +348,10 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                   <DialogDescription>
                     Fill in the details below to request an appointment. Our staff will confirm your booking.
                   </DialogDescription>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                    <Globe className="w-4 h-4" />
+                    <span>All times shown in {getTimezoneDisplay()}</span>
+                  </div>
                 </DialogHeader>
 
                 <Form {...form}>

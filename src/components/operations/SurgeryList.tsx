@@ -31,7 +31,7 @@ import { Eye, Edit, ClipboardList, UserPlus, Search, Filter } from 'lucide-react
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import SurgeryTeam from './SurgeryTeam';
 
 interface Surgery {
@@ -57,6 +57,7 @@ interface SurgeryListProps {
 
 const SurgeryList: React.FC<SurgeryListProps> = ({ refreshTrigger }) => {
   const { user } = useAuth();
+  const { formatDate, formatTime } = useTimezone();
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -288,8 +289,8 @@ const SurgeryList: React.FC<SurgeryListProps> = ({ refreshTrigger }) => {
                     </TableCell>
                     <TableCell>{surgery.surgery_type}</TableCell>
                     <TableCell>{surgery.operation_theatres?.ot_name}</TableCell>
-                    <TableCell>{format(new Date(surgery.surgery_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{surgery.start_time} - {surgery.end_time}</TableCell>
+                    <TableCell>{formatDate(surgery.surgery_date)}</TableCell>
+                    <TableCell>{formatTime(surgery.start_time)} - {formatTime(surgery.end_time)}</TableCell>
                     <TableCell>{getPriorityBadge(surgery.priority)}</TableCell>
                     <TableCell>{getStatusBadge(surgery.status)}</TableCell>
                     <TableCell>
@@ -376,13 +377,13 @@ const SurgeryList: React.FC<SurgeryListProps> = ({ refreshTrigger }) => {
                   <div>
                     <Label className="text-muted-foreground">Date</Label>
                     <p className="font-medium">
-                      {format(new Date(selectedSurgery.surgery_date), 'MMMM dd, yyyy')}
+                      {formatDate(selectedSurgery.surgery_date, 'MMMM dd, yyyy')}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Time</Label>
                     <p className="font-medium">
-                      {selectedSurgery.start_time} - {selectedSurgery.end_time}
+                      {formatTime(selectedSurgery.start_time)} - {formatTime(selectedSurgery.end_time)}
                     </p>
                   </div>
                   <div>

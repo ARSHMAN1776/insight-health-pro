@@ -22,7 +22,7 @@ import { Plus, CalendarPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 
 interface Patient {
   id: string;
@@ -49,23 +49,26 @@ interface SurgerySchedulerProps {
 
 const SurgeryScheduler: React.FC<SurgerySchedulerProps> = ({ onSurgeryScheduled }) => {
   const { user } = useAuth();
+  const { getCurrentDate } = useTimezone();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [theatres, setTheatres] = useState<OperationTheatre[]>([]);
   const [loading, setLoading] = useState(false);
   
-  const [formData, setFormData] = useState({
+  const getInitialFormData = () => ({
     patient_id: '',
     doctor_id: '',
     ot_id: '',
     surgery_type: '',
-    surgery_date: format(new Date(), 'yyyy-MM-dd'),
+    surgery_date: getCurrentDate(),
     start_time: '09:00',
     end_time: '11:00',
     priority: 'normal',
     notes: ''
   });
+  
+  const [formData, setFormData] = useState(getInitialFormData());
 
   const canSchedule = ['admin', 'receptionist', 'doctor'].includes(user?.role || '');
 
@@ -173,17 +176,7 @@ const SurgeryScheduler: React.FC<SurgerySchedulerProps> = ({ onSurgeryScheduled 
   };
 
   const resetForm = () => {
-    setFormData({
-      patient_id: '',
-      doctor_id: '',
-      ot_id: '',
-      surgery_type: '',
-      surgery_date: format(new Date(), 'yyyy-MM-dd'),
-      start_time: '09:00',
-      end_time: '11:00',
-      priority: 'normal',
-      notes: ''
-    });
+    setFormData(getInitialFormData());
   };
 
   if (!canSchedule) {
@@ -281,7 +274,7 @@ const SurgeryScheduler: React.FC<SurgerySchedulerProps> = ({ onSurgeryScheduled 
                 type="date"
                 value={formData.surgery_date}
                 onChange={(e) => setFormData({ ...formData, surgery_date: e.target.value })}
-                min={format(new Date(), 'yyyy-MM-dd')}
+                min={getCurrentDate()}
               />
             </div>
 
