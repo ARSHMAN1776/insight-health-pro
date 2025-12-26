@@ -40,9 +40,9 @@ const HeroSection = () => {
               <span className="block text-gradient mt-2">Management System</span>
             </h1>
             
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-              Streamline your healthcare operations with our comprehensive hospital management solution. 
-              Empowering healthcare providers and patients with cutting-edge technology.
+            <p className="text-lg text-foreground/90 leading-relaxed mb-8 [text-shadow:_0_2px_8px_rgb(0_0_0_/_40%)]">
+              <span className="font-medium">Streamline your healthcare operations</span> with our comprehensive hospital management solution. 
+              <span className="text-foreground font-medium">Empowering healthcare providers and patients</span> with cutting-edge technology.
             </p>
             
 
