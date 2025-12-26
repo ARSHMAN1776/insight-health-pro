@@ -18,8 +18,8 @@ const HeroSection = () => {
       {/* Full Background Image - Hospital Building */}
       <div className="absolute inset-0">
         <img 
-          src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&h=1080&fit=crop&q=90" 
-          alt="Modern hospital building exterior"
+          src="https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&h=1080&fit=crop&q=90" 
+          alt="Bright modern hospital with glass facade"
           className="w-full h-full object-cover"
         />
         {/* Minimal overlay for text readability */}
