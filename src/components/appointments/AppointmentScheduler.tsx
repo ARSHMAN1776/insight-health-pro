@@ -58,6 +58,7 @@ const AppointmentScheduler: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentDoctorsMap, setDepartmentDoctorsMap] = useState<{department_id: string; doctor_id: string}[]>([]);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -86,12 +87,18 @@ const AppointmentScheduler: React.FC = () => {
           .select('department_id, department_name, status')
           .eq('status', 'Active')
           .order('department_name');
+
+        // Fetch department_doctors assignments
+        const { data: deptDoctorsData } = await supabase
+          .from('department_doctors')
+          .select('department_id, doctor_id');
         
         setAppointments(appointmentsData);
         setPatients(patientsData);
         setDoctors(doctorsData);
         setFilteredDoctors(doctorsData);
         setDepartments(deptData || []);
+        setDepartmentDoctorsMap(deptDoctorsData || []);
       } catch (error) {
         console.error('Error loading data:', error);
         toast({
@@ -126,15 +133,23 @@ const AppointmentScheduler: React.FC = () => {
 
   useEffect(() => {
     if (selectedDepartmentId) {
-      // Filter doctors by department_id
-      const filtered = doctors.filter(d => d.department_id === selectedDepartmentId);
+      // Get doctor IDs assigned to this department from junction table
+      const assignedDoctorIds = departmentDoctorsMap
+        .filter(dd => dd.department_id === selectedDepartmentId)
+        .map(dd => dd.doctor_id);
+      
+      // Filter doctors: either directly assigned via department_id OR in junction table
+      const filtered = doctors.filter(d => 
+        d.department_id === selectedDepartmentId || 
+        assignedDoctorIds.includes(d.id)
+      );
       setFilteredDoctors(filtered);
       // Reset doctor selection when department changes
       form.setValue('doctorId', '');
     } else {
       setFilteredDoctors(doctors);
     }
-  }, [selectedDepartmentId, doctors, form]);
+  }, [selectedDepartmentId, doctors, departmentDoctorsMap, form]);
 
   const onSubmit = async (data: AppointmentFormData) => {
     try {
