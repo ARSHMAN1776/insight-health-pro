@@ -11,6 +11,13 @@ import { useToast } from '../../hooks/use-toast';
 import { dataManager, MedicalRecord, Patient, Doctor } from '../../lib/dataManager';
 import { FileText, Plus, Search, Calendar, User, Stethoscope } from 'lucide-react';
 import DataTable from '../shared/DataTable';
+import { useAuth } from '../../contexts/AuthContext';
+import { 
+  logMedicalRecordCreate, 
+  logMedicalRecordUpdate, 
+  logMedicalRecordDelete,
+  getUserContextFromAuth 
+} from '../../lib/auditLogger';
 
 const MedicalRecords: React.FC = () => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
@@ -21,6 +28,7 @@ const MedicalRecords: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadData();
@@ -74,10 +82,28 @@ const MedicalRecords: React.FC = () => {
     }
 
     try {
+      const userContext = user ? getUserContextFromAuth(
+        user, 
+        user.role, 
+        { first_name: user.firstName, last_name: user.lastName }
+      ) : null;
+      
       if (selectedRecord) {
         // Update existing record
+        const oldValues = { ...selectedRecord };
         const updated = await dataManager.updateMedicalRecord(selectedRecord.id, formData);
         if (updated) {
+          // Log the update for audit trail
+          if (userContext) {
+            await logMedicalRecordUpdate(
+              selectedRecord.id,
+              formData.patient_id,
+              oldValues,
+              formData,
+              userContext
+            );
+          }
+          
           setMedicalRecords(prev => prev.map(record => record.id === selectedRecord.id ? updated : record));
           toast({
             title: 'Success',
@@ -87,6 +113,17 @@ const MedicalRecords: React.FC = () => {
       } else {
         // Create new record
         const newRecord = await dataManager.createMedicalRecord(formData);
+        
+        // Log the creation for audit trail
+        if (userContext) {
+          await logMedicalRecordCreate(
+            newRecord.id,
+            formData.patient_id,
+            formData,
+            userContext
+          );
+        }
+        
         setMedicalRecords(prev => [...prev, newRecord]);
         toast({
           title: 'Success',
