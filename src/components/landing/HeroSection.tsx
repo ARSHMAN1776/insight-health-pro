@@ -1,118 +1,105 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowRight, Stethoscope, Play } from 'lucide-react';
+import { ArrowRight, Users, Clock, Shield, Award, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import AnimatedBackground from './AnimatedBackground';
+import FloatingElements from './FloatingElements';
+import AnimatedCounter from './AnimatedCounter';
+import ScrollAnimationWrapper from './ScrollAnimationWrapper';
+
+const stats = [
+  { icon: Users, value: 50000, suffix: '+', label: 'Patients Served', delay: 0 },
+  { icon: Award, value: 500, suffix: '+', label: 'Healthcare Pros', delay: 100 },
+  { icon: Clock, value: 99, suffix: '.9%', label: 'System Uptime', delay: 200 },
+  { icon: Shield, value: 24, suffix: '/7', label: 'Support', delay: 300 },
+];
 
 const HeroSection = () => {
   const navigate = useNavigate();
 
-  const stats = [
-    { value: '10,000+', label: 'Patients Served' },
-    { value: '50+', label: 'Healthcare Professionals' },
-    { value: '99.9%', label: 'Uptime Reliability' },
-    { value: '24/7', label: 'Support Available' }
-  ];
-
   return (
-    <section className="relative py-16 lg:py-24 overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-medical-green/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      {/* Animated Background */}
+      <AnimatedBackground />
+      <FloatingElements />
       
       <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
-          <div className="space-y-8 animate-fade-in">
-            <div className="inline-block">
-              <span className="inline-flex items-center space-x-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20 animate-pulse">
-                <CheckCircle className="w-4 h-4" />
-                <span>Trusted Healthcare Platform</span>
-              </span>
+        <div className="max-w-5xl mx-auto text-center">
+          {/* Badge */}
+          <ScrollAnimationWrapper delay={0}>
+            <div className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-xl border border-primary/20 text-primary px-5 py-2.5 rounded-full text-sm font-semibold mb-8 shadow-lg">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+              Now with AI-Powered Diagnostics
             </div>
-            
-            <h1 className="text-5xl lg:text-7xl font-bold text-foreground leading-tight">
-              Modern Healthcare
-              <span className="block text-gradient mt-2">Management System</span>
+          </ScrollAnimationWrapper>
+          
+          {/* Main Headline */}
+          <ScrollAnimationWrapper delay={100}>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-6 leading-[1.1] tracking-tight">
+              Healthcare
+              <span className="text-gradient-mesh block">Reimagined</span>
             </h1>
-            
-            <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
-              Streamline your healthcare operations with our comprehensive hospital management solution. 
-              Empowering healthcare providers and patients with cutting-edge technology.
+          </ScrollAnimationWrapper>
+          
+          {/* Subheadline */}
+          <ScrollAnimationWrapper delay={200}>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+              The complete hospital management platform that empowers healthcare providers 
+              to deliver exceptional patient care with cutting-edge technology.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          </ScrollAnimationWrapper>
+          
+          {/* CTA Buttons */}
+          <ScrollAnimationWrapper delay={300}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Button 
                 size="lg" 
                 onClick={() => navigate('/login')}
-                className="btn-primary text-lg px-10 group"
+                className="btn-primary text-lg px-10 py-7 rounded-2xl group relative overflow-hidden"
               >
-                Get Started
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <span className="relative z-10 flex items-center">
+                  Get Started Free
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="text-lg px-10 py-7 rounded-2xl border-2 border-border hover:bg-muted/50 hover:border-primary/30 group backdrop-blur-xl"
+              >
+                <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
+                Watch Demo
               </Button>
             </div>
-
-            {/* Animated Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8">
-              {stats.map((stat, index) => (
-                <div 
-                  key={index} 
-                  className="text-center p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300 hover:scale-105"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="text-3xl font-bold text-primary">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right - Hero Image */}
-          <div className="hidden lg:block animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <div className="relative">
-              {/* Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-medical-green/30 rounded-3xl blur-3xl"></div>
-              
-              {/* Main Image */}
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-border/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&h=600&fit=crop&q=80" 
-                  alt="Medical professionals consulting with patient"
-                  className="w-full h-[500px] object-cover hover:scale-105 transition-transform duration-700"
-                />
-                {/* Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent"></div>
-                
-                {/* Floating Card */}
-                <div className="absolute bottom-6 left-6 right-6 bg-card/90 backdrop-blur-xl rounded-2xl p-4 border border-border/50 shadow-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-medical-green flex items-center justify-center">
-                      <Play className="w-5 h-5 text-white ml-0.5" />
+          </ScrollAnimationWrapper>
+          
+          {/* Stats */}
+          <ScrollAnimationWrapper delay={400}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+              {stats.map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <div 
+                    key={index} 
+                    className="glass-card p-6 rounded-2xl hover:shadow-glow transition-all duration-500 hover:-translate-y-1"
+                  >
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-foreground">See How It Works</p>
-                      <p className="text-sm text-muted-foreground">Watch our 2-minute demo</p>
+                    <div className="text-3xl font-bold text-foreground mb-1">
+                      <AnimatedCounter end={stat.value} suffix={stat.suffix} />
                     </div>
+                    <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
                   </div>
-                </div>
-              </div>
-
-              {/* Floating Badge */}
-              <div className="absolute -top-4 -right-4 bg-card rounded-2xl p-4 shadow-xl border border-border/50 animate-bounce" style={{ animationDuration: '3s' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">HIPAA Compliant</p>
-                    <p className="text-xs text-muted-foreground">100% Secure</p>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          </div>
+          </ScrollAnimationWrapper>
         </div>
       </div>
+      
+      {/* Bottom Gradient Fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
     </section>
   );
 };

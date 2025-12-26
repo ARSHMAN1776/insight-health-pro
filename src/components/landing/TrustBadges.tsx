@@ -1,73 +1,79 @@
 import React from 'react';
-import { Shield, Award, Clock, HeartPulse, Lock, CheckCircle } from 'lucide-react';
+import { Shield, Lock, Award, CheckCircle, Zap, Globe } from 'lucide-react';
+import ScrollAnimationWrapper from './ScrollAnimationWrapper';
 
 const badges = [
   {
     icon: Shield,
     title: 'HIPAA Compliant',
-    description: 'Fully compliant with healthcare data protection standards',
-    color: 'bg-medical-blue',
+    description: 'Full healthcare data protection',
+    gradient: 'from-primary to-primary/70',
   },
   {
     icon: Lock,
-    title: 'Bank-Level Security',
-    description: '256-bit SSL encryption for all data transfers',
-    color: 'bg-medical-green',
-  },
-  {
-    icon: Clock,
-    title: '24/7 Support',
-    description: 'Round-the-clock technical and medical support',
-    color: 'bg-medical-purple',
+    title: 'End-to-End Encryption',
+    description: '256-bit AES encryption',
+    gradient: 'from-success to-success/70',
   },
   {
     icon: Award,
-    title: 'Award Winning',
-    description: 'Recognized for excellence in healthcare technology',
-    color: 'bg-medical-orange',
-  },
-  {
-    icon: HeartPulse,
-    title: '99.9% Uptime',
-    description: 'Reliable service when you need it most',
-    color: 'bg-medical-red',
+    title: 'SOC 2 Type II',
+    description: 'Certified security practices',
+    gradient: 'from-warning to-warning/70',
   },
   {
     icon: CheckCircle,
-    title: 'SOC 2 Certified',
-    description: 'Meeting the highest security standards',
-    color: 'bg-gold',
+    title: 'HL7 FHIR',
+    description: 'Healthcare interoperability',
+    gradient: 'from-info to-info/70',
+  },
+  {
+    icon: Zap,
+    title: '99.99% Uptime',
+    description: 'Enterprise reliability',
+    gradient: 'from-destructive to-destructive/70',
+  },
+  {
+    icon: Globe,
+    title: 'GDPR Ready',
+    description: 'International compliance',
+    gradient: 'from-primary to-info',
   },
 ];
 
 const TrustBadges = () => {
   return (
-    <section className="py-16 bg-muted/30">
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="text-center mb-12">
+    <section className="py-20 bg-muted/30 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-dots opacity-20"></div>
+      
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        <ScrollAnimationWrapper className="text-center mb-12">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-            Trusted & Secure
+            Trusted by Healthcare Leaders
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Your data security is our top priority. We maintain the highest industry standards.
+            Built with enterprise-grade security and compliance standards
           </p>
-        </div>
+        </ScrollAnimationWrapper>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {badges.map((badge, index) => {
             const Icon = badge.icon;
             return (
-              <div 
+              <ScrollAnimationWrapper 
                 key={index} 
-                className="group flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                delay={index * 50}
+                className="group"
               >
-                <div className={`w-14 h-14 ${badge.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className="w-7 h-7 text-white" />
+                <div className="h-full p-5 rounded-2xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-500 hover:-translate-y-1 hover:shadow-lg text-center">
+                  <div className={`w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br ${badge.gradient} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-500`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-bold text-foreground text-sm mb-1">{badge.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{badge.description}</p>
                 </div>
-                <h3 className="font-semibold text-foreground mb-2 text-sm">{badge.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{badge.description}</p>
-              </div>
+              </ScrollAnimationWrapper>
             );
           })}
         </div>

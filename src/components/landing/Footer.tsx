@@ -1,177 +1,135 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Heart, Phone, Mail, MapPin, Facebook, Twitter, Linkedin, Instagram, ArrowRight } from 'lucide-react';
+import { Heart, ArrowRight, Facebook, Twitter, Linkedin, Instagram, Mail, Phone, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const Footer = () => {
-  const navigate = useNavigate();
-
   return (
-    <footer className="bg-foreground text-background relative overflow-hidden">
+    <footer className="bg-gray-900 text-gray-300 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-dots opacity-5"></div>
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+      
       {/* Newsletter Section */}
-      <div className="border-b border-background/10">
-        <div className="container mx-auto px-4 lg:px-8 py-12">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Stay Updated</h3>
-              <p className="text-background/70">Get the latest health tips and updates delivered to your inbox.</p>
-            </div>
-            <div className="flex w-full lg:w-auto gap-3">
+      <div className="border-b border-gray-800">
+        <div className="container mx-auto px-4 lg:px-8 py-16">
+          <div className="max-w-4xl mx-auto text-center">
+            <h3 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+              Stay Updated with Healthcare Insights
+            </h3>
+            <p className="text-lg text-gray-400 mb-8">
+              Get the latest news, tips, and product updates delivered to your inbox.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
               <Input 
                 type="email" 
                 placeholder="Enter your email" 
-                className="bg-background/10 border-background/20 text-background placeholder:text-background/50 min-w-[300px]"
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 rounded-xl py-6 focus:border-primary"
               />
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary px-8 py-6 rounded-xl font-semibold whitespace-nowrap">
                 Subscribe
-                <ArrowRight className="ml-2 w-4 h-4" />
+                <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
           </div>
         </div>
       </div>
-
+      
       {/* Main Footer */}
       <div className="container mx-auto px-4 lg:px-8 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                <Heart className="w-6 h-6 text-primary-foreground" />
+          <div className="lg:col-span-1">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <Heart className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">HealthCare HMS</h2>
-                <p className="text-xs text-background/60">Hospital Management System</p>
+                <span className="text-xl font-bold text-white">HealthCare</span>
+                <span className="block text-xs text-gray-500">HMS Platform</span>
               </div>
             </div>
-            <p className="text-background/70 leading-relaxed">
-              Empowering healthcare through innovative technology solutions. Your health is our priority.
+            <p className="text-gray-400 mb-6 leading-relaxed">
+              Empowering healthcare providers with cutting-edge technology for exceptional patient care.
             </p>
             <div className="flex gap-3">
-              <a href="#" className="w-10 h-10 rounded-full bg-background/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-background/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-background/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Linkedin className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-background/10 hover:bg-primary flex items-center justify-center transition-colors">
-                <Instagram className="w-4 h-4" />
-              </a>
+              {[Facebook, Twitter, Linkedin, Instagram].map((Icon, index) => (
+                <button 
+                  key={index}
+                  className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-primary hover:text-white transition-colors duration-300"
+                >
+                  <Icon className="w-5 h-5" />
+                </button>
+              ))}
             </div>
           </div>
-
+          
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-lg mb-6">Quick Links</h3>
+            <h4 className="text-white font-bold mb-6">Quick Links</h4>
             <ul className="space-y-4">
-              <li>
-                <button onClick={() => navigate('/about')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  About Us
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigate('/services')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  Services
-                </button>
-              </li>
-              <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  Departments
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  Careers
-                </a>
-              </li>
+              {['About Us', 'Services', 'Departments', 'Careers', 'Blog'].map((link, index) => (
+                <li key={index}>
+                  <a href="#" className="text-gray-400 hover:text-primary transition-colors duration-300">
+                    {link}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
-
+          
           {/* Support */}
           <div>
-            <h3 className="font-semibold text-lg mb-6">Support</h3>
+            <h4 className="text-white font-bold mb-6">Support</h4>
             <ul className="space-y-4">
-              <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  Terms of Service
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
-                  <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                  Contact Us
-                </a>
-              </li>
+              {['Help Center', 'Privacy Policy', 'Terms of Service', 'Documentation', 'API Reference'].map((link, index) => (
+                <li key={index}>
+                  <a href="#" className="text-gray-400 hover:text-primary transition-colors duration-300">
+                    {link}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
-
+          
           {/* Contact */}
           <div>
-            <h3 className="font-semibold text-lg mb-6">Contact Us</h3>
+            <h4 className="text-white font-bold mb-6">Contact Us</h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-background/10 flex items-center justify-center flex-shrink-0">
-                  <Phone className="w-4 h-4 text-primary" />
-                </div>
+                <Phone className="w-5 h-5 text-primary mt-0.5" />
                 <div>
-                  <p className="text-sm text-background/60">Phone</p>
-                  <p className="font-medium">+1 (555) 123-4567</p>
+                  <div className="text-gray-400">1-800-HEALTH</div>
+                  <div className="text-xs text-gray-500">Mon-Fri, 9am-6pm EST</div>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-background/10 flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-background/60">Email</p>
-                  <p className="font-medium">info@healthcare.com</p>
-                </div>
+                <Mail className="w-5 h-5 text-primary mt-0.5" />
+                <div className="text-gray-400">support@healthcare-hms.com</div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-background/10 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-background/60">Address</p>
-                  <p className="font-medium">123 Medical Center Dr<br />Healthcare City, HC 12345</p>
+                <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                <div className="text-gray-400">
+                  123 Medical Plaza<br />
+                  San Francisco, CA 94102
                 </div>
               </li>
             </ul>
           </div>
         </div>
       </div>
-
+      
       {/* Copyright */}
-      <div className="border-t border-background/10">
+      <div className="border-t border-gray-800">
         <div className="container mx-auto px-4 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-background/60">
-            <p>&copy; {new Date().getFullYear()} HealthCare HMS. All rights reserved.</p>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="#" className="hover:text-primary transition-colors">Terms</a>
-              <a href="#" className="hover:text-primary transition-colors">Cookies</a>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">
+              © {new Date().getFullYear()} HealthCare HMS. All rights reserved.
+            </p>
+            <div className="flex gap-6 text-sm">
+              <a href="#" className="text-gray-500 hover:text-primary transition-colors">Privacy</a>
+              <a href="#" className="text-gray-500 hover:text-primary transition-colors">Terms</a>
+              <a href="#" className="text-gray-500 hover:text-primary transition-colors">Cookies</a>
             </div>
           </div>
         </div>
