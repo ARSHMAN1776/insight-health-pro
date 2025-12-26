@@ -9,27 +9,45 @@
 2. [System Overview](#2-system-overview)
 3. [Technology Stack](#3-technology-stack)
 4. [User Roles & Permissions](#4-user-roles--permissions)
-5. [System Modules](#5-system-modules)
-6. [Database Architecture](#6-database-architecture)
-7. [Security Features](#7-security-features)
-8. [User Interface](#8-user-interface)
-9. [API & Integrations](#9-api--integrations)
-10. [System Requirements](#10-system-requirements)
+5. [Public Website Modules](#5-public-website-modules)
+6. [Core System Modules](#6-core-system-modules)
+7. [Blood Bank Module](#7-blood-bank-module)
+8. [Operation Theatre Module](#8-operation-theatre-module)
+9. [Patient Portal Module](#9-patient-portal-module)
+10. [Department Management](#10-department-management)
+11. [Staff Management Module](#11-staff-management-module)
+12. [Notification & Reminder System](#12-notification--reminder-system)
+13. [Reports & Analytics](#13-reports--analytics)
+14. [Settings & Configuration](#14-settings--configuration)
+15. [Database Architecture](#15-database-architecture)
+16. [Security Features](#16-security-features)
+17. [Edge Functions & APIs](#17-edge-functions--apis)
+18. [Custom Hooks](#18-custom-hooks)
+19. [Utility Libraries](#19-utility-libraries)
+20. [UI Components Library](#20-ui-components-library)
+21. [System Requirements](#21-system-requirements)
+22. [File Structure](#22-file-structure)
 
 ---
 
 ## 1. Executive Summary
 
-The Hospital Management System (HMS) is a comprehensive, web-based healthcare management solution designed to streamline hospital operations, enhance patient care, and improve administrative efficiency. The system provides a centralized platform for managing patients, appointments, medical records, billing, inventory, and staff operations.
+The Hospital Management System (HMS) is a comprehensive, web-based healthcare management solution designed to streamline hospital operations, enhance patient care, and improve administrative efficiency. The system provides a centralized platform for managing patients, appointments, medical records, billing, inventory, blood bank, operation theatres, and staff operations.
 
 ### Key Benefits
 
-- **Centralized Data Management**: All patient and operational data in one secure location
-- **Role-Based Access Control**: Secure access with permissions based on user roles
-- **Real-Time Updates**: Live data synchronization across all modules
-- **Responsive Design**: Accessible on desktop, tablet, and mobile devices
-- **Comprehensive Reporting**: Analytics and insights for informed decision-making
-- **Notification System**: Real-time alerts and reminders for staff and patients
+| Benefit | Description |
+|---------|-------------|
+| **Centralized Data Management** | All patient and operational data in one secure location |
+| **Role-Based Access Control** | Secure access with permissions based on 6 different user roles |
+| **Real-Time Updates** | Live data synchronization across all modules |
+| **Responsive Design** | Accessible on desktop, tablet, and mobile devices |
+| **Comprehensive Reporting** | Analytics and insights for informed decision-making |
+| **Notification System** | Real-time alerts and reminders for staff and patients |
+| **Blood Bank Management** | Complete blood inventory, donors, and transfusion tracking |
+| **Operation Theatre Management** | Surgery scheduling, team management, and post-op care |
+| **Patient Self-Service Portal** | Patients can book appointments, message doctors, request refills |
+| **Multi-Timezone Support** | Hospital timezone configuration for global operations |
 
 ---
 
@@ -37,23 +55,26 @@ The Hospital Management System (HMS) is a comprehensive, web-based healthcare ma
 
 ### 2.1 Public-Facing Website
 
-| Page | Description |
-|------|-------------|
-| **Landing Page** | Professional homepage with hospital information, services overview, and login access |
-| **About Us** | Hospital history, mission, vision, values, and leadership team profiles |
-| **Services** | Comprehensive list of medical departments, specializations, and healthcare services |
-| **Login Portal** | Separate login options for staff and patients with secure authentication |
+| Page | Route | Description | Key Features |
+|------|-------|-------------|--------------|
+| **Landing Page** | `/` | Professional homepage | Hero section with hospital image, features grid, team section, testimonials, trust badges, CTA section |
+| **About Us** | `/about` | Hospital information | History, mission, vision, values, leadership team profiles |
+| **Services** | `/services` | Medical services list | Department listing, specializations, healthcare services offered |
+| **Contact** | `/contact` | Contact information | Contact form with real email delivery, Google Maps integration, contact info cards |
+| **Login Portal** | `/login` | Authentication page | Staff and patient login with role-based redirection |
 
 ### 2.2 Dashboard System
 
 The system provides **6 role-specific dashboards**:
 
-1. **Admin Dashboard** - Complete system oversight with analytics
-2. **Doctor Dashboard** - Patient management and clinical workflows
-3. **Nurse Dashboard** - Patient care coordination and task management
-4. **Patient Dashboard** - Personal health portal and appointment booking
-5. **Receptionist Dashboard** - Front desk operations and scheduling
-6. **Pharmacist Dashboard** - Prescription and inventory management
+| Dashboard | Target User | Key Widgets |
+|-----------|-------------|-------------|
+| **Admin Dashboard** | Administrators | System statistics, pending verifications, recent activities, user management shortcuts |
+| **Doctor Dashboard** | Physicians | Today's appointments, patient queue, recent prescriptions, lab results pending |
+| **Nurse Dashboard** | Nursing Staff | Patient assignments, room status, task list, medication schedules |
+| **Patient Dashboard** | Patients | Upcoming appointments, prescriptions, medical history, doctor messaging |
+| **Receptionist Dashboard** | Front Desk | Appointment scheduling, patient registration queue, billing shortcuts |
+| **Pharmacist Dashboard** | Pharmacy Staff | Prescription queue, inventory alerts, drug dispensing |
 
 ---
 
@@ -61,39 +82,42 @@ The system provides **6 role-specific dashboards**:
 
 ### 3.1 Frontend Technologies
 
-| Technology | Purpose |
-|------------|---------|
-| **React 18.3** | Core UI framework |
-| **TypeScript** | Type-safe development |
-| **Vite** | Build tool and development server |
-| **Tailwind CSS** | Utility-first styling |
-| **shadcn/ui** | Pre-built accessible UI components |
-| **React Router** | Client-side routing |
-| **TanStack Query** | Server state management |
-| **Recharts** | Data visualization and charts |
-| **Lucide React** | Icon library |
-| **date-fns** | Date manipulation |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 18.3.1 | Core UI framework with functional components and hooks |
+| **TypeScript** | Latest | Type-safe development with strict type checking |
+| **Vite** | Latest | Build tool and development server with HMR |
+| **Tailwind CSS** | Latest | Utility-first CSS styling framework |
+| **shadcn/ui** | Latest | Pre-built accessible UI components based on Radix UI |
+| **React Router** | 6.26.2 | Client-side routing with protected routes |
+| **TanStack Query** | 5.56.2 | Server state management with caching |
+| **Recharts** | 3.1.0 | Data visualization and charting |
+| **Lucide React** | 0.462.0 | Icon library with 1000+ icons |
+| **date-fns** | 3.6.0 | Date manipulation and formatting |
+| **date-fns-tz** | 3.2.0 | Timezone handling |
+| **React Hook Form** | 7.53.0 | Form state management |
+| **Zod** | 3.23.8 | Schema validation |
+| **Sonner** | 1.5.0 | Toast notifications |
+| **Framer Motion** | Implied | Animations and transitions |
 
 ### 3.2 Backend Technologies
 
 | Technology | Purpose |
 |------------|---------|
 | **Supabase** | Backend-as-a-Service platform |
-| **PostgreSQL** | Relational database |
-| **Supabase Auth** | Authentication and authorization |
-| **Row Level Security (RLS)** | Database-level access control |
-| **Edge Functions** | Serverless backend logic |
-| **Real-time Subscriptions** | Live data updates |
+| **PostgreSQL** | Relational database with advanced features |
+| **Supabase Auth** | Authentication and session management |
+| **Row Level Security (RLS)** | Database-level access control policies |
+| **Edge Functions** | Serverless Deno-based backend logic |
+| **Real-time Subscriptions** | Live data updates via WebSocket |
+| **Storage Buckets** | File storage for lab reports and documents |
 
-### 3.3 Additional Libraries
+### 3.3 External Integrations
 
-| Library | Purpose |
-|---------|---------|
-| **React Hook Form** | Form management |
-| **Zod** | Schema validation |
-| **Sonner** | Toast notifications |
-| **Framer Motion** | Animations (implied) |
-| **date-fns-tz** | Timezone handling |
+| Integration | Purpose |
+|-------------|---------|
+| **Resend** | Email delivery for contact forms and notifications |
+| **Google Maps** | Location display on contact page |
 
 ---
 
@@ -101,667 +125,1682 @@ The system provides **6 role-specific dashboards**:
 
 ### 4.1 Role Definitions
 
-| Role | Description |
-|------|-------------|
-| **Admin** | Full system access, user management, settings control |
-| **Doctor** | Clinical operations, patient care, prescriptions, lab tests |
-| **Nurse** | Patient care, room management, medical records assistance |
-| **Patient** | Personal health information, appointment booking |
-| **Receptionist** | Front desk operations, scheduling, billing |
-| **Pharmacist** | Prescription management, medication dispensing, inventory |
+| Role | Code | Description |
+|------|------|-------------|
+| **Admin** | `admin` | Full system access, user management, settings control, system configuration |
+| **Doctor** | `doctor` | Clinical operations, patient care, prescriptions, lab tests, medical records |
+| **Nurse** | `nurse` | Patient care, room management, medical records assistance, medication administration |
+| **Patient** | `patient` | Personal health information, appointment booking, messaging, prescription refills |
+| **Receptionist** | `receptionist` | Front desk operations, scheduling, billing, patient registration verification |
+| **Pharmacist** | `pharmacist` | Prescription management, medication dispensing, inventory control |
 
-### 4.2 Module Access Matrix
+### 4.2 Complete Module Access Matrix
 
 | Module | Admin | Doctor | Nurse | Patient | Receptionist | Pharmacist |
 |--------|:-----:|:------:|:-----:|:-------:|:------------:|:----------:|
 | Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Patients | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Patient Registry | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Patient Registry | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
 | Appointments | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Medical Records | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Prescriptions | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
 | Lab Tests | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Rooms & Beds | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
 | Billing | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Pharmacy | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Staff | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Pharmacy/Inventory | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Blood Bank | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Operation Theatre | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Departments | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Staff Management | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Reports | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Settings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
+### 4.3 Patient Registration Workflow
+
+```
+Patient Signup → Pending Verification Status → 
+Admin/Receptionist Review → Approve/Reject → 
+Patient Notified → Active Status
+```
+
+**Queue States:**
+- `pending` - Awaiting review
+- `approved` - Patient verified and active
+- `rejected` - Registration rejected with reason
+
 ---
 
-## 5. System Modules
+## 5. Public Website Modules
 
-### 5.1 Patient Management
+### 5.1 Landing Page (`/`)
 
-**Features:**
-- Patient registration with comprehensive demographic data
-- Medical history tracking
-- Insurance information management
-- Emergency contact details
-- Search and filter functionality
-- Patient status tracking (Active/Inactive)
+**File:** `src/pages/Index.tsx`
 
-**Data Captured:**
-- Personal Information (name, DOB, gender, contact)
-- Medical Details (blood type, allergies, medical history)
-- Insurance Details (provider, policy number)
-- Emergency Contact Information
+| Component | File | Features |
+|-----------|------|----------|
+| **Navbar** | `src/components/landing/Navbar.tsx` | Glassmorphic navigation, mobile responsive menu, login/signup buttons, scroll animations |
+| **HeroSection** | `src/components/landing/HeroSection.tsx` | Full-screen background image, animated text, CTA button, gradient overlays |
+| **AnimatedBackground** | `src/components/landing/AnimatedBackground.tsx` | Mesh gradient background with floating elements |
+| **FloatingElements** | `src/components/landing/FloatingElements.tsx` | 3D floating medical icons with animations |
+| **FeaturesSection** | `src/components/landing/FeaturesSection.tsx` | 6 feature cards with icons, images, hover effects |
+| **BentoGrid** | `src/components/landing/BentoGrid.tsx` | Modern bento grid layout showcasing features |
+| **TrustBadges** | `src/components/landing/TrustBadges.tsx` | Certification and compliance badges |
+| **TeamSection** | `src/components/landing/TeamSection.tsx` | Leadership team with photos, bios, social links |
+| **TestimonialsSection** | `src/components/landing/TestimonialsSection.tsx` | Patient testimonials with ratings and photos |
+| **CTASection** | `src/components/landing/CTASection.tsx` | Call-to-action section with gradient background |
+| **Footer** | `src/components/landing/Footer.tsx` | Multi-column footer with links, contact info, social icons |
+| **ScrollAnimationWrapper** | `src/components/landing/ScrollAnimationWrapper.tsx` | Scroll-triggered animations wrapper |
+| **AnimatedCounter** | `src/components/landing/AnimatedCounter.tsx` | Animated statistics counter |
 
-### 5.2 Appointment Scheduling
+### 5.2 About Us Page (`/about`)
 
-**Features:**
-- Real-time appointment booking
-- Doctor availability management
-- Appointment type categorization
-- Status tracking (Scheduled, Completed, Cancelled, No-Show)
-- Duration configuration
-- Notes and symptoms recording
-- Calendar view integration
+**File:** `src/pages/AboutUs.tsx`
 
-**Appointment Types:**
+| Section | Features |
+|---------|----------|
+| Hero Section | Page title with gradient text |
+| Mission & Vision | Company values and goals |
+| History Timeline | Hospital milestones |
+| Leadership Team | Staff profiles with photos |
+| Achievements | Awards and certifications |
+
+### 5.3 Services Page (`/services`)
+
+**File:** `src/pages/Services.tsx`
+
+| Section | Features |
+|---------|----------|
+| Services Grid | All medical departments listed |
+| Department Cards | Icon, description, specialties |
+| Feature Highlights | Key capabilities per department |
+
+### 5.4 Contact Page (`/contact`)
+
+**File:** `src/pages/Contact.tsx`
+
+| Section | Features |
+|---------|----------|
+| Contact Info Cards | Address, phone, email, working hours with gradient icons |
+| Contact Form | Name, email, phone, subject, message fields |
+| Form Validation | Real-time validation with error messages |
+| Email Delivery | Sends email to `arshmanrasool75@gmail.com` via Resend |
+| Confirmation Email | Auto-sends thank you email to user |
+| Google Maps | Embedded interactive location map |
+| Loading State | Spinner during form submission |
+
+**Edge Function:** `supabase/functions/send-contact-email/index.ts`
+
+### 5.5 Login Page (`/login`)
+
+**File:** `src/pages/Login.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Email/Password Login | Standard authentication |
+| Role-Based Redirect | Redirects to appropriate dashboard |
+| Remember Me | Session persistence option |
+| Error Handling | Clear error messages |
+| Loading States | Submit button loading indicator |
+
+---
+
+## 6. Core System Modules
+
+### 6.1 Patient Management
+
+**Files:**
+- `src/components/patients/PatientManagement.tsx`
+- `src/components/forms/PatientRegistrationForm.tsx`
+
+#### Features:
+
+| Feature | Description |
+|---------|-------------|
+| Patient List | Searchable, filterable data table |
+| Patient Registration | Comprehensive registration form |
+| Edit Patient | Update patient information |
+| Delete Patient | Soft delete with confirmation |
+| Search | By name, email, phone, blood type |
+| Filter | By status (Active/Inactive) |
+| Export | Data export functionality |
+
+#### Data Fields:
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| First Name | Text | ✅ | Min 2 characters |
+| Last Name | Text | ✅ | Min 2 characters |
+| Date of Birth | Date | ✅ | Must be in past |
+| Gender | Select | ✅ | Male/Female/Other |
+| Email | Email | ❌ | Valid email format |
+| Phone | Phone | ❌ | Valid phone format |
+| Address | Text | ❌ | - |
+| Blood Type | Select | ❌ | A+/A-/B+/B-/AB+/AB-/O+/O- |
+| Allergies | Text | ❌ | - |
+| Medical History | Textarea | ❌ | - |
+| Emergency Contact Name | Text | ❌ | - |
+| Emergency Contact Phone | Phone | ❌ | - |
+| Insurance Provider | Text | ❌ | - |
+| Insurance Policy Number | Text | ❌ | - |
+| Department | Select | ❌ | From departments list |
+| Status | Select | ✅ | Active/Inactive/Pending |
+
+### 6.2 Patient Registry (Verification Queue)
+
+**File:** `src/pages/PatientRegistry.tsx`
+
+#### Features:
+
+| Feature | Description |
+|---------|-------------|
+| Pending Queue | List of patients awaiting verification |
+| Approve Patient | Activate patient account |
+| Reject Patient | Reject with reason |
+| View Details | Patient information modal |
+| Bulk Actions | Approve/Reject multiple patients |
+| Notification | Auto-notify patient on status change |
+
+#### Queue Widget:
+
+**File:** `src/components/dashboard/PendingVerificationsWidget.tsx`
+- Shows count of pending verifications
+- Quick access link to registry page
+
+### 6.3 Appointment Scheduling
+
+**File:** `src/components/appointments/AppointmentScheduler.tsx`
+
+#### Features:
+
+| Feature | Description |
+|---------|-------------|
+| Schedule Appointment | Book new appointments |
+| Edit Appointment | Modify existing appointments |
+| Cancel Appointment | Cancel with status update |
+| View by Department | Filter by department |
+| Doctor Availability | Real-time availability check |
+| Time Slot Selection | Available slots based on doctor schedule |
+| Status Management | Scheduled/Confirmed/Completed/Cancelled/No-Show |
+| Quick Stats | Today's appointments, pending, completed counts |
+
+#### Appointment Types:
+
 - Consultation
 - Follow-up
 - Emergency
 - Routine Check-up
 - Specialist Visit
 
-### 5.3 Medical Records
+#### Status Workflow:
 
-**Features:**
-- Comprehensive visit documentation
-- Diagnosis and treatment recording
-- Medication tracking
-- Follow-up scheduling
-- Doctor notes
-- Historical record access
-- Symptom documentation
+```
+Scheduled → Confirmed → In Progress → Completed
+    ↓          ↓           ↓
+Cancelled  Cancelled   Cancelled
+    ↓
+ No-Show
+```
 
-### 5.4 Prescription Management
+### 6.4 Medical Records
 
-**Features:**
-- Digital prescription creation
-- Medication database integration
-- Dosage and frequency specification
-- Duration setting
-- Special instructions
-- Drug interaction warnings
-- Side effects documentation
-- Prescription status tracking (Active, Completed, Cancelled)
+**File:** `src/components/medical/MedicalRecords.tsx`
 
-### 5.5 Laboratory Tests
+#### Features:
 
-**Features:**
-- Test ordering system
-- Multiple test types support
-- Result recording
-- Normal range indication
-- Priority levels (Normal, Urgent, STAT)
-- Lab technician assignment
-- Cost tracking
-- Status management (Pending, In Progress, Completed)
+| Feature | Description |
+|---------|-------------|
+| Create Record | New visit documentation |
+| Edit Record | Update existing records |
+| View History | Patient medical history timeline |
+| Search Records | By patient, doctor, date |
+| Filter | By date range, doctor |
+| Print/Export | Generate printable records |
 
-### 5.6 Room & Bed Management
+#### Data Fields:
 
-**Features:**
-- Room type categorization (ICU, General, Private, Semi-Private)
-- Occupancy tracking
-- Floor and department assignment
-- Daily rate configuration
-- Amenities listing
-- Status management (Available, Occupied, Maintenance)
-- Capacity monitoring
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Doctor | Select | ✅ |
+| Visit Date | Date | ✅ |
+| Symptoms | Textarea | ❌ |
+| Diagnosis | Textarea | ❌ |
+| Treatment | Textarea | ❌ |
+| Medications | Textarea | ❌ |
+| Notes | Textarea | ❌ |
+| Follow-up Date | Date | ❌ |
 
-### 5.7 Billing & Payments
+### 6.5 Prescription Management
 
-**Features:**
-- Patient billing generation
-- Payment recording
-- Multiple payment methods (Cash, Card, Insurance, Bank Transfer)
-- Invoice generation
-- Payment status tracking (Pending, Paid, Overdue, Refunded)
-- Transaction ID recording
-- Revenue analytics
+**File:** `src/components/prescriptions/PrescriptionManagement.tsx`
 
-### 5.8 Pharmacy & Inventory
+#### Features:
 
-**Features:**
-- Medication inventory management
-- Stock level monitoring
-- Expiry date tracking
-- Reorder alerts (minimum stock levels)
-- Supplier management
-- Batch number tracking
-- Category organization
-- Location tracking within facility
+| Feature | Description |
+|---------|-------------|
+| Create Prescription | New prescription entry |
+| Edit Prescription | Modify existing prescription |
+| Delete Prescription | Remove prescription |
+| Drug Interactions | Warning system for interactions |
+| Side Effects | Document known side effects |
+| Refill Requests | Process patient refill requests |
+| Status Tracking | Active/Completed/Cancelled |
 
-### 5.9 Staff Management
+#### Data Fields:
 
-**Features:**
-- Doctor registration and management
-- Nurse registration and management
-- Staff scheduling
-- Department assignment
-- License verification
-- Specialization tracking
-- Contact information management
-- Status tracking (Active, Inactive, On Leave)
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Doctor | Select | ✅ |
+| Medication Name | Text | ✅ |
+| Dosage | Text | ❌ |
+| Frequency | Text | ❌ |
+| Duration | Text | ❌ |
+| Quantity | Number | ❌ |
+| Instructions | Textarea | ❌ |
+| Side Effects | Textarea | ❌ |
+| Drug Interactions | Textarea | ❌ |
+| Date Prescribed | Date | ✅ |
+| Status | Select | ✅ |
 
-### 5.10 Reports & Analytics
+### 6.6 Laboratory Tests
 
-**Features:**
-- Dashboard statistics
-- Appointment analytics
-- Revenue reports
-- Department distribution
-- Time-range filtering (7 days, 30 days, 90 days, 1 year)
-- Visual charts and graphs
-- Export capabilities
+**File:** `src/components/lab-tests/LabTestManagement.tsx`
 
-**Report Types:**
-- Patient statistics
-- Appointment status distribution
-- Revenue trends
-- Department staff distribution
-- Lab test analytics
+#### Features:
 
-### 5.11 Notification System
+| Feature | Description |
+|---------|-------------|
+| Order Test | Create new lab test order |
+| Record Results | Enter test results |
+| Upload Report | Attach lab report images |
+| Priority Levels | Normal/Urgent/STAT |
+| Status Tracking | Pending/In Progress/Completed |
+| Normal Ranges | Display reference ranges |
+| Cost Tracking | Test cost management |
+| Assign Technician | Lab technician assignment |
 
-**Features:**
-- Real-time in-app notifications
-- Priority levels (Low, Normal, High, Urgent)
-- Notification types (System, Appointment, Lab Result, Prescription, Alert, Reminder)
-- Read/unread status
-- Action URLs
-- Metadata support
-- Email/SMS/Push notification flags
-- Expiration dates
+#### Test Types:
 
-### 5.12 Reminder System
+- Blood Tests (CBC, Lipid Panel, Blood Sugar, etc.)
+- Urine Tests
+- Imaging (X-Ray, MRI, CT Scan, Ultrasound)
+- Pathology
+- Microbiology
+- Cardiology (ECG, Echo)
 
-**Features:**
-- Custom reminder creation
-- Scheduling with specific times
-- Recurring reminders (Daily, Weekly, Monthly)
-- Related entity linking (appointments, prescriptions, etc.)
-- Status tracking (Pending, Sent, Dismissed)
-- User-specific reminders
+#### Data Fields:
 
-### 5.13 Settings
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Doctor | Select | ✅ |
+| Test Name | Text | ✅ |
+| Test Type | Select | ❌ |
+| Test Date | Date | ✅ |
+| Priority | Select | ✅ |
+| Lab Technician | Text | ❌ |
+| Results | Textarea | ❌ |
+| Normal Range | Text | ❌ |
+| Cost | Number | ❌ |
+| Notes | Textarea | ❌ |
+| Report Image URL | File | ❌ |
+| Status | Select | ✅ |
 
-**Features:**
-- User profile management
-- Password change
-- Theme preferences (Light/Dark mode)
-- Notification preferences
-- Language settings
-- Hospital-wide settings (Admin only)
+**Storage:** Lab reports stored in `lab-reports` Supabase storage bucket.
+
+### 6.7 Room & Bed Management
+
+**Files:**
+- `src/components/rooms/RoomManagement.tsx`
+- `src/components/rooms/BedAssignment.tsx`
+
+#### Room Management Features:
+
+| Feature | Description |
+|---------|-------------|
+| Add Room | Create new room entry |
+| Edit Room | Modify room details |
+| Delete Room | Remove room |
+| View Occupancy | Current patients in room |
+| Status Management | Available/Occupied/Maintenance |
+
+#### Room Types:
+
+- ICU (Intensive Care Unit)
+- General Ward
+- Private Room
+- Semi-Private Room
+- Emergency Room
+- Pediatric Ward
+- Maternity Ward
+- Surgical Ward
+
+#### Bed Assignment Features:
+
+| Feature | Description |
+|---------|-------------|
+| Assign Patient | Assign patient to bed |
+| Transfer Patient | Move to different room/bed |
+| Discharge Patient | Release from room |
+| Admission Notes | Record admission reason |
+| Surgery Link | Link to surgery record |
+
+#### Room Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Room Number | Text | ✅ |
+| Room Type | Select | ✅ |
+| Department | Text | ❌ |
+| Floor | Number | ❌ |
+| Capacity | Number | ✅ |
+| Daily Rate | Number | ❌ |
+| Amenities | Array | ❌ |
+| Status | Select | ✅ |
+| Notes | Textarea | ❌ |
+
+### 6.8 Billing & Payments
+
+**Files:**
+- `src/pages/Billing.tsx`
+- `src/components/payments/PaymentsList.tsx`
+- `src/components/forms/PaymentManagementForm.tsx`
+
+#### Features:
+
+| Feature | Description |
+|---------|-------------|
+| Create Invoice | Generate patient invoice |
+| Record Payment | Log payment received |
+| Payment History | View all transactions |
+| Search Payments | By patient, date, status |
+| Filter | By payment method, status |
+| Invoice Generation | Auto-generate invoice numbers |
+| Export | Export payment data |
+
+#### Payment Methods:
+
+- Cash
+- Credit Card
+- Debit Card
+- Insurance
+- Bank Transfer
+- Online Payment
+
+#### Payment Statuses:
+
+- Pending
+- Paid
+- Overdue
+- Refunded
+- Partially Paid
+
+#### Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Amount | Number | ✅ |
+| Payment Date | Date | ✅ |
+| Payment Method | Select | ✅ |
+| Payment Status | Select | ✅ |
+| Description | Textarea | ❌ |
+| Invoice Number | Text | Auto-generated |
+| Transaction ID | Text | ❌ |
+
+### 6.9 Pharmacy & Inventory
+
+**Files:**
+- `src/pages/Pharmacy.tsx`
+- `src/components/inventory/InventoryManagement.tsx`
+
+#### Features:
+
+| Feature | Description |
+|---------|-------------|
+| Add Item | Add new inventory item |
+| Edit Item | Update item details |
+| Delete Item | Remove item |
+| Stock Alerts | Low stock notifications |
+| Expiry Tracking | Items nearing expiration |
+| Restock | Record restocking |
+| Search | By name, category, supplier |
+| Filter | By category, status |
+
+#### Inventory Categories:
+
+- Medications
+- Medical Supplies
+- Equipment
+- Surgical Instruments
+- Laboratory Supplies
+- PPE (Personal Protective Equipment)
+- First Aid Supplies
+
+#### Stock Status:
+
+- Available
+- Low Stock (below minimum)
+- Out of Stock
+- Expired
+- Discontinued
+
+#### Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Item Name | Text | ✅ |
+| Category | Select | ❌ |
+| Current Stock | Number | ✅ |
+| Minimum Stock | Number | ❌ |
+| Maximum Stock | Number | ❌ |
+| Unit Price | Number | ❌ |
+| Supplier | Text | ❌ |
+| Batch Number | Text | ❌ |
+| Expiry Date | Date | ❌ |
+| Last Restocked | Date | ❌ |
+| Location | Text | ❌ |
+| Status | Select | ✅ |
 
 ---
 
-## 6. Database Architecture
+## 7. Blood Bank Module
 
-### 6.1 Entity Relationship Overview
+**Page:** `src/pages/BloodBank.tsx`
+
+### 7.1 Blood Bank Dashboard
+
+**File:** `src/components/blood-bank/BloodBankDashboard.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Stock Overview | Visual display of all blood group levels |
+| Quick Stats | Total donors, pending requests, recent donations |
+| Low Stock Alerts | Warning for blood groups below threshold |
+| Recent Activity | Latest donations and issues |
+
+### 7.2 Blood Groups Management
+
+**File:** `src/components/blood-bank/BloodGroupsManagement.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| View Blood Groups | List all blood group types |
+| Add Blood Group | Create new blood group entry |
+| Edit Blood Group | Modify blood group details |
+
+**Blood Groups Supported:**
+- A+, A-, B+, B-, AB+, AB-, O+, O-
+
+### 7.3 Blood Stock Management
+
+**File:** `src/components/blood-bank/BloodStockManagement.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| View Stock | Current units per blood group |
+| Add Stock | Record new blood units |
+| Deduct Stock | Remove units from stock |
+| Stock History | Transaction log |
+
+### 7.4 Blood Inventory
+
+**File:** `src/components/blood-bank/BloodInventory.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Inventory Grid | Visual blood group availability |
+| Expiry Tracking | Units nearing expiration |
+| Compatibility Chart | Blood type compatibility display |
+
+### 7.5 Donor Management
+
+**File:** `src/components/blood-bank/DonorManagement.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Register Donor | Add new blood donor |
+| Edit Donor | Update donor information |
+| Delete Donor | Remove donor record |
+| Donor Status | Active/Inactive/Deferred |
+| Last Donation | Track donation history |
+
+#### Donor Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Name | Text | ✅ |
+| Blood Group | Select | ✅ |
+| Contact | Phone | ❌ |
+| Last Donation Date | Date | ❌ |
+| Status | Select | ✅ |
+
+### 7.6 Donation Records
+
+**File:** `src/components/blood-bank/DonationRecords.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Record Donation | Log new blood donation |
+| Donation History | View all donations |
+| Donor Stats | Donations per donor |
+
+### 7.7 Blood Requests
+
+**File:** `src/components/blood-bank/BloodRequests.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Create Request | New blood request |
+| Process Request | Fulfill or reject request |
+| Request Status | Pending/Approved/Fulfilled/Rejected |
+| Urgency Levels | Normal/Urgent/Emergency |
+
+### 7.8 Blood Issue
+
+**File:** `src/components/blood-bank/BloodIssue.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Issue Blood | Dispense blood to patient |
+| Record Details | Patient, units, blood group |
+| Cross-match | Compatibility verification |
+| Issue History | Track all blood issues |
+
+#### Issue Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Blood Group | Select | ✅ |
+| Units Given | Number | ✅ |
+| Issued By | Text | ❌ |
+| Issue Date | Date | ✅ |
+| Notes | Textarea | ❌ |
+
+### 7.9 Transfusion Records
+
+**File:** `src/components/blood-bank/TransfusionRecords.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Record Transfusion | Log blood transfusion |
+| Reaction Tracking | Document adverse reactions |
+| Transfusion History | Patient transfusion timeline |
+
+### 7.10 Blood Availability Widget
+
+**File:** `src/components/blood-bank/BloodAvailabilityWidget.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Quick View | Dashboard widget for blood levels |
+| Color Coding | Green/Yellow/Red for availability |
+| Click to Expand | Opens detailed inventory |
+
+### 7.11 Blood Bank Reports
+
+**File:** `src/components/blood-bank/BloodBankReports.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Donation Reports | Donations by period |
+| Issue Reports | Blood issued by period |
+| Stock Reports | Inventory snapshots |
+| Donor Reports | Active donors, donation frequency |
+
+### 7.12 Blood Compatibility Utilities
+
+**File:** `src/lib/bloodCompatibility.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getCompatibleBloodTypes()` | Returns compatible donor types |
+| `canReceiveFrom()` | Check if recipient can receive from donor |
+| `canDonateTo()` | Check who can receive from donor |
+
+### 7.13 Blood Bank Validation
+
+**File:** `src/lib/bloodBankValidation.ts`
+
+| Function | Description |
+|----------|-------------|
+| `validateDonor()` | Validate donor eligibility |
+| `validateDonationInterval()` | Check minimum days between donations |
+| `validateBloodUnits()` | Validate stock levels |
+
+---
+
+## 8. Operation Theatre Module
+
+**Page:** `src/pages/OperationDepartment.tsx`
+
+### 8.1 Operation Theatres Management
+
+**File:** `src/components/operations/OperationTheatres.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Add OT | Create new operation theatre |
+| Edit OT | Update OT details |
+| Delete OT | Remove operation theatre |
+| Status Management | Available/In Use/Maintenance |
+| Equipment Tracking | List of equipment in each OT |
+
+#### OT Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| OT Name | Text | ✅ |
+| Floor | Number | ❌ |
+| Equipment | Array | ❌ |
+| Status | Select | ✅ |
+| Notes | Textarea | ❌ |
+
+### 8.2 Surgery List
+
+**File:** `src/components/operations/SurgeryList.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| View Surgeries | List all surgeries |
+| Filter | By status, date, doctor, priority |
+| Search | By patient, surgery type |
+| Status Updates | Change surgery status |
+
+### 8.3 Surgery Scheduler
+
+**File:** `src/components/operations/SurgeryScheduler.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Schedule Surgery | Book surgery slot |
+| Edit Surgery | Modify surgery details |
+| Cancel Surgery | Cancel with reason |
+| OT Availability | Check theatre availability |
+| Conflict Detection | Prevent double-booking |
+
+#### Surgery Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | Select | ✅ |
+| Doctor | Select | ✅ |
+| Surgery Type | Text | ✅ |
+| Surgery Date | Date | ✅ |
+| Start Time | Time | ✅ |
+| End Time | Time | ✅ |
+| Operation Theatre | Select | ✅ |
+| Priority | Select | ✅ |
+| Notes | Textarea | ❌ |
+| Status | Select | ✅ |
+
+#### Surgery Statuses:
+
+- Scheduled
+- Pre-Op
+- In Progress
+- Completed
+- Cancelled
+- Postponed
+
+#### Priority Levels:
+
+- Elective
+- Urgent
+- Emergency
+
+### 8.4 Surgery Team Management
+
+**File:** `src/components/operations/SurgeryTeam.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Add Team Member | Assign staff to surgery |
+| Edit Role | Change team member role |
+| Remove Member | Remove from surgery team |
+
+#### Team Roles:
+
+- Lead Surgeon
+- Assistant Surgeon
+- Anesthesiologist
+- Scrub Nurse
+- Circulating Nurse
+- Surgical Technician
+
+#### Team Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Surgery | Select | ✅ |
+| Staff Name | Text | ✅ |
+| Role | Select | ✅ |
+| Notes | Textarea | ❌ |
+
+### 8.5 Surgical Consent Form
+
+**File:** `src/components/operations/SurgicalConsentForm.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Generate Form | Create consent document |
+| Patient Signature | Digital signature capture |
+| Print Form | Printable consent document |
+| Store Record | Save signed consent |
+
+**Component:** `src/components/shared/SignaturePad.tsx` - Digital signature capture
+
+### 8.6 Post-Operation Care
+
+**File:** `src/components/operations/PostOperation.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Add Post-Op Record | Document post-surgery care |
+| Vital Signs | Track patient vitals |
+| Complications | Record any complications |
+| Medications | Post-op medication notes |
+| Recovery Notes | Recovery progress documentation |
+| Follow-up Date | Schedule follow-up appointment |
+| Discharge Status | Ready/Not Ready |
+
+#### Post-Op Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Surgery | Select | ✅ |
+| Vital Signs | JSON | ❌ |
+| Recovery Notes | Textarea | ❌ |
+| Complications | Textarea | ❌ |
+| Medication Notes | Textarea | ❌ |
+| Follow-up Date | Date | ❌ |
+| Discharge Status | Select | ✅ |
+
+---
+
+## 9. Patient Portal Module
+
+### 9.1 Patient Portal Navigation
+
+**File:** `src/components/patient-portal/PatientPortalNav.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Tab Navigation | Switch between portal sections |
+| Active Indicator | Highlight current section |
+| Mobile Responsive | Collapsible on mobile |
+
+### 9.2 Personal Information Section
+
+**File:** `src/components/patient-portal/PersonalInfoSection.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| View Profile | Display patient information |
+| Edit Profile | Update personal details |
+| Emergency Contact | Manage emergency contacts |
+| Insurance Info | View/update insurance details |
+
+### 9.3 Appointments View
+
+**File:** `src/components/patient-portal/AppointmentsView.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Upcoming Appointments | List future appointments |
+| Past Appointments | Appointment history |
+| Cancel Appointment | Patient-initiated cancellation |
+| Reschedule | Request reschedule |
+
+### 9.4 Patient Appointment Booking
+
+**File:** `src/components/patient-portal/PatientAppointmentBooking.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Select Department | Choose medical department |
+| Select Doctor | Choose available doctor |
+| Pick Date | Calendar date selection |
+| Pick Time | Available time slots |
+| Add Symptoms | Describe symptoms |
+| Confirm Booking | Submit appointment request |
+
+### 9.5 Medical Records View
+
+**File:** `src/components/patient-portal/MedicalRecordsView.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| View Records | Access own medical history |
+| Download Records | Export as PDF |
+| Lab Results | View test results |
+| Prescriptions | Current and past prescriptions |
+
+### 9.6 Doctor Messaging
+
+**File:** `src/components/patient-portal/DoctorMessaging.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Send Message | Message assigned doctor |
+| View Conversations | Message history |
+| Attachments | Send/receive files |
+| Read Receipts | Message read status |
+
+#### Message Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | UUID | ✅ |
+| Doctor | UUID | ✅ |
+| Message | Text | ✅ |
+| Sender Type | patient/doctor | ✅ |
+| Read | Boolean | ✅ |
+
+### 9.7 Prescription Refill Request
+
+**File:** `src/components/patient-portal/PrescriptionRefillRequest.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Request Refill | Submit refill request |
+| View Status | Track request status |
+| Add Reason | Explain refill need |
+| History | Past refill requests |
+
+#### Refill Request Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Patient | UUID | ✅ |
+| Prescription | UUID | ✅ |
+| Reason | Text | ❌ |
+| Status | pending/approved/denied | ✅ |
+| Reviewed By | UUID | ❌ |
+| Notes | Text | ❌ |
+
+---
+
+## 10. Department Management
+
+**File:** `src/components/departments/DepartmentManagement.tsx`
+
+### Features:
+
+| Feature | Description |
+|---------|-------------|
+| Add Department | Create new department |
+| Edit Department | Update department details |
+| Delete Department | Remove department |
+| Assign Head | Assign department head (doctor) |
+| View Doctors | List doctors in department |
+| Status Management | Active/Inactive |
+
+### Department Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Department Name | Text | ✅ |
+| Description | Textarea | ❌ |
+| Department Head | Select (Doctor) | ❌ |
+| Status | Select | ✅ |
+
+### Doctor-Department Assignment:
+
+**Table:** `department_doctors`
+
+| Feature | Description |
+|---------|-------------|
+| Assign Doctor | Add doctor to department |
+| Remove Doctor | Remove from department |
+| Set Role | Primary/Consultant/Visiting |
+| Notes | Assignment notes |
+
+---
+
+## 11. Staff Management Module
+
+**Pages:**
+- `src/pages/Staff.tsx`
+- `src/pages/StaffManagement.tsx`
+
+### 11.1 Staff List
+
+**File:** `src/components/staff/StaffList.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| View All Staff | List doctors, nurses, other staff |
+| Filter by Role | Doctor/Nurse filter |
+| Search | By name, department, specialization |
+| Status Filter | Active/Inactive/On Leave |
+
+### 11.2 Doctor Registration
+
+**File:** `src/components/forms/DoctorRegistrationForm.tsx`
+
+| Field | Type | Required |
+|-------|------|----------|
+| First Name | Text | ✅ |
+| Last Name | Text | ✅ |
+| Email | Email | ❌ |
+| Phone | Phone | ❌ |
+| Specialization | Text | ✅ |
+| License Number | Text | ✅ |
+| Department | Select | ❌ |
+| Years of Experience | Number | ❌ |
+| Consultation Fee | Number | ❌ |
+| Status | Select | ✅ |
+
+### 11.3 Nurse Registration
+
+**File:** `src/components/forms/NurseRegistrationForm.tsx`
+
+| Field | Type | Required |
+|-------|------|----------|
+| First Name | Text | ✅ |
+| Last Name | Text | ✅ |
+| Email | Email | ❌ |
+| Phone | Phone | ❌ |
+| Specialization | Text | ❌ |
+| License Number | Text | ✅ |
+| Department | Text | ❌ |
+| Shift Schedule | Text | ❌ |
+| Years of Experience | Number | ❌ |
+| Status | Select | ✅ |
+
+### 11.4 Staff Registration (Generic)
+
+**File:** `src/components/forms/StaffRegistrationForm.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Role Selection | Choose staff type |
+| Dynamic Form | Form fields based on role |
+| Account Creation | Optional user account |
+
+### 11.5 Staff Schedule Manager
+
+**File:** `src/components/staff/StaffScheduleManager.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Set Schedule | Define working days/hours |
+| Break Times | Configure break periods |
+| Slot Duration | Appointment slot length |
+| View Schedule | Weekly schedule overview |
+
+#### Schedule Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Staff ID | UUID | ✅ |
+| Staff Type | doctor/nurse | ✅ |
+| Day of Week | Number (0-6) | ✅ |
+| Start Time | Time | ✅ |
+| End Time | Time | ✅ |
+| Break Start | Time | ❌ |
+| Break End | Time | ❌ |
+| Slot Duration | Number (minutes) | ❌ |
+| Is Available | Boolean | ✅ |
+
+---
+
+## 12. Notification & Reminder System
+
+### 12.1 Notification Center
+
+**File:** `src/components/notifications/NotificationCenter.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| View Notifications | List all notifications |
+| Mark as Read | Mark individual/all as read |
+| Delete Notification | Remove notification |
+| Filter by Type | System/Appointment/Alert/etc. |
+| Priority Indicator | Visual priority indication |
+| Action Links | Click to navigate |
+
+### 12.2 Notification Types:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `system` | System announcements | Maintenance notice |
+| `appointment` | Appointment related | Appointment reminder |
+| `lab_result` | Lab test results | Results ready |
+| `prescription` | Prescription alerts | Prescription ready |
+| `alert` | Important alerts | Critical inventory |
+| `reminder` | Custom reminders | Follow-up reminder |
+| `patient_registration` | New patient signup | Verification needed |
+
+### 12.3 Notification Priority Levels:
+
+| Priority | Color | Use Case |
+|----------|-------|----------|
+| `low` | Gray | Informational |
+| `normal` | Blue | Standard notifications |
+| `high` | Orange | Important actions needed |
+| `urgent` | Red | Critical, immediate action |
+
+### 12.4 Notification Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| User ID | UUID | ✅ |
+| Title | Text | ✅ |
+| Message | Text | ✅ |
+| Type | Select | ✅ |
+| Priority | Select | ✅ |
+| Read | Boolean | ✅ |
+| Action URL | Text | ❌ |
+| Metadata | JSON | ❌ |
+| Expires At | Timestamp | ❌ |
+
+### 12.5 Reminder System
+
+**Table:** `reminders`
+
+| Feature | Description |
+|---------|-------------|
+| Create Reminder | Set personal reminders |
+| Recurring | Daily/Weekly/Monthly |
+| Link to Entity | Tie to appointment, prescription, etc. |
+| Status | Pending/Sent/Dismissed |
+
+### 12.6 Notification Hook
+
+**File:** `src/hooks/useNotifications.ts`
+
+| Function | Description |
+|----------|-------------|
+| `fetchNotifications()` | Get user notifications |
+| `markAsRead()` | Mark notification read |
+| `deleteNotification()` | Remove notification |
+| `subscribeToNotifications()` | Real-time subscription |
+
+---
+
+## 13. Reports & Analytics
+
+**Page:** `src/pages/Reports.tsx`
+
+### 13.1 Dashboard Statistics
+
+| Metric | Description |
+|--------|-------------|
+| Total Patients | Active patient count |
+| Today's Appointments | Appointments for today |
+| Revenue | Total/Monthly/Weekly revenue |
+| Pending Lab Tests | Tests awaiting results |
+| Bed Occupancy | Current occupancy rate |
+| Staff On Duty | Active staff count |
+
+### 13.2 Report Types:
+
+| Report | Description |
+|--------|-------------|
+| Patient Statistics | New registrations, demographics |
+| Appointment Analytics | Bookings, cancellations, no-shows |
+| Revenue Reports | Income by service, department, period |
+| Department Distribution | Patients per department |
+| Lab Test Analytics | Tests by type, turnaround time |
+| Inventory Reports | Stock levels, expiring items |
+| Blood Bank Reports | Donations, issues, stock |
+
+### 13.3 Time Range Filters:
+
+- Last 7 days
+- Last 30 days
+- Last 90 days
+- Last 1 year
+- Custom range
+
+### 13.4 Visualization Types:
+
+| Chart Type | Use Case |
+|------------|----------|
+| Line Chart | Trends over time |
+| Bar Chart | Comparisons |
+| Pie Chart | Distribution |
+| Area Chart | Volume over time |
+| Data Grid | Detailed data |
+
+---
+
+## 14. Settings & Configuration
+
+**File:** `src/components/settings/Settings.tsx`
+
+### 14.1 User Settings
+
+| Setting | Description |
+|---------|-------------|
+| Profile | Update personal information |
+| Password | Change password |
+| Theme | Light/Dark mode toggle |
+| Notifications | Enable/disable notification types |
+| Language | Language preference (future) |
+
+### 14.2 Hospital Settings (Admin Only)
+
+| Setting | Description |
+|---------|-------------|
+| Hospital Name | Organization name |
+| Timezone | Hospital timezone |
+| Working Hours | Default operating hours |
+| Appointment Duration | Default slot duration |
+| Logo | Hospital logo upload |
+| Contact Info | Address, phone, email |
+
+### 14.3 Settings Hook
+
+**File:** `src/hooks/useSettings.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getSetting()` | Get setting value |
+| `updateSetting()` | Update setting |
+| `getHospitalSettings()` | Get all hospital settings |
+
+### 14.4 Timezone Hook
+
+**File:** `src/hooks/useTimezone.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getHospitalTimezone()` | Get configured timezone |
+| `formatInTimezone()` | Format date in timezone |
+| `convertToTimezone()` | Convert date to timezone |
+
+---
+
+## 15. Database Architecture
+
+### 15.1 Entity Relationship Diagram
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   patients  │────►│appointments │◄────│   doctors   │
 └─────────────┘     └─────────────┘     └─────────────┘
        │                   │                   │
-       │                   │                   │
        ▼                   ▼                   ▼
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │medical_     │     │prescriptions│     │   nurses    │
 │records      │     └─────────────┘     └─────────────┘
-└─────────────┘            │
-       │                   │
-       ▼                   ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  lab_tests  │     │  inventory  │     │    rooms    │
-└─────────────┘     └─────────────┘     └─────────────┘
-       │
+└─────────────┘            
+       │                                ┌─────────────┐
+       ▼                                │ departments │
+┌─────────────┐     ┌─────────────┐     └─────────────┘
+│  lab_tests  │     │  inventory  │            │
+└─────────────┘     └─────────────┘            ▼
+                                        ┌─────────────┐
+┌─────────────┐     ┌─────────────┐     │department_  │
+│   rooms     │     │room_assign- │     │doctors      │
+└─────────────┘     │ments        │     └─────────────┘
+       │            └─────────────┘
        ▼
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │  payments   │     │notifications│     │  reminders  │
 └─────────────┘     └─────────────┘     └─────────────┘
+
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│blood_groups │     │blood_stock  │     │   donors    │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                   │
+       ▼                   ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│blood_issues │     │blood_stock_ │     │operation_   │
+└─────────────┘     │transactions │     │theatres     │
+                    └─────────────┘     └─────────────┘
+                                               │
+                                               ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  surgeries  │     │surgery_team │     │post_operation│
+└─────────────┘     └─────────────┘     └─────────────┘
+
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  profiles   │     │ user_roles  │     │user_settings│
+└─────────────┘     └─────────────┘     └─────────────┘
+
+┌─────────────────┐     ┌────────────────────┐
+│hospital_settings│     │patient_registration│
+└─────────────────┘     │_queue              │
+                        └────────────────────┘
+
+┌─────────────────────┐     ┌─────────────────────┐
+│patient_messages     │     │prescription_refill_ │
+└─────────────────────┘     │requests             │
+                            └─────────────────────┘
+
+┌─────────────────────┐
+│staff_schedules      │
+└─────────────────────┘
+
+┌─────────────────────┐
+│phi_audit_log        │
+└─────────────────────┘
 ```
 
-### 6.2 Database Tables
+### 15.2 Complete Table List
 
-#### **patients**
-Primary table for patient information.
+| Table | Description | Row Count Scope |
+|-------|-------------|-----------------|
+| `patients` | Patient demographic data | Per hospital |
+| `doctors` | Physician information | Per hospital |
+| `nurses` | Nursing staff | Per hospital |
+| `appointments` | Scheduled appointments | Per hospital |
+| `medical_records` | Visit documentation | Per patient |
+| `prescriptions` | Medication prescriptions | Per patient |
+| `lab_tests` | Laboratory orders/results | Per patient |
+| `inventory` | Medical supplies | Per hospital |
+| `rooms` | Hospital rooms | Per hospital |
+| `room_assignments` | Patient room assignments | Active assignments |
+| `payments` | Billing records | Per patient |
+| `notifications` | User notifications | Per user |
+| `reminders` | User reminders | Per user |
+| `profiles` | User profiles (linked to auth) | Per user |
+| `user_roles` | Role assignments | Per user |
+| `user_settings` | User preferences | Per user |
+| `hospital_settings` | System configuration | Per setting |
+| `departments` | Hospital departments | Per hospital |
+| `department_doctors` | Doctor-department mapping | Per assignment |
+| `blood_groups` | Blood type definitions | Fixed set |
+| `blood_stock` | Blood inventory levels | Per blood group |
+| `blood_stock_transactions` | Stock change history | Per transaction |
+| `blood_issues` | Blood dispensing records | Per issue |
+| `donors` | Blood donors | Per hospital |
+| `operation_theatres` | Surgery rooms | Per hospital |
+| `surgeries` | Surgery records | Per patient |
+| `surgery_team` | Surgery team assignments | Per surgery |
+| `post_operation` | Post-op care records | Per surgery |
+| `patient_messages` | Doctor-patient messaging | Per conversation |
+| `prescription_refill_requests` | Refill requests | Per request |
+| `patient_registration_queue` | Verification queue | Pending patients |
+| `staff_schedules` | Staff working hours | Per staff |
+| `phi_audit_log` | HIPAA audit trail | Per access |
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| first_name | varchar | No | - | Patient's first name |
-| last_name | varchar | No | - | Patient's last name |
-| date_of_birth | date | No | - | Birth date |
-| gender | varchar | No | - | Gender (Male/Female/Other) |
-| phone | varchar | Yes | - | Contact phone |
-| email | varchar | Yes | - | Email address |
-| address | text | Yes | - | Physical address |
-| emergency_contact_name | varchar | Yes | - | Emergency contact |
-| emergency_contact_phone | varchar | Yes | - | Emergency phone |
-| blood_type | varchar | Yes | - | Blood type (A+, A-, B+, etc.) |
-| allergies | text | Yes | - | Known allergies |
-| medical_history | text | Yes | - | Medical history summary |
-| insurance_provider | varchar | Yes | - | Insurance company |
-| insurance_policy_number | varchar | Yes | - | Policy number |
-| status | varchar | Yes | 'active' | Active/Inactive |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
+### 15.3 Database Functions
 
----
+| Function | Purpose | Security |
+|----------|---------|----------|
+| `update_updated_at_column()` | Auto-update timestamps | TRIGGER |
+| `update_notification_updated_at()` | Notification timestamp | SECURITY DEFINER |
+| `update_settings_updated_at()` | Settings timestamp | SECURITY DEFINER |
+| `get_patient_id_for_user(uuid)` | Get patient ID from user | SECURITY DEFINER |
+| `get_doctor_id_for_user(uuid)` | Get doctor ID from user | SECURITY DEFINER |
+| `doctor_has_patient_relationship(uuid, uuid)` | Check doctor-patient link | SECURITY DEFINER |
+| `get_doctor_departments(uuid)` | Get doctor's departments | SECURITY DEFINER |
+| `handle_new_user()` | Create profile on signup | TRIGGER |
+| `has_role(uuid, app_role)` | Check if user has role | SECURITY DEFINER |
+| `get_user_role(uuid)` | Get user's role | SECURITY DEFINER |
 
-#### **doctors**
-Healthcare provider information.
+### 15.4 Role Enum
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| first_name | varchar | No | - | Doctor's first name |
-| last_name | varchar | No | - | Doctor's last name |
-| specialization | varchar | No | - | Medical specialty |
-| phone | varchar | Yes | - | Contact phone |
-| email | varchar | Yes | - | Email address |
-| license_number | varchar | No | - | Medical license |
-| department | varchar | Yes | - | Hospital department |
-| years_of_experience | integer | Yes | - | Years practicing |
-| consultation_fee | numeric | Yes | - | Fee per consultation |
-| availability_schedule | jsonb | Yes | - | Weekly schedule |
-| status | varchar | Yes | 'active' | Active/Inactive/On Leave |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **nurses**
-Nursing staff information.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| first_name | varchar | No | - | Nurse's first name |
-| last_name | varchar | No | - | Nurse's last name |
-| phone | varchar | Yes | - | Contact phone |
-| email | varchar | Yes | - | Email address |
-| license_number | varchar | No | - | Nursing license |
-| department | varchar | Yes | - | Assigned department |
-| shift_schedule | varchar | Yes | - | Shift pattern |
-| specialization | varchar | Yes | - | Nursing specialty |
-| years_of_experience | integer | Yes | - | Years practicing |
-| status | varchar | Yes | 'active' | Active/Inactive/On Leave |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
+```sql
+CREATE TYPE app_role AS ENUM (
+  'admin',
+  'doctor', 
+  'nurse',
+  'patient',
+  'receptionist',
+  'pharmacist'
+);
+```
 
 ---
 
-#### **appointments**
-Appointment scheduling records.
+## 16. Security Features
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| patient_id | uuid | No | - | Reference to patient |
-| doctor_id | uuid | No | - | Reference to doctor |
-| appointment_date | date | No | - | Scheduled date |
-| appointment_time | time | No | - | Scheduled time |
-| duration | integer | Yes | 30 | Duration in minutes |
-| type | varchar | Yes | 'consultation' | Appointment type |
-| status | varchar | Yes | 'scheduled' | Current status |
-| symptoms | text | Yes | - | Patient symptoms |
-| notes | text | Yes | - | Additional notes |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
+### 16.1 Authentication
 
----
+| Feature | Implementation |
+|---------|----------------|
+| Email/Password Login | Supabase Auth |
+| Session Management | Auto token refresh |
+| Protected Routes | React Router guards |
+| Logout | Session invalidation |
 
-#### **medical_records**
-Patient visit and treatment records.
+### 16.2 Authorization
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| patient_id | uuid | No | - | Reference to patient |
-| doctor_id | uuid | No | - | Reference to doctor |
-| visit_date | date | No | - | Date of visit |
-| diagnosis | text | Yes | - | Medical diagnosis |
-| symptoms | text | Yes | - | Presented symptoms |
-| treatment | text | Yes | - | Treatment plan |
-| medications | text | Yes | - | Prescribed medications |
-| notes | text | Yes | - | Clinical notes |
-| follow_up_date | date | Yes | - | Follow-up appointment |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
+| Feature | Implementation |
+|---------|----------------|
+| Row Level Security (RLS) | PostgreSQL policies |
+| Role-Based Access | `has_role()` function |
+| Security Definer Functions | Safe role checks |
+| Route Protection | Client-side + server-side |
 
----
+### 16.3 RLS Policies Summary
 
-#### **prescriptions**
-Medication prescriptions.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| patient_id | uuid | No | - | Reference to patient |
-| doctor_id | uuid | No | - | Prescribing doctor |
-| medication_name | varchar | No | - | Drug name |
-| dosage | varchar | Yes | - | Dosage amount |
-| frequency | varchar | Yes | - | How often to take |
-| duration | varchar | Yes | - | Treatment duration |
-| quantity | integer | Yes | - | Quantity to dispense |
-| instructions | text | Yes | - | Special instructions |
-| side_effects | text | Yes | - | Known side effects |
-| drug_interactions | text | Yes | - | Drug interactions |
-| date_prescribed | date | Yes | CURRENT_DATE | Prescription date |
-| status | varchar | Yes | 'active' | Active/Completed/Cancelled |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **lab_tests**
-Laboratory test orders and results.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| patient_id | uuid | No | - | Reference to patient |
-| doctor_id | uuid | No | - | Ordering doctor |
-| test_name | varchar | No | - | Test name |
-| test_type | varchar | Yes | - | Category of test |
-| test_date | date | Yes | CURRENT_DATE | Date ordered |
-| results | text | Yes | - | Test results |
-| normal_range | varchar | Yes | - | Normal values |
-| status | varchar | Yes | 'pending' | Pending/In Progress/Completed |
-| priority | varchar | Yes | 'normal' | Normal/Urgent/STAT |
-| lab_technician | varchar | Yes | - | Assigned technician |
-| cost | numeric | Yes | - | Test cost |
-| notes | text | Yes | - | Additional notes |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **inventory**
-Medical supplies and equipment inventory.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| item_name | varchar | No | - | Item name |
-| category | varchar | Yes | - | Item category |
-| current_stock | integer | No | 0 | Current quantity |
-| minimum_stock | integer | Yes | 10 | Reorder threshold |
-| maximum_stock | integer | Yes | 1000 | Maximum capacity |
-| unit_price | numeric | Yes | - | Price per unit |
-| supplier | varchar | Yes | - | Supplier name |
-| batch_number | varchar | Yes | - | Batch identifier |
-| expiry_date | date | Yes | - | Expiration date |
-| last_restocked | date | Yes | - | Last restock date |
-| location | varchar | Yes | - | Storage location |
-| status | varchar | Yes | 'available' | Available/Out of Stock/Expired |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **rooms**
-Hospital room management.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| room_number | varchar | No | - | Room identifier |
-| room_type | varchar | No | - | ICU/General/Private/etc. |
-| department | varchar | Yes | - | Department |
-| floor | integer | Yes | - | Floor number |
-| capacity | integer | Yes | 1 | Bed capacity |
-| current_occupancy | integer | Yes | 0 | Current patients |
-| daily_rate | numeric | Yes | - | Cost per day |
-| amenities | text[] | Yes | - | Room amenities |
-| status | varchar | Yes | 'available' | Available/Occupied/Maintenance |
-| notes | text | Yes | - | Additional notes |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **payments**
-Billing and payment records.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | uuid_generate_v4() | Primary key |
-| patient_id | uuid | No | - | Reference to patient |
-| amount | numeric | No | - | Payment amount |
-| payment_date | date | Yes | CURRENT_DATE | Date of payment |
-| payment_method | varchar | Yes | 'cash' | Cash/Card/Insurance/Transfer |
-| payment_status | varchar | Yes | 'pending' | Pending/Paid/Overdue/Refunded |
-| description | text | Yes | - | Payment description |
-| invoice_number | varchar | Yes | - | Invoice reference |
-| transaction_id | varchar | Yes | - | Transaction reference |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **notifications**
-System notification records.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | gen_random_uuid() | Primary key |
-| user_id | uuid | No | - | Target user |
-| title | text | No | - | Notification title |
-| message | text | No | - | Notification body |
-| type | text | No | - | Notification type |
-| priority | text | No | 'normal' | Low/Normal/High/Urgent |
-| read | boolean | No | false | Read status |
-| action_url | text | Yes | - | Action link |
-| metadata | jsonb | Yes | '{}' | Additional data |
-| expires_at | timestamp | Yes | - | Expiration time |
-| sent_via_email | boolean | Yes | false | Email sent flag |
-| sent_via_sms | boolean | Yes | false | SMS sent flag |
-| sent_via_push | boolean | Yes | false | Push sent flag |
-| created_at | timestamp | No | now() | Creation timestamp |
-| updated_at | timestamp | No | now() | Last update timestamp |
-
----
-
-#### **reminders**
-Personal reminder system.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | gen_random_uuid() | Primary key |
-| user_id | uuid | No | - | Owner user |
-| title | text | No | - | Reminder title |
-| description | text | Yes | - | Reminder details |
-| reminder_type | text | No | - | Type of reminder |
-| reminder_time | timestamp | No | - | When to remind |
-| recurring | boolean | Yes | false | Is recurring |
-| recurring_pattern | text | Yes | - | Daily/Weekly/Monthly |
-| related_id | uuid | Yes | - | Related entity ID |
-| related_table | text | Yes | - | Related table name |
-| status | text | No | 'pending' | Pending/Sent/Dismissed |
-| created_at | timestamp | No | now() | Creation timestamp |
-| updated_at | timestamp | No | now() | Last update timestamp |
-
----
-
-#### **profiles**
-User profile information (linked to Supabase Auth).
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | - | User ID (from auth.users) |
-| first_name | text | No | - | User's first name |
-| last_name | text | No | - | User's last name |
-| phone | text | Yes | - | Contact phone |
-| department | text | Yes | - | Department |
-| specialization | text | Yes | - | Specialization |
-| license_number | text | Yes | - | Professional license |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **user_roles**
-Role assignments for users.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | gen_random_uuid() | Primary key |
-| user_id | uuid | No | - | Reference to auth.users |
-| role | app_role (enum) | No | - | Assigned role |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-
-**Role Enum Values:** `admin`, `doctor`, `nurse`, `patient`, `receptionist`, `pharmacist`
-
----
-
-#### **user_settings**
-User-specific preferences.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | gen_random_uuid() | Primary key |
-| user_id | uuid | No | - | Reference to user |
-| setting_key | text | No | - | Setting identifier |
-| setting_value | jsonb | No | - | Setting value |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-#### **hospital_settings**
-System-wide configuration.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | uuid | No | gen_random_uuid() | Primary key |
-| setting_category | text | No | - | Setting category |
-| setting_key | text | No | - | Setting identifier |
-| setting_value | jsonb | No | - | Setting value |
-| updated_by | uuid | Yes | - | Last modifier |
-| created_at | timestamp | Yes | now() | Creation timestamp |
-| updated_at | timestamp | Yes | now() | Last update timestamp |
-
----
-
-### 6.3 Database Functions
-
-| Function | Purpose |
-|----------|---------|
-| `update_updated_at_column()` | Automatically updates `updated_at` timestamp on row modifications |
-| `has_role(_user_id, _role)` | Checks if a user has a specific role (security definer) |
-| `get_user_role(_user_id)` | Returns the role of a user |
-| `handle_new_user()` | Trigger function that creates profile and role on user signup |
-
----
-
-## 7. Security Features
-
-### 7.1 Authentication
-
-- **Supabase Authentication** - Secure user authentication
-- **Email/Password Login** - Standard authentication flow
-- **Session Management** - Automatic token refresh
-- **Protected Routes** - Client-side route guards
-
-### 7.2 Authorization
-
-- **Row Level Security (RLS)** - Database-level access control
-- **Role-Based Access Control** - Feature access based on user roles
-- **Security Definer Functions** - Safe role verification without recursion
-
-### 7.3 RLS Policies Overview
-
-| Table | Policy Summary |
+| Table | Access Pattern |
 |-------|----------------|
-| patients | Public access for authenticated users |
-| doctors | Public access for authenticated users |
-| nurses | Public access for authenticated users |
-| appointments | Public access for authenticated users |
-| medical_records | Public access for authenticated users |
-| prescriptions | Public access for authenticated users |
-| lab_tests | Public access for authenticated users |
-| inventory | Public access for authenticated users |
-| rooms | Public access for authenticated users |
-| payments | Public access for authenticated users |
-| notifications | Users see own + Admin sees all |
-| reminders | Users manage own + Admin manages all |
-| profiles | Users manage own + Admin views all |
-| user_roles | Users view own + Admin manages all |
-| user_settings | Users manage own only |
-| hospital_settings | Admin only access |
+| patients | Authenticated users |
+| doctors | Authenticated users |
+| nurses | Authenticated users |
+| appointments | Authenticated users |
+| medical_records | Authenticated users |
+| prescriptions | Authenticated users |
+| lab_tests | Authenticated users |
+| inventory | Authenticated users |
+| rooms | Authenticated users |
+| payments | Authenticated users |
+| notifications | Own + Admin |
+| reminders | Own + Admin |
+| profiles | Own + Admin view |
+| user_roles | Own view + Admin manage |
+| user_settings | Own only |
+| hospital_settings | Admin only |
 
-### 7.4 Data Protection
+### 16.4 Data Protection
 
-- **UUID Primary Keys** - Non-sequential identifiers
-- **Encrypted Connections** - HTTPS/TLS encryption
-- **Input Validation** - Zod schema validation
-- **SQL Injection Prevention** - Parameterized queries via Supabase client
+| Feature | Description |
+|---------|-------------|
+| UUID Primary Keys | Non-sequential identifiers |
+| HTTPS/TLS | Encrypted connections |
+| Input Validation | Zod schema validation |
+| SQL Injection Prevention | Parameterized queries |
+| XSS Prevention | React's built-in escaping |
+| HIPAA Audit Logging | PHI access tracking |
 
----
+### 16.5 PHI Audit Log
 
-## 8. User Interface
+**Table:** `phi_audit_log`
 
-### 8.1 Design System
-
-- **Theme Support** - Light and Dark modes
-- **Responsive Layout** - Mobile, Tablet, Desktop optimized
-- **Consistent Components** - shadcn/ui component library
-- **Medical Color Palette** - Blue, Green, Purple, Orange, Red accents
-- **Accessible Design** - WCAG compliance considerations
-
-### 8.2 Navigation
-
-- **Collapsible Sidebar** - Role-based menu items
-- **Header Bar** - User info, notifications, search
-- **Breadcrumb Navigation** - Context awareness
-- **Quick Actions** - Common task shortcuts
-
-### 8.3 UI Components
-
-- Data Tables with sorting, filtering, pagination
-- Modal dialogs for forms
-- Toast notifications for feedback
-- Loading states and skeletons
-- Charts and visualizations
-- Form validation feedback
+| Field | Description |
+|-------|-------------|
+| action | CREATE/READ/UPDATE/DELETE |
+| table_name | Affected table |
+| record_id | Affected record |
+| patient_id | Related patient |
+| performed_by | User who performed action |
+| old_values | Previous values (JSON) |
+| new_values | New values (JSON) |
+| changed_fields | List of changed columns |
+| ip_address | Client IP |
+| user_agent | Client browser |
 
 ---
 
-## 9. API & Integrations
+## 17. Edge Functions & APIs
 
-### 9.1 Supabase Client
+### 17.1 Departments Function
 
-```typescript
-import { supabase } from "@/integrations/supabase/client";
+**Path:** `supabase/functions/departments/index.ts`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/departments` | List all departments |
+
+### 17.2 Contact Email Function
+
+**Path:** `supabase/functions/send-contact-email/index.ts`
+
+| Feature | Description |
+|---------|-------------|
+| Admin Email | Sends contact form to admin |
+| User Confirmation | Sends thank-you to user |
+| CORS | Enabled for web calls |
+| Logging | Detailed request logging |
+
+**Request Body:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "subject": "Inquiry",
+  "message": "Hello..."
+}
 ```
 
-### 9.2 Data Manager
-
-Centralized data access layer (`src/lib/dataManager.ts`):
-
-- CRUD operations for all entities
-- Search functionality
-- Dashboard statistics aggregation
-- Type-safe data handling
-
-### 9.3 Real-time Features
-
-- Live notification updates
-- Appointment status changes
-- Inventory level alerts
+**Recipient:** `arshmanrasool75@gmail.com`
 
 ---
 
-## 10. System Requirements
+## 18. Custom Hooks
 
-### 10.1 Browser Support
+### 18.1 useBloodBank
+
+**File:** `src/hooks/useBloodBank.ts`
+
+| Function | Description |
+|----------|-------------|
+| `fetchBloodGroups()` | Get all blood groups |
+| `fetchBloodStock()` | Get stock levels |
+| `fetchDonors()` | Get donor list |
+| `addDonation()` | Record new donation |
+| `issueBlood()` | Issue blood to patient |
+
+### 18.2 useDoctorData
+
+**File:** `src/hooks/useDoctorData.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getDoctorProfile()` | Get doctor info |
+| `getDoctorAppointments()` | Get doctor's appointments |
+| `getDoctorPatients()` | Get doctor's patients |
+
+### 18.3 useInventoryAlerts
+
+**File:** `src/hooks/useInventoryAlerts.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getLowStockItems()` | Items below minimum |
+| `getExpiringItems()` | Items nearing expiry |
+| `getAlertCount()` | Total alert count |
+
+### 18.4 useNotifications
+
+**File:** `src/hooks/useNotifications.ts`
+
+| Function | Description |
+|----------|-------------|
+| `fetchNotifications()` | Get user notifications |
+| `markAsRead()` | Mark notification read |
+| `deleteNotification()` | Remove notification |
+| `getUnreadCount()` | Count unread notifications |
+
+### 18.5 useSettings
+
+**File:** `src/hooks/useSettings.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getSetting()` | Get user setting |
+| `updateSetting()` | Update user setting |
+| `getHospitalSetting()` | Get hospital setting |
+
+### 18.6 useTimezone
+
+**File:** `src/hooks/useTimezone.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getHospitalTimezone()` | Get configured timezone |
+| `formatDate()` | Format in hospital timezone |
+| `parseDate()` | Parse to hospital timezone |
+
+### 18.7 useMobile
+
+**File:** `src/hooks/use-mobile.tsx`
+
+| Function | Description |
+|----------|-------------|
+| `isMobile` | Boolean for mobile viewport |
+
+### 18.8 useToast
+
+**File:** `src/hooks/use-toast.ts`
+
+| Function | Description |
+|----------|-------------|
+| `toast()` | Show toast notification |
+| `dismiss()` | Dismiss toast |
+
+---
+
+## 19. Utility Libraries
+
+### 19.1 Data Manager
+
+**File:** `src/lib/dataManager.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getPatients()` | Fetch all patients |
+| `getAppointments()` | Fetch all appointments |
+| `getDoctors()` | Fetch all doctors |
+| `getNurses()` | Fetch all nurses |
+| `getInventory()` | Fetch inventory items |
+| `getPayments()` | Fetch payment records |
+| `getStatistics()` | Dashboard statistics |
+
+### 19.2 Schedule Utilities
+
+**File:** `src/lib/scheduleUtils.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getStaffSchedules()` | Get staff working hours |
+| `getAvailableTimeSlots()` | Get available slots |
+| `isTimeSlotAvailable()` | Check slot availability |
+| `saveStaffSchedule()` | Save schedule to database |
+
+### 19.3 Timezone Utilities
+
+**File:** `src/lib/timezoneUtils.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getHospitalTimezone()` | Get hospital timezone setting |
+| `formatInTimezone()` | Format date in timezone |
+| `convertToTimezone()` | Convert between timezones |
+
+### 19.4 Blood Compatibility
+
+**File:** `src/lib/bloodCompatibility.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getCompatibleBloodTypes()` | Compatible donor types |
+| `canReceiveFrom()` | Check compatibility |
+| `getUniversalDonor()` | Get O- type |
+| `getUniversalRecipient()` | Get AB+ type |
+
+### 19.5 Blood Bank Validation
+
+**File:** `src/lib/bloodBankValidation.ts`
+
+| Function | Description |
+|----------|-------------|
+| `validateDonor()` | Check donor eligibility |
+| `validateDonationInterval()` | Minimum days check |
+| `validateStockLevel()` | Stock validation |
+
+### 19.6 Form Validation
+
+**File:** `src/lib/formValidation.ts`
+
+| Schema | Description |
+|--------|-------------|
+| `patientSchema` | Patient form validation |
+| `appointmentSchema` | Appointment validation |
+| `prescriptionSchema` | Prescription validation |
+
+### 19.7 Export Utilities
+
+**File:** `src/lib/exportUtils.ts`
+
+| Function | Description |
+|----------|-------------|
+| `exportToCSV()` | Export data to CSV |
+| `exportToPDF()` | Export data to PDF |
+| `downloadFile()` | Trigger file download |
+
+### 19.8 Audit Logger
+
+**File:** `src/lib/auditLogger.ts`
+
+| Function | Description |
+|----------|-------------|
+| `logAccess()` | Log PHI access |
+| `logModification()` | Log data changes |
+| `getAuditTrail()` | Retrieve audit logs |
+
+### 19.9 General Utilities
+
+**File:** `src/lib/utils.ts`
+
+| Function | Description |
+|----------|-------------|
+| `cn()` | Tailwind class merge |
+| `formatCurrency()` | Currency formatting |
+| `formatDate()` | Date formatting |
+
+---
+
+## 20. UI Components Library
+
+### 20.1 Shared Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| DataTable | `src/components/shared/DataTable.tsx` | Sortable, filterable table |
+| ConfirmDialog | `src/components/shared/ConfirmDialog.tsx` | Confirmation modal |
+| SignaturePad | `src/components/shared/SignaturePad.tsx` | Digital signature capture |
+| BackToTop | `src/components/shared/BackToTop.tsx` | Scroll to top button |
+
+### 20.2 Layout Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| MainLayout | `src/components/layout/MainLayout.tsx` | Dashboard wrapper |
+| Header | `src/components/layout/Header.tsx` | Top navigation bar |
+| Sidebar | `src/components/layout/Sidebar.tsx` | Side navigation menu |
+
+### 20.3 shadcn/ui Components
+
+| Component | Description |
+|-----------|-------------|
+| Button | Various button styles |
+| Input | Text input fields |
+| Textarea | Multi-line text input |
+| Select | Dropdown select |
+| Checkbox | Checkbox input |
+| Radio Group | Radio button group |
+| Switch | Toggle switch |
+| Slider | Range slider |
+| Calendar | Date picker |
+| Dialog | Modal dialog |
+| Sheet | Side panel |
+| Dropdown Menu | Context menu |
+| Popover | Floating popup |
+| Tooltip | Hover tooltip |
+| Toast | Notification toast |
+| Alert | Alert messages |
+| Badge | Status badges |
+| Avatar | User avatars |
+| Card | Content cards |
+| Table | Data tables |
+| Tabs | Tab navigation |
+| Accordion | Collapsible sections |
+| Progress | Progress bar |
+| Skeleton | Loading placeholders |
+| Separator | Divider lines |
+| Scroll Area | Custom scrollbar |
+| Navigation Menu | Navigation component |
+| Breadcrumb | Breadcrumb navigation |
+| Pagination | Page navigation |
+| Form | Form wrapper with validation |
+
+---
+
+## 21. System Requirements
+
+### 21.1 Browser Support
 
 | Browser | Minimum Version |
 |---------|-----------------|
@@ -770,116 +1809,306 @@ Centralized data access layer (`src/lib/dataManager.ts`):
 | Safari | 14+ |
 | Edge | 90+ |
 
-### 10.2 Server Requirements
+### 21.2 Server Requirements
 
-- **Supabase Project** - Free tier or above
-- **PostgreSQL** - Version 15+ (Supabase managed)
-- **Edge Functions** - Deno runtime (Supabase managed)
+| Requirement | Specification |
+|-------------|---------------|
+| Supabase | Free tier or above |
+| PostgreSQL | Version 15+ (managed) |
+| Edge Functions | Deno runtime (managed) |
 
-### 10.3 Deployment
+### 21.3 Deployment
 
-- **Frontend Hosting** - Any static hosting (Lovable, Vercel, Netlify)
-- **SSL Certificate** - Required for production
-- **Custom Domain** - Supported
+| Aspect | Options |
+|--------|---------|
+| Frontend Hosting | Lovable, Vercel, Netlify |
+| SSL Certificate | Required for production |
+| Custom Domain | Supported |
+| CDN | Recommended for assets |
 
 ---
 
-## Appendix A: File Structure
+## 22. File Structure
 
 ```
-src/
-├── components/
-│   ├── appointments/
-│   │   └── AppointmentScheduler.tsx
-│   ├── dashboard/
-│   │   ├── AdminDashboard.tsx
-│   │   ├── DoctorDashboard.tsx
-│   │   ├── NurseDashboard.tsx
-│   │   ├── PatientDashboard.tsx
-│   │   ├── PharmacistDashboard.tsx
-│   │   └── ReceptionistDashboard.tsx
-│   ├── forms/
-│   │   ├── DoctorRegistrationForm.tsx
-│   │   ├── NurseRegistrationForm.tsx
-│   │   ├── PatientRegistrationForm.tsx
-│   │   ├── PaymentManagementForm.tsx
-│   │   ├── RecordUpdateForm.tsx
-│   │   └── StaffRegistrationForm.tsx
-│   ├── inventory/
-│   │   └── InventoryManagement.tsx
-│   ├── lab-tests/
-│   │   └── LabTestManagement.tsx
-│   ├── layout/
-│   │   ├── Header.tsx
-│   │   ├── MainLayout.tsx
-│   │   └── Sidebar.tsx
-│   ├── medical/
-│   │   └── MedicalRecords.tsx
-│   ├── notifications/
-│   │   └── NotificationCenter.tsx
-│   ├── patient-portal/
-│   │   ├── AppointmentsView.tsx
-│   │   ├── MedicalRecordsView.tsx
-│   │   ├── PatientPortalNav.tsx
-│   │   └── PersonalInfoSection.tsx
-│   ├── patients/
-│   │   └── PatientManagement.tsx
-│   ├── payments/
-│   │   └── PaymentsList.tsx
-│   ├── prescriptions/
-│   │   └── PrescriptionManagement.tsx
-│   ├── rooms/
-│   │   └── RoomManagement.tsx
-│   ├── settings/
-│   │   └── Settings.tsx
-│   ├── shared/
-│   │   ├── ConfirmDialog.tsx
-│   │   └── DataTable.tsx
-│   └── ui/
-│       └── [shadcn components]
-├── contexts/
-│   └── AuthContext.tsx
-├── hooks/
-│   ├── use-mobile.tsx
-│   ├── use-toast.ts
-│   ├── useNotifications.ts
-│   └── useSettings.ts
-├── integrations/
-│   └── supabase/
-│       ├── client.ts
-│       └── types.ts
-├── lib/
-│   ├── dataManager.ts
-│   └── utils.ts
-├── pages/
-│   ├── AboutUs.tsx
-│   ├── Billing.tsx
-│   ├── Dashboard.tsx
-│   ├── Index.tsx
-│   ├── Login.tsx
-│   ├── NotFound.tsx
-│   ├── PatientRegistry.tsx
-│   ├── Pharmacy.tsx
-│   ├── Reports.tsx
-│   ├── Services.tsx
-│   └── Staff.tsx
-├── App.tsx
-├── App.css
-├── index.css
-└── main.tsx
+├── .env                                    # Environment variables
+├── PROJECT_DOCUMENTATION.md               # This file
+├── USER_GUIDE.md                          # User guide
+├── NOTIFICATION_SYSTEM_DOCUMENTATION.md   # Notification docs
+├── README.md                              # Project readme
+├── index.html                             # HTML entry point
+├── vite.config.ts                         # Vite configuration
+├── tailwind.config.ts                     # Tailwind configuration
+├── tsconfig.json                          # TypeScript config
+├── eslint.config.js                       # ESLint configuration
+│
+├── public/
+│   ├── favicon.ico                        # Site favicon
+│   ├── robots.txt                         # SEO robots file
+│   └── placeholder.svg                    # Placeholder image
+│
+├── src/
+│   ├── App.tsx                            # Main app component
+│   ├── App.css                            # App styles
+│   ├── index.css                          # Global styles & design system
+│   ├── main.tsx                           # React entry point
+│   ├── vite-env.d.ts                      # Vite type declarations
+│   │
+│   ├── components/
+│   │   ├── appointments/
+│   │   │   └── AppointmentScheduler.tsx   # Appointment management
+│   │   │
+│   │   ├── blood-bank/
+│   │   │   ├── BloodAvailabilityWidget.tsx
+│   │   │   ├── BloodBankDashboard.tsx
+│   │   │   ├── BloodBankReports.tsx
+│   │   │   ├── BloodGroupsManagement.tsx
+│   │   │   ├── BloodInventory.tsx
+│   │   │   ├── BloodIssue.tsx
+│   │   │   ├── BloodRequests.tsx
+│   │   │   ├── BloodStockManagement.tsx
+│   │   │   ├── DonationRecords.tsx
+│   │   │   ├── DonorManagement.tsx
+│   │   │   └── TransfusionRecords.tsx
+│   │   │
+│   │   ├── dashboard/
+│   │   │   ├── AdminDashboard.tsx
+│   │   │   ├── DoctorDashboard.tsx
+│   │   │   ├── NurseDashboard.tsx
+│   │   │   ├── PatientDashboard.tsx
+│   │   │   ├── PendingVerificationsWidget.tsx
+│   │   │   ├── PharmacistDashboard.tsx
+│   │   │   └── ReceptionistDashboard.tsx
+│   │   │
+│   │   ├── departments/
+│   │   │   └── DepartmentManagement.tsx
+│   │   │
+│   │   ├── forms/
+│   │   │   ├── DoctorRegistrationForm.tsx
+│   │   │   ├── NurseRegistrationForm.tsx
+│   │   │   ├── PatientRegistrationForm.tsx
+│   │   │   ├── PaymentManagementForm.tsx
+│   │   │   ├── RecordUpdateForm.tsx
+│   │   │   └── StaffRegistrationForm.tsx
+│   │   │
+│   │   ├── inventory/
+│   │   │   └── InventoryManagement.tsx
+│   │   │
+│   │   ├── lab-tests/
+│   │   │   └── LabTestManagement.tsx
+│   │   │
+│   │   ├── landing/
+│   │   │   ├── AnimatedBackground.tsx
+│   │   │   ├── AnimatedCounter.tsx
+│   │   │   ├── BentoGrid.tsx
+│   │   │   ├── CTASection.tsx
+│   │   │   ├── FeaturesSection.tsx
+│   │   │   ├── FloatingElements.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── HeroSection.tsx
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── ScrollAnimationWrapper.tsx
+│   │   │   ├── TeamSection.tsx
+│   │   │   ├── TestimonialsSection.tsx
+│   │   │   └── TrustBadges.tsx
+│   │   │
+│   │   ├── layout/
+│   │   │   ├── Header.tsx
+│   │   │   ├── MainLayout.tsx
+│   │   │   └── Sidebar.tsx
+│   │   │
+│   │   ├── medical/
+│   │   │   └── MedicalRecords.tsx
+│   │   │
+│   │   ├── notifications/
+│   │   │   └── NotificationCenter.tsx
+│   │   │
+│   │   ├── operations/
+│   │   │   ├── OperationTheatres.tsx
+│   │   │   ├── PostOperation.tsx
+│   │   │   ├── SurgeryList.tsx
+│   │   │   ├── SurgeryScheduler.tsx
+│   │   │   ├── SurgeryTeam.tsx
+│   │   │   └── SurgicalConsentForm.tsx
+│   │   │
+│   │   ├── patient-portal/
+│   │   │   ├── AppointmentsView.tsx
+│   │   │   ├── DoctorMessaging.tsx
+│   │   │   ├── MedicalRecordsView.tsx
+│   │   │   ├── PatientAppointmentBooking.tsx
+│   │   │   ├── PatientPortalNav.tsx
+│   │   │   ├── PersonalInfoSection.tsx
+│   │   │   └── PrescriptionRefillRequest.tsx
+│   │   │
+│   │   ├── patients/
+│   │   │   └── PatientManagement.tsx
+│   │   │
+│   │   ├── payments/
+│   │   │   └── PaymentsList.tsx
+│   │   │
+│   │   ├── prescriptions/
+│   │   │   └── PrescriptionManagement.tsx
+│   │   │
+│   │   ├── rooms/
+│   │   │   ├── BedAssignment.tsx
+│   │   │   └── RoomManagement.tsx
+│   │   │
+│   │   ├── settings/
+│   │   │   └── Settings.tsx
+│   │   │
+│   │   ├── shared/
+│   │   │   ├── BackToTop.tsx
+│   │   │   ├── ConfirmDialog.tsx
+│   │   │   ├── DataTable.tsx
+│   │   │   └── SignaturePad.tsx
+│   │   │
+│   │   ├── staff/
+│   │   │   ├── StaffList.tsx
+│   │   │   └── StaffScheduleManager.tsx
+│   │   │
+│   │   ├── ui/                            # shadcn/ui components
+│   │   │   ├── accordion.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── aspect-ratio.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── breadcrumb.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── carousel.tsx
+│   │   │   ├── chart.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── collapsible.tsx
+│   │   │   ├── command.tsx
+│   │   │   ├── context-menu.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── drawer.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── hover-card.tsx
+│   │   │   ├── input-otp.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── menubar.tsx
+│   │   │   ├── navigation-menu.tsx
+│   │   │   ├── pagination.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── radio-group.tsx
+│   │   │   ├── resizable.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── slider.tsx
+│   │   │   ├── sonner.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── toaster.tsx
+│   │   │   ├── toggle-group.tsx
+│   │   │   ├── toggle.tsx
+│   │   │   ├── tooltip.tsx
+│   │   │   └── use-toast.ts
+│   │   │
+│   │   └── theme-provider.tsx             # Theme context
+│   │
+│   ├── contexts/
+│   │   └── AuthContext.tsx                # Authentication context
+│   │
+│   ├── hooks/
+│   │   ├── use-mobile.tsx                 # Mobile detection
+│   │   ├── use-toast.ts                   # Toast notifications
+│   │   ├── useBloodBank.ts                # Blood bank operations
+│   │   ├── useDoctorData.ts               # Doctor data fetching
+│   │   ├── useInventoryAlerts.ts          # Inventory alerts
+│   │   ├── useNotifications.ts            # Notification management
+│   │   ├── useSettings.ts                 # User/hospital settings
+│   │   └── useTimezone.ts                 # Timezone utilities
+│   │
+│   ├── integrations/
+│   │   └── supabase/
+│   │       ├── client.ts                  # Supabase client
+│   │       └── types.ts                   # Database types (auto-generated)
+│   │
+│   ├── lib/
+│   │   ├── auditLogger.ts                 # PHI audit logging
+│   │   ├── bloodBankValidation.ts         # Blood bank validation
+│   │   ├── bloodCompatibility.ts          # Blood type compatibility
+│   │   ├── dataManager.ts                 # Data CRUD operations
+│   │   ├── exportUtils.ts                 # Data export utilities
+│   │   ├── formValidation.ts              # Form validation schemas
+│   │   ├── scheduleUtils.ts               # Staff scheduling
+│   │   ├── timezoneUtils.ts               # Timezone handling
+│   │   └── utils.ts                       # General utilities
+│   │
+│   ├── pages/
+│   │   ├── AboutUs.tsx                    # About page
+│   │   ├── Billing.tsx                    # Billing page
+│   │   ├── BloodBank.tsx                  # Blood bank page
+│   │   ├── Contact.tsx                    # Contact page
+│   │   ├── Dashboard.tsx                  # Main dashboard
+│   │   ├── Index.tsx                      # Landing page
+│   │   ├── Login.tsx                      # Login page
+│   │   ├── NotFound.tsx                   # 404 page
+│   │   ├── OperationDepartment.tsx        # OT management
+│   │   ├── PatientRegistry.tsx            # Patient verification
+│   │   ├── Pharmacy.tsx                   # Pharmacy/inventory
+│   │   ├── Reports.tsx                    # Reports page
+│   │   ├── Services.tsx                   # Services page
+│   │   ├── Staff.tsx                      # Staff list
+│   │   └── StaffManagement.tsx            # Staff management
+│   │
+│   └── database/
+│       └── schema.sql                     # Database schema reference
+│
+└── supabase/
+    ├── config.toml                        # Supabase configuration
+    │
+    └── functions/
+        ├── departments/
+        │   └── index.ts                   # Departments edge function
+        │
+        └── send-contact-email/
+            └── index.ts                   # Contact email function
 ```
 
 ---
 
-## Appendix B: Contact & Support
+## Appendix A: Contact & Support
 
-For technical support or inquiries about this Hospital Management System, please contact the development team.
+| Type | Contact |
+|------|---------|
+| Admin Email | arshmanrasool75@gmail.com |
+| Technical Support | Via contact form |
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** December 2024  
-**System Version:** HMS v1.0
+## Appendix B: Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | December 2024 | Initial release |
+| 1.1 | December 2024 | Added blood bank, OT modules |
+| 1.2 | December 2024 | Added patient portal, messaging |
+| 1.3 | December 2024 | Added contact form email delivery |
+
+---
+
+**Document Version:** 2.0  
+**Last Updated:** December 26, 2024  
+**System Version:** HMS v2.0  
+**Total Components:** 100+  
+**Total Database Tables:** 25+  
+**Total Edge Functions:** 2  
+**Total Custom Hooks:** 8  
+**Total Utility Libraries:** 9  
 
 ---
 
