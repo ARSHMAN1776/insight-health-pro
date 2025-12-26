@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -7,6 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../../hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '../../contexts/AuthContext';
+
+interface Department {
+  department_id: string;
+  department_name: string;
+}
 
 interface StaffRegistrationFormProps {
   open: boolean;
@@ -21,6 +26,7 @@ const StaffRegistrationForm: React.FC<StaffRegistrationFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -32,6 +38,24 @@ const StaffRegistrationForm: React.FC<StaffRegistrationFormProps> = ({
     specialization: '',
     licenseNumber: ''
   });
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('department_id, department_name')
+        .eq('status', 'Active')
+        .order('department_name');
+
+      if (!error && data) {
+        setDepartments(data);
+      }
+    };
+
+    if (open) {
+      fetchDepartments();
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,12 +210,21 @@ const StaffRegistrationForm: React.FC<StaffRegistrationFormProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="department">Department</Label>
-            <Input
-              id="department"
+            <Select
               value={formData.department}
-              onChange={(e) => handleChange('department', e.target.value)}
-              placeholder="e.g., Cardiology, Emergency, etc."
-            />
+              onValueChange={(value) => handleChange('department', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.department_id} value={dept.department_name}>
+                    {dept.department_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
