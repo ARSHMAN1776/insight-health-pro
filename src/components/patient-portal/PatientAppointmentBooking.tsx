@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -30,6 +30,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Patient } from '../../lib/dataManager';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
+import { TimeSlot, getAvailableTimeSlots, DAY_NAMES } from '@/lib/scheduleUtils';
 
 interface Department {
   department_id: string;
@@ -77,6 +78,9 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [noScheduleMessage, setNoScheduleMessage] = useState<string | null>(null);
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -130,12 +134,66 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
   const handleDepartmentChange = (departmentId: string) => {
     form.setValue('departmentId', departmentId);
     form.setValue('doctorId', ''); // Reset doctor selection
+    form.setValue('time', ''); // Reset time selection
+    setAvailableSlots([]);
+    setNoScheduleMessage(null);
     
     if (departmentId) {
       const filtered = doctors.filter(d => d.department_id === departmentId);
       setFilteredDoctors(filtered.length > 0 ? filtered : doctors);
     } else {
       setFilteredDoctors(doctors);
+    }
+  };
+
+  // Handle doctor change - reset time slots
+  const handleDoctorChange = (doctorId: string) => {
+    form.setValue('doctorId', doctorId);
+    form.setValue('time', ''); // Reset time when doctor changes
+    setAvailableSlots([]);
+    setNoScheduleMessage(null);
+    
+    // If date is already selected, fetch available slots
+    const selectedDate = form.getValues('date');
+    if (selectedDate && doctorId) {
+      fetchAvailableSlots(doctorId, selectedDate);
+    }
+  };
+
+  // Handle date change - fetch available slots
+  const handleDateChange = (date: string) => {
+    form.setValue('date', date);
+    form.setValue('time', ''); // Reset time when date changes
+    setAvailableSlots([]);
+    setNoScheduleMessage(null);
+    
+    const selectedDoctorId = form.getValues('doctorId');
+    if (selectedDoctorId && date) {
+      fetchAvailableSlots(selectedDoctorId, date);
+    }
+  };
+
+  // Fetch available time slots based on doctor schedule
+  const fetchAvailableSlots = async (doctorId: string, date: string) => {
+    setLoadingSlots(true);
+    setNoScheduleMessage(null);
+    
+    try {
+      const slots = await getAvailableTimeSlots(doctorId, date);
+      
+      // Check if no schedule is set
+      if (slots.length === 1 && !slots[0].available && !slots[0].time) {
+        setNoScheduleMessage(slots[0].reason || 'No schedule available');
+        setAvailableSlots([]);
+      } else {
+        setAvailableSlots(slots);
+        setNoScheduleMessage(null);
+      }
+    } catch (error) {
+      console.error('Error fetching slots:', error);
+      setNoScheduleMessage('Error loading available slots');
+    } finally {
+      setLoadingSlots(false);
     }
   };
 
@@ -234,10 +292,14 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
     { value: 'emergency', label: 'Urgent Care' },
   ];
 
-  const timeSlots = [
+  // Fallback time slots (used if no schedule is set)
+  const fallbackTimeSlots = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
   ];
+
+  // Get available slot count for display
+  const availableSlotsCount = availableSlots.filter(s => s.available).length;
 
   // Check if patient is verified
   const isVerified = patientData?.status === 'active';
@@ -330,7 +392,7 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                               Doctor
                             </FormLabel>
                             <Select 
-                              onValueChange={field.onChange} 
+                              onValueChange={handleDoctorChange} 
                               value={field.value}
                               disabled={loading}
                             >
@@ -369,7 +431,8 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                                 type="date" 
                                 min={getMinDate()}
                                 max={getMaxDate()}
-                                {...field} 
+                                value={field.value}
+                                onChange={(e) => handleDateChange(e.target.value)}
                               />
                             </FormControl>
                             <FormMessage />
@@ -384,22 +447,69 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
                               <Clock className="w-4 h-4" />
-                              Preferred Time
+                              Available Time Slots
+                              {loadingSlots && <Loader2 className="w-3 h-3 animate-spin" />}
+                              {!loadingSlots && availableSlots.length > 0 && (
+                                <Badge variant="secondary" className="ml-1 text-xs">
+                                  {availableSlotsCount} available
+                                </Badge>
+                              )}
                             </FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select time slot" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {timeSlots.map((slot) => (
-                                  <SelectItem key={slot} value={slot}>
-                                    {slot}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            
+                            {noScheduleMessage ? (
+                              <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+                                <AlertCircle className="h-4 w-4 text-amber-600" />
+                                <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
+                                  {noScheduleMessage}
+                                </AlertDescription>
+                              </Alert>
+                            ) : !form.getValues('doctorId') || !form.getValues('date') ? (
+                              <Select disabled>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select doctor and date first" />
+                                  </SelectTrigger>
+                                </FormControl>
+                              </Select>
+                            ) : loadingSlots ? (
+                              <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted/50">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span className="text-sm text-muted-foreground">Loading available slots...</span>
+                              </div>
+                            ) : availableSlots.length === 0 ? (
+                              <Alert className="bg-muted">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription className="text-sm">
+                                  No time slots available. Please try a different date.
+                                </AlertDescription>
+                              </Alert>
+                            ) : (
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select time slot" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {availableSlots.map((slot) => (
+                                    <SelectItem 
+                                      key={slot.time} 
+                                      value={slot.time}
+                                      disabled={!slot.available}
+                                    >
+                                      <span className={!slot.available ? 'line-through text-muted-foreground' : ''}>
+                                        {slot.time}
+                                      </span>
+                                      {!slot.available && (
+                                        <span className="ml-2 text-xs text-muted-foreground">
+                                          ({slot.reason})
+                                        </span>
+                                      )}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}
