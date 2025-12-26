@@ -34,10 +34,16 @@ interface Nurse {
   email: string;
 }
 
+interface DepartmentDoctor {
+  doctor_id: string;
+  department_id: string;
+}
+
 const Staff: React.FC = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [nurses, setNurses] = useState<Nurse[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentDoctors, setDepartmentDoctors] = useState<DepartmentDoctor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,28 +54,18 @@ const Staff: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch departments first
-      const { data: deptData } = await supabase
-        .from('departments')
-        .select('department_id, department_name')
-        .order('department_name');
+      // Fetch all data in parallel
+      const [deptResult, doctorsResult, nursesResult, deptDoctorsResult] = await Promise.all([
+        supabase.from('departments').select('department_id, department_name').order('department_name'),
+        supabase.from('doctors').select('*').order('first_name'),
+        supabase.from('nurses').select('*').order('first_name'),
+        supabase.from('department_doctors').select('doctor_id, department_id')
+      ]);
       
-      setDepartments(deptData || []);
-
-      // Fetch doctors
-      const { data: doctorsData } = await supabase
-        .from('doctors')
-        .select('*')
-        .order('first_name');
-      
-      // Fetch nurses
-      const { data: nursesData } = await supabase
-        .from('nurses')
-        .select('*')
-        .order('first_name');
-
-      setDoctors(doctorsData || []);
-      setNurses(nursesData || []);
+      setDepartments(deptResult.data || []);
+      setDoctors(doctorsResult.data || []);
+      setNurses(nursesResult.data || []);
+      setDepartmentDoctors(deptDoctorsResult.data || []);
     } catch (error) {
       console.error('Error loading staff:', error);
     } finally {
@@ -135,11 +131,22 @@ const Staff: React.FC = () => {
     { key: 'email', label: 'Email' },
   ];
 
-  // Count doctors per department
-  const doctorsByDepartment = departments.map(dept => ({
-    ...dept,
-    count: doctors.filter(d => d.department_id === dept.department_id).length
-  })).filter(d => d.count > 0);
+  // Count doctors per department using junction table as primary source
+  const doctorsByDepartment = departments.map(dept => {
+    // Get unique doctor IDs from junction table OR legacy department_id
+    const junctionDoctorIds = departmentDoctors
+      .filter(dd => dd.department_id === dept.department_id)
+      .map(dd => dd.doctor_id);
+    const legacyDoctorIds = doctors
+      .filter(d => d.department_id === dept.department_id)
+      .map(d => d.id);
+    const uniqueDoctorIds = [...new Set([...junctionDoctorIds, ...legacyDoctorIds])];
+    
+    return {
+      ...dept,
+      count: uniqueDoctorIds.length
+    };
+  }).filter(d => d.count > 0);
 
   if (loading) {
     return (
