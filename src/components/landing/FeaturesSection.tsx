@@ -18,7 +18,7 @@ const features = [
     title: 'Smart Scheduling',
     description: 'AI-powered appointment scheduling with real-time availability and automated reminders.',
     color: 'bg-medical-blue',
-    image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400&h=300&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&h=300&fit=crop&q=80',
   },
   {
     icon: FileText,
