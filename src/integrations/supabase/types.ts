@@ -1161,6 +1161,63 @@ export type Database = {
         }
         Relationships: []
       }
+      room_assignments: {
+        Row: {
+          admission_date: string
+          assigned_by: string | null
+          bed_number: number
+          created_at: string | null
+          discharge_date: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          room_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          admission_date?: string
+          assigned_by?: string | null
+          bed_number: number
+          created_at?: string | null
+          discharge_date?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          room_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          admission_date?: string
+          assigned_by?: string | null
+          bed_number?: number
+          created_at?: string | null
+          discharge_date?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          room_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_assignments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_assignments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           amenities: string[] | null

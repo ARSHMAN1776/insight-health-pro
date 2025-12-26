@@ -873,6 +873,45 @@ class DataManager {
       };
     }
   }
+
+  // Medical Records by Doctor
+  async getMedicalRecordsByDoctor(doctorId: string): Promise<MedicalRecord[]> {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select('*')
+      .eq('doctor_id', doctorId)
+      .is('deleted_at', null)
+      .order('visit_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  // Prescriptions by Doctor
+  async getPrescriptionsByDoctor(doctorId: string): Promise<Prescription[]> {
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .select('*')
+      .eq('doctor_id', doctorId)
+      .is('deleted_at', null)
+      .order('date_prescribed', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as Prescription[];
+  }
+
+  // Lab Tests by Doctor
+  async getLabTestsByDoctor(doctorId: string): Promise<LabTest[]> {
+    const { data, error } = await supabase
+      .from('lab_tests')
+      .select('*')
+      .eq('doctor_id', doctorId)
+      .is('deleted_at', null)
+      .order('test_date', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as LabTest[];
+  }
 }
 
 // Export singleton instance

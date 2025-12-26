@@ -16,14 +16,20 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts';
-import { Calendar, TrendingUp, Users, Activity, DollarSign, FileText } from 'lucide-react';
+import { Calendar, TrendingUp, Users, Activity, DollarSign, FileText, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { useTimezone } from '@/hooks/useTimezone';
+import { exportToCSV, patientColumns, appointmentColumns, paymentColumns } from '@/lib/exportUtils';
+import { dataManager } from '@/lib/dataManager';
+import { useToast } from '@/hooks/use-toast';
 
 const Reports: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const { getCurrentDate } = useTimezone();
   const { getCurrentDate } = useTimezone();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
@@ -147,6 +153,44 @@ const Reports: React.FC = () => {
     );
   }
 
+  const handleExport = async (type: 'patients' | 'appointments' | 'payments') => {
+    try {
+      let data;
+      let columns;
+      let filename;
+
+      switch (type) {
+        case 'patients':
+          data = await dataManager.getPatients();
+          columns = patientColumns;
+          filename = 'patients_export';
+          break;
+        case 'appointments':
+          data = await dataManager.getAppointments();
+          columns = appointmentColumns;
+          filename = 'appointments_export';
+          break;
+        case 'payments':
+          data = await dataManager.getPayments();
+          columns = paymentColumns;
+          filename = 'payments_export';
+          break;
+      }
+
+      exportToCSV(data, filename, columns);
+      toast({
+        title: 'Export Successful',
+        description: `${type.charAt(0).toUpperCase() + type.slice(1)} data exported to CSV`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export data. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -154,17 +198,30 @@ const Reports: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Reports & Analytics</h1>
           <p className="text-muted-foreground mt-2">Comprehensive insights into hospital operations</p>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select time range" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-            <SelectItem value="365">Last year</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select time range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="365">Last year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select onValueChange={(v) => handleExport(v as any)}>
+            <SelectTrigger className="w-[150px]">
+              <Download className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Export" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="patients">Patients</SelectItem>
+              <SelectItem value="appointments">Appointments</SelectItem>
+              <SelectItem value="payments">Payments</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Stats Cards */}

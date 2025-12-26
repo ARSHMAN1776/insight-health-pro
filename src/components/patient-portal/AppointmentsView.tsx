@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Calendar, Clock, User, MapPin, FileText } from 'lucide-react';
+import { Calendar, Clock, User, MapPin, FileText, X, RefreshCw } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
-import { Appointment, Patient } from '../../lib/dataManager';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
+import { Textarea } from '../ui/textarea';
+import { Appointment, Patient, dataManager } from '../../lib/dataManager';
 import PatientAppointmentBooking from './PatientAppointmentBooking';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppointmentsViewProps {
   appointments: Appointment[];
@@ -19,6 +24,13 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   patientData,
   onAppointmentBooked 
 }) => {
+  const { toast } = useToast();
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [processing, setProcessing] = useState(false);
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
@@ -47,11 +59,66 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   // Separate upcoming and past appointments
   const today = new Date();
   const upcomingAppointments = appointments.filter(
-    (apt) => new Date(apt.appointment_date) >= today
+    (apt) => new Date(apt.appointment_date) >= today && apt.status !== 'cancelled'
   );
   const pastAppointments = appointments.filter(
-    (apt) => new Date(apt.appointment_date) < today
+    (apt) => new Date(apt.appointment_date) < today || apt.status === 'cancelled'
   );
+
+  const handleCancelClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setCancelReason('');
+    setCancelDialogOpen(true);
+  };
+
+  const handleRescheduleClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setRescheduleDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!selectedAppointment) return;
+
+    try {
+      setProcessing(true);
+      
+      // Update appointment status to cancelled
+      const { error } = await supabase
+        .from('appointments')
+        .update({ 
+          status: 'cancelled',
+          notes: selectedAppointment.notes 
+            ? `${selectedAppointment.notes}\n\nCancelled by patient: ${cancelReason}`
+            : `Cancelled by patient: ${cancelReason}`
+        })
+        .eq('id', selectedAppointment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Appointment Cancelled',
+        description: 'Your appointment has been cancelled successfully.',
+      });
+
+      setCancelDialogOpen(false);
+      onAppointmentBooked?.(); // Refresh data
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to cancel appointment. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const canModifyAppointment = (appointment: Appointment) => {
+    // Can only modify if scheduled/confirmed and more than 24 hours away
+    const appointmentDate = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
+    const hoursUntil = (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
+    return ['scheduled', 'confirmed', 'pending'].includes(appointment.status) && hoursUntil > 24;
+  };
 
   if (loading) {
     return (
@@ -138,6 +205,35 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                         <p className="text-sm text-foreground">{appointment.notes}</p>
                       </div>
                     )}
+
+                    {/* Cancel/Reschedule Buttons */}
+                    {canModifyAppointment(appointment) && (
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRescheduleClick(appointment)}
+                          className="flex-1"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Reschedule
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCancelClick(appointment)}
+                          className="flex-1 text-destructive border-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                    {!canModifyAppointment(appointment) && appointment.status !== 'cancelled' && (
+                      <p className="text-xs text-muted-foreground pt-2">
+                        Appointments can only be modified more than 24 hours in advance
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -190,6 +286,65 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Cancel Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Appointment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this appointment? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Reason for cancellation (optional)"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+              Keep Appointment
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleCancelConfirm}
+              disabled={processing}
+            >
+              {processing ? 'Cancelling...' : 'Cancel Appointment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Dialog - Opens booking form */}
+      <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Reschedule Appointment</DialogTitle>
+            <DialogDescription>
+              Book a new appointment, then your current one will be cancelled.
+            </DialogDescription>
+          </DialogHeader>
+          <PatientAppointmentBooking 
+            patientData={patientData || null} 
+            onAppointmentBooked={() => {
+              // Cancel the old appointment
+              if (selectedAppointment) {
+                supabase
+                  .from('appointments')
+                  .update({ status: 'cancelled', notes: 'Rescheduled by patient' })
+                  .eq('id', selectedAppointment.id)
+                  .then(() => {
+                    setRescheduleDialogOpen(false);
+                    onAppointmentBooked?.();
+                  });
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
