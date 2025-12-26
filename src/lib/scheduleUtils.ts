@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getHospitalTimezone, getDayOfWeekInTimezone, getCurrentDateInTimezone } from '@/lib/timezoneUtils';
 
 export interface StaffSchedule {
   id: string;
@@ -25,12 +26,35 @@ export const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 /**
  * Get the day of week (0-6) from a date string (YYYY-MM-DD)
- * Uses local calendar day (avoids timezone parsing issues).
+ * Uses hospital timezone for accurate day calculation.
  */
-export const getDayOfWeek = (dateString: string): number => {
+export const getDayOfWeek = async (dateString: string): Promise<number> => {
+  try {
+    const timezone = await getHospitalTimezone();
+    return getDayOfWeekInTimezone(dateString, timezone);
+  } catch {
+    // Fallback to local calendar day
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return new Date(dateString).getDay();
+    return new Date(year, month - 1, day).getDay();
+  }
+};
+
+/**
+ * Synchronous version for non-async contexts (uses local time)
+ */
+export const getDayOfWeekSync = (dateString: string): number => {
   const [year, month, day] = dateString.split('-').map(Number);
   if (!year || !month || !day) return new Date(dateString).getDay();
   return new Date(year, month - 1, day).getDay();
+};
+
+/**
+ * Get current date in hospital timezone
+ */
+export const getCurrentDateInHospitalTimezone = async (): Promise<string> => {
+  const timezone = await getHospitalTimezone();
+  return getCurrentDateInTimezone(timezone);
 };
 
 /**
@@ -203,7 +227,7 @@ export const getAvailableTimeSlots = async (
   doctorId: string,
   date: string
 ): Promise<TimeSlot[]> => {
-  const dayOfWeek = getDayOfWeek(date);
+  const dayOfWeek = await getDayOfWeek(date);
   
   // Get doctor's schedule for this day
   const schedule = await getStaffScheduleForDay(doctorId, 'doctor', dayOfWeek);
@@ -256,7 +280,7 @@ export const isTimeSlotAvailable = async (
   date: string,
   time: string
 ): Promise<{ available: boolean; reason?: string }> => {
-  const dayOfWeek = getDayOfWeek(date);
+  const dayOfWeek = await getDayOfWeek(date);
   
   // Check doctor's schedule
   const schedule = await getStaffScheduleForDay(doctorId, 'doctor', dayOfWeek);
