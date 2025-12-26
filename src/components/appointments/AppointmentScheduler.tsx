@@ -241,15 +241,19 @@ const AppointmentScheduler: React.FC = () => {
     }
   };
 
-  const handleDelete = async (appointmentId: string) => {
+  const handleDelete = async (appointment: Appointment) => {
     try {
-      await dataManager.deleteAppointment(appointmentId);
-      const updatedAppointments = await dataManager.getAppointments();
-      setAppointments(updatedAppointments);
-      toast({
-        title: 'Success',
-        description: 'Appointment deleted successfully',
-      });
+      const success = await dataManager.deleteAppointment(appointment.id);
+      if (success) {
+        const updatedAppointments = await dataManager.getAppointments();
+        setAppointments(updatedAppointments);
+        toast({
+          title: 'Success',
+          description: 'Appointment deleted successfully',
+        });
+      } else {
+        throw new Error('Delete failed');
+      }
     } catch (error) {
       console.error('Error deleting appointment:', error);
       toast({
