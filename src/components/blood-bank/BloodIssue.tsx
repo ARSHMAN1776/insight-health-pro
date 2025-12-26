@@ -43,7 +43,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { z } from 'zod';
 import {
@@ -97,6 +97,7 @@ const AUTHORIZED_ROLES = ['admin'] as const;
 const BloodIssue: React.FC = () => {
   const { user, isRole } = useAuth();
   const { toast } = useToast();
+  const { formatDate, getCurrentDate } = useTimezone();
   
   const [patients, setPatients] = useState<Patient[]>([]);
   const [bloodGroups, setBloodGroups] = useState<BloodGroup[]>([]);
@@ -398,7 +399,7 @@ const BloodIssue: React.FC = () => {
           patient_id: formData.patient_id,
           blood_group_id: formData.blood_group_id,
           units_given: units,
-          issue_date: new Date().toISOString().split('T')[0],
+          issue_date: getCurrentDate(),
           issued_by: user.id,
           notes: sanitizedNotes || null,
         })
@@ -580,7 +581,7 @@ const BloodIssue: React.FC = () => {
                         {record.units_given}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(record.issue_date), 'MMM dd, yyyy')}
+                        {formatDate(record.issue_date)}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate">
                         {record.notes || '-'}
