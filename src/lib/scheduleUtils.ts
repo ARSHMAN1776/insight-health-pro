@@ -138,21 +138,18 @@ export const isInBreakPeriod = (
 };
 
 /**
- * Generate time slots based on schedule
+ * Generate time slots based on schedule (includes break slots as unavailable)
  */
-export const generateTimeSlotsFromSchedule = (schedule: StaffSchedule): string[] => {
-  const slots: string[] = [];
+export const generateTimeSlotsFromSchedule = (schedule: StaffSchedule): { time: string; isBreak: boolean }[] => {
+  const slots: { time: string; isBreak: boolean }[] = [];
   const startMinutes = timeToMinutes(schedule.start_time);
   const endMinutes = timeToMinutes(schedule.end_time);
   const duration = schedule.slot_duration || 30;
 
   for (let time = startMinutes; time + duration <= endMinutes; time += duration) {
     const timeStr = minutesToTime(time);
-    
-    // Skip if in break period
-    if (!isInBreakPeriod(timeStr, schedule.break_start, schedule.break_end)) {
-      slots.push(timeStr);
-    }
+    const isBreak = isInBreakPeriod(timeStr, schedule.break_start, schedule.break_end);
+    slots.push({ time: timeStr, isBreak });
   }
 
   return slots;
@@ -196,7 +193,7 @@ export const getAvailableTimeSlots = async (
     }];
   }
 
-  // Generate all possible slots
+  // Generate all possible slots (includes break info)
   const allSlots = generateTimeSlotsFromSchedule(schedule);
   
   if (allSlots.length === 0) {
@@ -210,12 +207,22 @@ export const getAvailableTimeSlots = async (
   // Get already booked slots
   const bookedSlots = await getBookedSlots(doctorId, date);
 
-  // Mark slots as available or booked
-  return allSlots.map(time => ({
-    time,
-    available: !bookedSlots.includes(time),
-    reason: bookedSlots.includes(time) ? 'Already booked' : undefined
-  }));
+  // Mark slots as available, booked, or break time
+  return allSlots.map(slot => {
+    if (slot.isBreak) {
+      return {
+        time: slot.time,
+        available: false,
+        reason: 'Break time'
+      };
+    }
+    const isBooked = bookedSlots.includes(slot.time);
+    return {
+      time: slot.time,
+      available: !isBooked,
+      reason: isBooked ? 'Already booked' : undefined
+    };
+  });
 };
 
 /**
