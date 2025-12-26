@@ -1,15 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { DollarSign, CreditCard, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 import PaymentsList from '../components/payments/PaymentsList';
 import PaymentManagementForm from '../components/forms/PaymentManagementForm';
+import { supabase } from '../integrations/supabase/client';
+
+interface PaymentStats {
+  totalRevenue: number;
+  paidCount: number;
+  pendingCount: number;
+  overdueCount: number;
+}
 
 const Billing: React.FC = () => {
   const { toast } = useToast();
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [stats, setStats] = useState<PaymentStats>({
+    totalRevenue: 0,
+    paidCount: 0,
+    pendingCount: 0,
+    overdueCount: 0,
+  });
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const { data: payments, error } = await supabase
+        .from('payments')
+        .select('amount, payment_status');
+
+      if (error) throw error;
+
+      const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+      const paidCount = payments?.filter(p => p.payment_status === 'completed').length || 0;
+      const pendingCount = payments?.filter(p => p.payment_status === 'pending').length || 0;
+      const overdueCount = payments?.filter(p => p.payment_status === 'overdue').length || 0;
+
+      setStats({ totalRevenue, paidCount, pendingCount, overdueCount });
+    } catch (error) {
+      console.error('Error fetching payment stats:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats, refreshKey]);
 
   const handlePaymentAdded = () => {
     setShowPaymentForm(false);
@@ -31,7 +68,7 @@ const Billing: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-3xl font-bold text-foreground">$0</p>
+                <p className="text-3xl font-bold text-foreground">${stats.totalRevenue.toLocaleString()}</p>
               </div>
               <div className="w-14 h-14 bg-medical-blue rounded-lg flex items-center justify-center">
                 <DollarSign className="w-7 h-7 text-white" />
@@ -45,7 +82,7 @@ const Billing: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Paid</p>
-                <p className="text-3xl font-bold text-foreground">0</p>
+                <p className="text-3xl font-bold text-foreground">{stats.paidCount}</p>
               </div>
               <div className="w-14 h-14 bg-medical-green rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-7 h-7 text-white" />
@@ -59,7 +96,7 @@ const Billing: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-3xl font-bold text-foreground">0</p>
+                <p className="text-3xl font-bold text-foreground">{stats.pendingCount}</p>
               </div>
               <div className="w-14 h-14 bg-medical-orange rounded-lg flex items-center justify-center">
                 <Clock className="w-7 h-7 text-white" />
@@ -73,7 +110,7 @@ const Billing: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Overdue</p>
-                <p className="text-3xl font-bold text-foreground">0</p>
+                <p className="text-3xl font-bold text-foreground">{stats.overdueCount}</p>
               </div>
               <div className="w-14 h-14 bg-medical-red rounded-lg flex items-center justify-center">
                 <AlertCircle className="w-7 h-7 text-white" />
