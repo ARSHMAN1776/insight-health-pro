@@ -36,7 +36,19 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-8">
+            <button 
+              onClick={() => navigate('/services')}
+              className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+            >
+              Services
+            </button>
+            <button 
+              onClick={() => navigate('/about')}
+              className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+            >
+              About Us
+            </button>
             <Button 
               onClick={() => navigate('/login')}
               className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary px-8"
@@ -62,6 +74,18 @@ const Navbar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
             <div className="flex flex-col space-y-4">
+              <button 
+                onClick={() => { navigate('/services'); setIsMobileMenuOpen(false); }}
+                className="text-foreground/80 hover:text-foreground transition-colors font-medium text-left"
+              >
+                Services
+              </button>
+              <button 
+                onClick={() => { navigate('/about'); setIsMobileMenuOpen(false); }}
+                className="text-foreground/80 hover:text-foreground transition-colors font-medium text-left"
+              >
+                About Us
+              </button>
               <Button 
                 onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}
                 className="w-full bg-gradient-to-r from-primary to-primary/90"
