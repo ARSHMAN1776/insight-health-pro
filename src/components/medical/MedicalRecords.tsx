@@ -285,7 +285,7 @@ const MedicalRecords: React.FC = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedRecord ? 'Edit Medical Record' : 'Add New Medical Record'}
@@ -300,7 +300,7 @@ const MedicalRecords: React.FC = () => {
                   <SelectTrigger>
                     <SelectValue placeholder="Select patient" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200] max-h-[200px] overflow-y-auto bg-background">
                     {patients.map(patient => (
                       <SelectItem key={patient.id} value={patient.id}>
                         {patient.first_name} {patient.last_name}
@@ -316,7 +316,7 @@ const MedicalRecords: React.FC = () => {
                   <SelectTrigger>
                     <SelectValue placeholder="Select doctor" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200] max-h-[200px] overflow-y-auto bg-background">
                     {doctors.map(doctor => (
                       <SelectItem key={doctor.id} value={doctor.id}>
                         Dr. {doctor.first_name} {doctor.last_name}
