@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth, UserRole, StaffSignupData } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -29,6 +29,12 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import { Separator } from '../components/ui/separator';
 import StaffList from '../components/staff/StaffList';
+import { supabase } from '../integrations/supabase/client';
+
+interface Department {
+  department_id: string;
+  department_name: string;
+}
 
 const StaffManagement: React.FC = () => {
   const { user, signupStaff, isLoading, isRole } = useAuth();
@@ -50,6 +56,23 @@ const StaffManagement: React.FC = () => {
   
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('department_id, department_name')
+        .eq('status', 'Active')
+        .order('department_name');
+
+      if (!error && data) {
+        setDepartments(data);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
 
   // Only admins can access this page
   if (!user || !isRole('admin')) {
@@ -86,19 +109,6 @@ const StaffManagement: React.FC = () => {
     { value: 'admin', label: 'Administrator', icon: Shield, description: 'System administrator', color: 'bg-destructive/10 text-destructive border-destructive/20' }
   ];
 
-  const departments = [
-    'Administration',
-    'Emergency',
-    'Cardiology',
-    'Neurology',
-    'Orthopedics',
-    'Pediatrics',
-    'Surgery',
-    'Pharmacy',
-    'Laboratory',
-    'Radiology',
-    'Front Desk'
-  ];
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -366,7 +376,7 @@ const StaffManagement: React.FC = () => {
                               </SelectTrigger>
                               <SelectContent className="bg-popover border shadow-lg z-50">
                                 {departments.map(dept => (
-                                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                  <SelectItem key={dept.department_id} value={dept.department_name}>{dept.department_name}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
