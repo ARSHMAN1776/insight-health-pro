@@ -36,9 +36,10 @@ type PaymentFormData = z.infer<typeof paymentSchema>;
 
 interface PaymentManagementFormProps {
   onClose: () => void;
+  onPaymentAdded?: () => void;
 }
 
-const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }) => {
+const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose, onPaymentAdded }) => {
   const { toast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(true);
@@ -99,7 +100,11 @@ const PaymentManagementForm: React.FC<PaymentManagementFormProps> = ({ onClose }
       });
       
       form.reset();
-      onClose();
+      if (onPaymentAdded) {
+        onPaymentAdded();
+      } else {
+        onClose();
+      }
     } catch (error) {
       console.error('Payment creation error:', error);
       toast({

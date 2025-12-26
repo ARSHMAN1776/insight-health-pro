@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { DollarSign, CreditCard, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -9,6 +9,12 @@ import PaymentManagementForm from '../components/forms/PaymentManagementForm';
 const Billing: React.FC = () => {
   const { toast } = useToast();
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handlePaymentAdded = () => {
+    setShowPaymentForm(false);
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
     <div className="space-y-6">
@@ -78,10 +84,10 @@ const Billing: React.FC = () => {
       </div>
 
       {showPaymentForm ? (
-        <PaymentManagementForm onClose={() => setShowPaymentForm(false)} />
+        <PaymentManagementForm onClose={() => setShowPaymentForm(false)} onPaymentAdded={handlePaymentAdded} />
       ) : (
         <>
-          <PaymentsList />
+          <PaymentsList key={refreshKey} />
           <div className="flex justify-end mt-4">
             <Button onClick={() => setShowPaymentForm(true)}>
               Add New Payment
