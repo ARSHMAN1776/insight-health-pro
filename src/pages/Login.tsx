@@ -5,7 +5,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Heart, Eye, EyeOff, Stethoscope, Shield, Activity, ArrowRight, Calendar, Phone, User } from 'lucide-react';
+import { Heart, Eye, EyeOff, Stethoscope, Shield, Activity, ArrowRight, Calendar, Phone, User, ArrowLeft, Lock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -58,16 +58,13 @@ const Login: React.FC = () => {
   };
 
   const validatePhone = (phone: string): boolean => {
-    // Must have at least 10 digits
     const digitsOnly = phone.replace(/\D/g, '');
     if (digitsOnly.length < 10) return false;
-    // Must match phone format
     const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/;
     return phoneRegex.test(phone);
   };
 
   const normalizePhoneInput = (phone: string): string => {
-    // Allow typing with formatting characters
     return phone.replace(/[^\d\s\-+()]/g, '');
   };
 
@@ -111,7 +108,6 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (!email || !password || !firstName || !lastName || !phone || !dateOfBirth || !gender) {
       setError('Please fill in all required fields');
       return;
@@ -137,7 +133,6 @@ const Login: React.FC = () => {
       return;
     }
 
-    // Validate date of birth
     const dob = new Date(dateOfBirth);
     const today = new Date();
     if (dob >= today) {
@@ -161,7 +156,6 @@ const Login: React.FC = () => {
         description: 'You can now sign in with your credentials.',
       });
       
-      // Reset form and switch to login
       setIsSignup(false);
       setEmail('');
       setPassword('');
@@ -182,67 +176,133 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-medical-blue-light via-background to-medical-green-light flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Side - Branding */}
-        <div className="flex flex-col justify-center space-y-6">
-          <div className="text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start space-x-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-hover rounded-xl flex items-center justify-center">
-                <Heart className="w-7 h-7 text-primary-foreground" />
+    <div className="min-h-screen flex">
+      {/* Left Side - Hero Image */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <img 
+          src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1200&h=1600&fit=crop&q=80" 
+          alt="Healthcare professionals"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/80 to-primary/70"></div>
+        <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+        
+        {/* Content Overlay */}
+        <div className="relative z-10 flex flex-col justify-between p-12 text-white">
+          {/* Back Button */}
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="w-fit text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
+          
+          {/* Main Content */}
+          <div className="space-y-8">
+            <div className="flex items-center space-x-3">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <Heart className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gradient">HMS</h1>
-                <p className="text-sm text-muted-foreground">Hospital Management System</p>
+                <h1 className="text-3xl font-bold">HealthCare HMS</h1>
+                <p className="text-white/80 text-sm">Hospital Management System</p>
               </div>
             </div>
             
-            <h2 className="text-4xl font-bold text-foreground mb-4">
-              Welcome to Your Healthcare Hub
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Streamline hospital operations with our comprehensive management system designed for modern healthcare.
-            </p>
-            
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="stat-card">
-                <Activity className="w-8 h-8 text-medical-blue mb-2" />
-                <h3 className="text-xl font-bold text-foreground">10,000+</h3>
-                <p className="text-sm text-muted-foreground">Patients Served</p>
+            <div>
+              <h2 className="text-4xl lg:text-5xl font-bold leading-tight">
+                Your Health,<br />
+                <span className="text-white/90">Our Priority</span>
+              </h2>
+              <p className="text-lg text-white/80 mt-4 max-w-md">
+                Access your medical records, book appointments, and connect with healthcare professionals - all in one place.
+              </p>
+            </div>
+
+            {/* Stats */}
+            <div className="flex gap-8">
+              <div>
+                <div className="text-3xl font-bold">10,000+</div>
+                <div className="text-white/70 text-sm">Patients Served</div>
               </div>
-              <div className="stat-card">
-                <Stethoscope className="w-8 h-8 text-medical-green mb-2" />
-                <h3 className="text-xl font-bold text-foreground">50+</h3>
-                <p className="text-sm text-muted-foreground">Medical Staff</p>
+              <div>
+                <div className="text-3xl font-bold">50+</div>
+                <div className="text-white/70 text-sm">Specialists</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold">24/7</div>
+                <div className="text-white/70 text-sm">Support</div>
               </div>
             </div>
           </div>
+          
+          {/* Trust Badges */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+              <Shield className="w-4 h-4" />
+              <span className="text-sm">HIPAA Compliant</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+              <Lock className="w-4 h-4" />
+              <span className="text-sm">SSL Secured</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Right Side - Login/Signup Form */}
-        <div className="flex flex-col justify-center">
-          <Card className="card-gradient">
-            <CardHeader>
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-gradient-to-br from-background via-background to-muted/30">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center justify-center mb-8">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/')}
+              className="absolute top-4 left-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center">
+                <Heart className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gradient">HMS</h1>
+                <p className="text-xs text-muted-foreground">Hospital Management</p>
+              </div>
+            </div>
+          </div>
+
+          <Card className="border-2 shadow-xl bg-card/80 backdrop-blur-sm">
+            <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-2xl text-center">
-                {isSignup ? 'Create Patient Account' : 'Sign In'}
+                {isSignup ? 'Create Patient Account' : 'Welcome Back'}
               </CardTitle>
               <CardDescription className="text-center">
                 {isSignup 
                   ? 'Register as a new patient'
-                  : 'Enter your credentials to access your account'}
+                  : 'Sign in to access your account'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as 'patient' | 'staff'); setIsSignup(false); setError(''); }} className="mb-4">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="patient">Patient</TabsTrigger>
-                  <TabsTrigger value="staff">Staff</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="patient" className="gap-2">
+                    <User className="w-4 h-4" />
+                    Patient
+                  </TabsTrigger>
+                  <TabsTrigger value="staff" className="gap-2">
+                    <Stethoscope className="w-4 h-4" />
+                    Staff
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* Patient Tab */}
                 <TabsContent value="patient">
                   {isSignup ? (
-                    // Patient Signup Form
                     <form onSubmit={handlePatientSignup} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -299,7 +359,6 @@ const Login: React.FC = () => {
                             required
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Include country code (e.g., +1 for US)</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -317,13 +376,12 @@ const Login: React.FC = () => {
                               required
                             />
                           </div>
-                          <p className="text-xs text-muted-foreground">Must be a past date</p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="gender">Gender *</Label>
                           <Select value={gender} onValueChange={setGender}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
+                              <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Male">Male</SelectItem>
@@ -362,7 +420,7 @@ const Login: React.FC = () => {
                         <Input
                           id="confirmPassword"
                           type="password"
-                          placeholder="Re-enter your password"
+                          placeholder="Re-enter password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           required
@@ -381,7 +439,6 @@ const Login: React.FC = () => {
                       </Button>
                     </form>
                   ) : (
-                    // Patient Login Form
                     <form onSubmit={handleLogin} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
@@ -396,7 +453,10 @@ const Login: React.FC = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="password">Password</Label>
+                          <a href="#" className="text-xs text-primary hover:underline">Forgot password?</a>
+                        </div>
                         <div className="relative">
                           <Input
                             id="password"
@@ -430,50 +490,38 @@ const Login: React.FC = () => {
                       </Button>
                     </form>
                   )}
-
-                  {/* Toggle between Login and Signup */}
-                  <div className="mt-4">
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-border"></div>
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">or</span>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full mt-4"
-                      onClick={() => {
-                        setIsSignup(!isSignup);
-                        setError('');
-                      }}
-                    >
-                      {isSignup 
-                        ? 'Already have an account? Sign in'
-                        : 'New patient? Create an account'}
-                    </Button>
+                  
+                  {/* Toggle Signup/Login */}
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {isSignup ? 'Already have an account?' : "Don't have an account?"}
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="text-primary font-medium ml-1 p-0"
+                        onClick={() => { setIsSignup(!isSignup); setError(''); }}
+                      >
+                        {isSignup ? 'Sign In' : 'Create one'}
+                      </Button>
+                    </p>
                   </div>
                 </TabsContent>
 
                 {/* Staff Tab */}
                 <TabsContent value="staff">
                   <form onSubmit={handleLogin} className="space-y-4">
-                    {/* Staff Role Selector */}
                     <div className="space-y-2">
-                      <Label>I am a</Label>
+                      <Label htmlFor="staffRole">Role</Label>
                       <Select value={selectedStaffRole} onValueChange={(v) => setSelectedStaffRole(v as StaffRole)}>
-                        <SelectTrigger className="bg-background">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select your role" />
                         </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
-                          {staffRoleOptions.map(({ value, label, icon: Icon }) => (
-                            <SelectItem key={value} value={value}>
+                        <SelectContent>
+                          {staffRoleOptions.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
                               <div className="flex items-center gap-2">
-                                <Icon className="w-4 h-4" />
-                                <span>{label}</span>
+                                <role.icon className="w-4 h-4" />
+                                {role.label}
                               </div>
                             </SelectItem>
                           ))}
@@ -486,7 +534,7 @@ const Login: React.FC = () => {
                       <Input
                         id="staffEmail"
                         type="email"
-                        placeholder="your.email@hospital.com"
+                        placeholder="staff@hospital.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -494,7 +542,10 @@ const Login: React.FC = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="staffPassword">Password</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="staffPassword">Password</Label>
+                        <a href="#" className="text-xs text-primary hover:underline">Forgot password?</a>
+                      </div>
                       <div className="relative">
                         <Input
                           id="staffPassword"
@@ -523,24 +574,33 @@ const Login: React.FC = () => {
                     )}
 
                     <Button type="submit" className="w-full btn-primary" disabled={isLoading}>
-                      {isLoading ? 'Signing in...' : 'Sign In'}
+                      {isLoading ? 'Signing in...' : 'Staff Sign In'}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
-
-                    <p className="text-xs text-muted-foreground text-center mt-4">
-                      Staff accounts are created by administrators. Contact your admin if you need access.
-                    </p>
                   </form>
+                  
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Staff accounts are created by administrators.
+                    </p>
+                  </div>
                 </TabsContent>
               </Tabs>
-
+              
               {/* Security Notice */}
-              <div className="mt-6 p-4 bg-accent/50 rounded-lg">
-                <div className="flex items-start space-x-3">
-                  <Shield className="w-5 h-5 text-success mt-0.5" />
-                  <div className="text-xs text-muted-foreground">
-                    <p className="font-semibold text-foreground mb-1">Your data is secure</p>
-                    <p>We use industry-standard encryption to protect your health information.</p>
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    <span>SSL Secure</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
+                    <span>HIPAA Compliant</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Verified</span>
                   </div>
                 </div>
               </div>
