@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
@@ -16,21 +15,29 @@ import {
   FormField, 
   FormItem, 
   FormLabel, 
-  FormMessage 
+  FormMessage,
+  FormDescription
 } from '../ui/form';
+import { 
+  phoneSchema, 
+  dateOfBirthSchema, 
+  emailSchema, 
+  nameSchema,
+  normalizePhoneInput
+} from '../../lib/formValidation';
 
 const patientSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 characters'),
-  dateOfBirth: z.string(),
+  firstName: nameSchema,
+  lastName: nameSchema,
+  email: emailSchema,
+  phone: phoneSchema,
+  dateOfBirth: dateOfBirthSchema,
   gender: z.enum(['male', 'female', 'other']),
-  address: z.string().min(10, 'Address must be at least 10 characters'),
-  emergencyContact: z.string().min(10, 'Emergency contact must be at least 10 characters'),
-  medicalHistory: z.string().optional(),
-  insuranceProvider: z.string().optional(),
-  insuranceId: z.string().optional(),
+  address: z.string().min(10, 'Address must be at least 10 characters').max(500, 'Address is too long'),
+  emergencyContact: z.string().min(10, 'Emergency contact must be at least 10 characters').max(100, 'Emergency contact is too long'),
+  medicalHistory: z.string().max(5000, 'Medical history is too long').optional(),
+  insuranceProvider: z.string().max(100, 'Insurance provider name is too long').optional(),
+  insuranceId: z.string().max(50, 'Insurance ID is too long').optional(),
 });
 
 type PatientFormData = z.infer<typeof patientSchema>;
@@ -212,8 +219,15 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1 (555) 123-4567" {...field} />
+                      <Input 
+                        placeholder="+1 (555) 123-4567" 
+                        {...field}
+                        onChange={(e) => field.onChange(normalizePhoneInput(e.target.value))}
+                      />
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      Include country code (e.g., +1 for US)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
