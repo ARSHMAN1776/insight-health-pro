@@ -351,6 +351,8 @@ const PatientDashboard: React.FC = () => {
                 prescriptions={prescriptions}
                 labTests={labTests}
                 loading={loading}
+                patientData={patientData}
+                onDataRefresh={fetchPatientData}
               />
             </div>
           </div>
