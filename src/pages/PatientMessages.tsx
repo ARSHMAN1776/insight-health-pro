@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Send, User, Search } from 'lucide-react';
+import { MessageCircle, Send, User, Search, Check, CheckCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -342,13 +342,22 @@ const PatientMessages: React.FC = () => {
                             }`}
                           >
                             <p className="text-sm">{msg.message}</p>
-                            <p className={`text-xs mt-1 ${
+                            <div className={`flex items-center justify-end gap-1 mt-1 ${
                               msg.sender_type === 'doctor'
                                 ? 'text-primary-foreground/70'
                                 : 'text-muted-foreground'
                             }`}>
-                              {new Date(msg.created_at).toLocaleString()}
-                            </p>
+                              <span className="text-xs">
+                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {msg.sender_type === 'doctor' && (
+                                msg.read ? (
+                                  <CheckCheck className="w-4 h-4 text-blue-400" />
+                                ) : (
+                                  <Check className="w-4 h-4 text-primary-foreground/50" />
+                                )
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
