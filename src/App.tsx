@@ -34,6 +34,7 @@ const OperationDepartment = React.lazy(() => import('./pages/OperationDepartment
 const DepartmentManagement = React.lazy(() => import('./components/departments/DepartmentManagement'));
 const StaffManagement = React.lazy(() => import('./pages/StaffManagement'));
 const BloodBank = React.lazy(() => import('./pages/BloodBank'));
+const PatientMessages = React.lazy(() => import('./pages/PatientMessages'));
 
 const queryClient = new QueryClient();
 
@@ -222,6 +223,15 @@ const App = () => (
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <BloodBank />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/patient-messages" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <PatientMessages />
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
