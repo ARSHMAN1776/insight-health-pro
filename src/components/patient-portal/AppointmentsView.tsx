@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Calendar, Clock, User, MapPin, FileText, X, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, User, MapPin, FileText, X, RefreshCw, AlertCircle, Info } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Textarea } from '../ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Appointment, Patient, dataManager } from '../../lib/dataManager';
 import PatientAppointmentBooking from './PatientAppointmentBooking';
 import { useToast } from '@/hooks/use-toast';
@@ -120,6 +121,30 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     return ['scheduled', 'confirmed', 'pending'].includes(appointment.status) && hoursUntil > 24;
   };
 
+  const getModificationBlockedReason = (appointment: Appointment): string | null => {
+    if (appointment.status === 'cancelled') return null;
+    if (appointment.status === 'completed') return 'This appointment has already been completed.';
+    
+    const appointmentDate = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
+    const hoursUntil = (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
+    
+    if (hoursUntil <= 0) {
+      return 'This appointment has already passed.';
+    }
+    
+    if (hoursUntil <= 24) {
+      const hoursLeft = Math.max(0, Math.floor(hoursUntil));
+      const minutesLeft = Math.max(0, Math.floor((hoursUntil - hoursLeft) * 60));
+      return `Appointments can only be cancelled or rescheduled more than 24 hours in advance. Your appointment is in ${hoursLeft}h ${minutesLeft}m. Please contact the hospital directly if you need to make changes.`;
+    }
+    
+    if (!['scheduled', 'confirmed', 'pending'].includes(appointment.status)) {
+      return `Appointments with status "${appointment.status}" cannot be modified. Please contact the hospital for assistance.`;
+    }
+    
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -229,10 +254,14 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                         </Button>
                       </div>
                     )}
-                    {!canModifyAppointment(appointment) && appointment.status !== 'cancelled' && (
-                      <p className="text-xs text-muted-foreground pt-2">
-                        Appointments can only be modified more than 24 hours in advance
-                      </p>
+                    {!canModifyAppointment(appointment) && getModificationBlockedReason(appointment) && (
+                      <Alert variant="default" className="mt-3 bg-warning/10 border-warning/30">
+                        <Info className="h-4 w-4 text-warning" />
+                        <AlertTitle className="text-warning">Cannot Modify Appointment</AlertTitle>
+                        <AlertDescription className="text-warning/80 text-sm">
+                          {getModificationBlockedReason(appointment)}
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                 </div>
