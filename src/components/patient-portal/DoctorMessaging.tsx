@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { MessageCircle, Send, User, Check, CheckCheck, Plus, Search } from 'lucide-react';
+import { MessageCircle, Send, User, Check, CheckCheck, Plus, Search, Trash2 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -227,6 +227,30 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
     }
   };
 
+  const deleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('patient_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      fetchDoctorsAndConversations();
+      toast({
+        title: 'Message Deleted',
+        description: 'The message has been deleted.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete message.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const startNewConversation = (doctor: Doctor) => {
     const existingConvo = conversations.find(c => c.id === doctor.id);
     if (existingConvo) {
@@ -435,15 +459,24 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                         {messages.map(msg => (
                           <div
                             key={msg.id}
-                            className={`flex ${msg.sender_type === 'patient' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${msg.sender_type === 'patient' ? 'justify-end' : 'justify-start'} group`}
                           >
                             <div
-                              className={`max-w-[80%] rounded-lg p-2.5 ${
+                              className={`max-w-[80%] rounded-lg p-2.5 relative ${
                                 msg.sender_type === 'patient'
                                   ? 'bg-primary text-primary-foreground'
                                   : 'bg-background border'
                               }`}
                             >
+                              {msg.sender_type === 'patient' && (
+                                <button
+                                  onClick={() => deleteMessage(msg.id)}
+                                  className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+                                  title="Delete message"
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </button>
+                              )}
                               <p className="text-sm">{msg.message}</p>
                               <div className={`flex items-center justify-end gap-1 mt-1 ${
                                 msg.sender_type === 'patient' 

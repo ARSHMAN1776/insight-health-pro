@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Send, User, Search, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Send, User, Search, Check, CheckCheck, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -238,6 +238,30 @@ const PatientMessages: React.FC = () => {
     }
   };
 
+  const deleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('patient_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      fetchPatientConversations();
+      toast({
+        title: 'Message Deleted',
+        description: 'The message has been deleted.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete message.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const filteredPatients = patients.filter(p =>
     `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -357,15 +381,24 @@ const PatientMessages: React.FC = () => {
                       {messages.map(msg => (
                         <div
                           key={msg.id}
-                          className={`flex ${msg.sender_type === 'doctor' ? 'justify-end' : 'justify-start'}`}
+                          className={`flex ${msg.sender_type === 'doctor' ? 'justify-end' : 'justify-start'} group`}
                         >
                           <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
+                            className={`max-w-[80%] rounded-lg p-3 relative ${
                               msg.sender_type === 'doctor'
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-background border'
                             }`}
                           >
+                            {msg.sender_type === 'doctor' && (
+                              <button
+                                onClick={() => deleteMessage(msg.id)}
+                                className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+                                title="Delete message"
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </button>
+                            )}
                             <p className="text-sm">{msg.message}</p>
                             <div className={`flex items-center justify-end gap-1 mt-1 ${
                               msg.sender_type === 'doctor'
