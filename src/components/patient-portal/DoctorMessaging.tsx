@@ -53,6 +53,31 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
   useEffect(() => {
     if (patientData?.id) {
       fetchDoctorsAndConversations();
+
+      // Set up real-time subscription for messages
+      const channel = supabase
+        .channel('patient-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'patient_messages',
+            filter: `patient_id=eq.${patientData.id}`
+          },
+          (payload) => {
+            console.log('Message update received:', payload);
+            fetchDoctorsAndConversations();
+            if (selectedDoctor) {
+              fetchMessages();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [patientData?.id]);
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Activity,
@@ -28,6 +28,8 @@ import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SidebarItem {
   label: string;
@@ -149,6 +151,63 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+
+  // Fetch unread message count for doctors
+  useEffect(() => {
+    if (user?.role === 'doctor' && user?.id) {
+      fetchUnreadCount();
+      
+      // Set up real-time subscription for new messages
+      const channel = supabase
+        .channel('sidebar-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'patient_messages'
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user?.role, user?.id]);
+
+  const fetchUnreadCount = async () => {
+    if (!user?.id) return;
+
+    try {
+      // First get the doctor ID
+      const { data: doctorData } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (doctorData?.id) {
+        // Count unread messages from patients
+        const { count, error } = await supabase
+          .from('patient_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('doctor_id', doctorData.id)
+          .eq('sender_type', 'patient')
+          .eq('read', false);
+
+        if (!error) {
+          setUnreadMessageCount(count || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   if (!user) return null;
 
@@ -210,16 +269,33 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
           {filteredItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
+            const showBadge = item.path === '/patient-messages' && unreadMessageCount > 0;
             
             return (
               <li key={item.path}>
                 <NavLink
                   to={item.path}
-                  className={`sidebar-item ${isActive ? 'active' : ''}`}
+                  className={`sidebar-item ${isActive ? 'active' : ''} relative`}
                   title={collapsed ? item.label : undefined}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+                  <div className="relative">
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {showBadge && collapsed && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                      </span>
+                    )}
+                  </div>
+                  {!collapsed && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="text-sm font-medium">{item.label}</span>
+                      {showBadge && (
+                        <Badge variant="destructive" className="h-5 min-w-5 text-xs flex items-center justify-center">
+                          {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </NavLink>
               </li>
             );
