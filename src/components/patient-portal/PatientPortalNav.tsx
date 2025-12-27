@@ -1,10 +1,10 @@
 import React from 'react';
-import { LayoutDashboard, FileText, Calendar, LogOut } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, LogOut, MessageCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface PatientPortalNavProps {
-  activeTab: 'dashboard' | 'records' | 'appointments';
-  onTabChange: (tab: 'dashboard' | 'records' | 'appointments') => void;
+  activeTab: 'dashboard' | 'records' | 'appointments' | 'messages';
+  onTabChange: (tab: 'dashboard' | 'records' | 'appointments' | 'messages') => void;
   onLogout: () => void;
 }
 
@@ -13,6 +13,7 @@ const PatientPortalNav: React.FC<PatientPortalNavProps> = ({ activeTab, onTabCha
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'records', label: 'Medical Records', icon: FileText },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
+    { id: 'messages', label: 'Messages', icon: MessageCircle },
   ] as const;
 
   return (

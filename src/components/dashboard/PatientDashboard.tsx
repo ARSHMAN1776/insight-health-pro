@@ -7,6 +7,7 @@ import PatientPortalNav from '../patient-portal/PatientPortalNav';
 import PersonalInfoSection from '../patient-portal/PersonalInfoSection';
 import MedicalRecordsView from '../patient-portal/MedicalRecordsView';
 import AppointmentsView from '../patient-portal/AppointmentsView';
+import DoctorMessaging from '../patient-portal/DoctorMessaging';
 import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -17,7 +18,7 @@ const PatientDashboard: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'records' | 'appointments'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'records' | 'appointments' | 'messages'>('dashboard');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
@@ -423,6 +424,18 @@ const PatientDashboard: React.FC = () => {
               patientData={patientData}
               onAppointmentBooked={fetchPatientData}
             />
+          </div>
+        )}
+
+        {activeTab === 'messages' && (
+          <div className="animate-fade-in">
+            <div className="mb-8">
+              <h2 className="text-4xl font-bold text-foreground mb-3">Messages</h2>
+              <p className="text-muted-foreground text-lg">
+                Communicate securely with your healthcare providers
+              </p>
+            </div>
+            <DoctorMessaging patientData={patientData} />
           </div>
         )}
       </main>
