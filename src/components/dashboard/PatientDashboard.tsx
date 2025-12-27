@@ -136,10 +136,10 @@ const PatientDashboard: React.FC = () => {
     }
   };
 
-  // Get upcoming appointment count
+  // Get upcoming appointment count (exclude cancelled appointments)
   const today = new Date();
   const upcomingAppointments = appointments.filter(
-    (apt) => new Date(apt.appointment_date) >= today
+    (apt) => new Date(apt.appointment_date) >= today && apt.status !== 'cancelled'
   );
   const nextAppointment = upcomingAppointments[0];
 
