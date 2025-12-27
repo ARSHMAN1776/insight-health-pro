@@ -21,7 +21,8 @@ import {
   Bell,
   BarChart,
   Scissors,
-  Droplets
+  Droplets,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -125,6 +126,12 @@ const sidebarItems: SidebarItem[] = [
     icon: BarChart,
     path: '/reports',
     roles: ['admin', 'doctor']
+  },
+  {
+    label: 'Patient Messages',
+    icon: MessageCircle,
+    path: '/patient-messages',
+    roles: ['doctor']
   },
   {
     label: 'Settings',
