@@ -336,10 +336,10 @@ const PatientDashboard: React.FC = () => {
                 <Bell className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-2 text-lg">View-Only Portal</h3>
+                <h3 className="font-semibold text-foreground mb-2 text-lg">Your Patient Portal</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  This is a secure, read-only portal for accessing your medical information. 
-                  To schedule appointments or update records, please contact our reception.
+                  Welcome to your personal health portal. You can view your medical records, 
+                  schedule appointments, request prescription refills, and message your doctors directly.
                 </p>
               </div>
             </div>
