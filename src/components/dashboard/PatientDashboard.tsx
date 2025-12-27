@@ -142,6 +142,13 @@ const PatientDashboard: React.FC = () => {
     (apt) => new Date(apt.appointment_date) >= today && apt.status !== 'cancelled'
   );
   const nextAppointment = upcomingAppointments[0];
+  
+  // Get recently cancelled appointments (within last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const cancelledAppointments = appointments.filter(
+    (apt) => apt.status === 'cancelled' && new Date(apt.appointment_date) >= thirtyDaysAgo
+  );
 
   const isVerified = patientData?.status === 'active';
 
@@ -272,6 +279,50 @@ const PatientDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Cancelled Appointments Section */}
+      {cancelledAppointments.length > 0 && (
+        <Card className="border-destructive/20 bg-gradient-to-r from-destructive/5 to-transparent">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-destructive" />
+                Recently Cancelled Appointments
+              </CardTitle>
+              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                {cancelledAppointments.length} cancelled
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              {cancelledAppointments.map((apt) => (
+                <div key={apt.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-destructive" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{apt.type || 'Appointment'}</p>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <span>{apt.appointment_date}</span>
+                        <span>•</span>
+                        <span>{apt.appointment_time}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20">
+                    Cancelled
+                  </Badge>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Showing appointments cancelled in the last 30 days
+            </p>
           </CardContent>
         </Card>
       )}
