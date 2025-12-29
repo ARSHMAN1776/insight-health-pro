@@ -13,8 +13,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { TestTube, Plus, Clock, CheckCircle, AlertCircle, Upload, Image, X, Eye } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import { useTimezone } from '@/hooks/useTimezone';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LabTestManagement: React.FC = () => {
+  const { user, isRole } = useAuth();
+  const isLabTechnician = isRole('lab_technician');
   const { formatDate, getCurrentDate } = useTimezone();
   const [labTests, setLabTests] = useState<LabTest[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -397,16 +400,16 @@ const LabTestManagement: React.FC = () => {
 
       {/* Data Table */}
       <DataTable
-        title="Lab Test Management"
+        title={isLabTechnician ? "Lab Tests - Update Results" : "Lab Test Management"}
         data={filteredTests}
         columns={columns}
         onEdit={handleEdit}
-        onDelete={handleDelete}
-        onAdd={() => {
+        onDelete={isLabTechnician ? undefined : handleDelete}
+        onAdd={isLabTechnician ? undefined : () => {
           resetForm();
           setIsDialogOpen(true);
         }}
-        addButtonText="Order Test"
+        addButtonText={isLabTechnician ? undefined : "Order Test"}
       />
 
       {/* Add/Edit Dialog */}
@@ -414,89 +417,144 @@ const LabTestManagement: React.FC = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedLabTest ? 'Edit Lab Test' : 'Order New Lab Test'}
+              {isLabTechnician 
+                ? 'Update Test Results' 
+                : (selectedLabTest ? 'Edit Lab Test' : 'Order New Lab Test')
+              }
             </DialogTitle>
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Patient *</Label>
-                <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select patient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map(patient => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.first_name} {patient.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Patient and Doctor - Read only for lab technicians */}
+            {isLabTechnician ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Patient</Label>
+                  <Input 
+                    value={getPatientName(formData.patient_id)} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Doctor</Label>
+                  <Input 
+                    value={getDoctorName(formData.doctor_id)} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                </div>
               </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Patient *</Label>
+                  <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select patient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {patients.map(patient => (
+                        <SelectItem key={patient.id} value={patient.id}>
+                          {patient.first_name} {patient.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label>Doctor *</Label>
-                <Select value={formData.doctor_id} onValueChange={(value) => setFormData({...formData, doctor_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select doctor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctors.map(doctor => (
-                      <SelectItem key={doctor.id} value={doctor.id}>
-                        Dr. {doctor.first_name} {doctor.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Label>Doctor *</Label>
+                  <Select value={formData.doctor_id} onValueChange={(value) => setFormData({...formData, doctor_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select doctor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {doctors.map(doctor => (
+                        <SelectItem key={doctor.id} value={doctor.id}>
+                          Dr. {doctor.first_name} {doctor.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Test Name *</Label>
-                <Input
-                  value={formData.test_name}
-                  onChange={(e) => setFormData({...formData, test_name: e.target.value})}
-                  placeholder="Complete Blood Count"
-                />
+            {/* Test Name and Type - Read only for lab technicians */}
+            {isLabTechnician ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Test Name</Label>
+                  <Input value={formData.test_name} disabled className="bg-muted" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Test Type</Label>
+                  <Input value={formData.test_type || 'N/A'} disabled className="bg-muted" />
+                </div>
               </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Test Name *</Label>
+                  <Input
+                    value={formData.test_name}
+                    onChange={(e) => setFormData({...formData, test_name: e.target.value})}
+                    placeholder="Complete Blood Count"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label>Test Type</Label>
-                <Input
-                  value={formData.test_type}
-                  onChange={(e) => setFormData({...formData, test_type: e.target.value})}
-                  placeholder="Blood"
-                />
+                <div className="space-y-2">
+                  <Label>Test Type</Label>
+                  <Input
+                    value={formData.test_type}
+                    onChange={(e) => setFormData({...formData, test_type: e.target.value})}
+                    placeholder="Blood"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
+            {/* Date, Priority, Status - Priority read only for lab technicians */}
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Test Date</Label>
-                <Input
-                  type="date"
-                  value={formData.test_date}
-                  onChange={(e) => setFormData({...formData, test_date: e.target.value})}
-                />
-              </div>
+              {isLabTechnician ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Test Date</Label>
+                    <Input value={formData.test_date} disabled className="bg-muted" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Priority</Label>
+                    <Input value={formData.priority} disabled className="bg-muted capitalize" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Test Date</Label>
+                    <Input
+                      type="date"
+                      value={formData.test_date}
+                      onChange={(e) => setFormData({...formData, test_date: e.target.value})}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select value={formData.priority} onValueChange={(value: any) => setFormData({...formData, priority: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label>Priority</Label>
+                    <Select value={formData.priority} onValueChange={(value: any) => setFormData({...formData, priority: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -508,7 +566,7 @@ const LabTestManagement: React.FC = () => {
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    {!isLabTechnician && <SelectItem value="cancelled">Cancelled</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
