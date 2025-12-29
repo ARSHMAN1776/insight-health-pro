@@ -26,7 +26,8 @@ CREATE TYPE public.app_role AS ENUM (
     'nurse',
     'pharmacist',
     'receptionist',
-    'patient'
+    'patient',
+    'lab_technician'
 );
 
 -- ============================================================================
@@ -240,6 +241,9 @@ CREATE POLICY "Doctors can update own profile" ON public.doctors
     FOR UPDATE USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
+CREATE POLICY "Lab technicians can view doctors" ON public.doctors
+    FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
+
 -- Indexes for doctors
 CREATE INDEX idx_doctors_specialization ON public.doctors(specialization);
 CREATE INDEX idx_doctors_department ON public.doctors(department);
@@ -423,6 +427,9 @@ CREATE POLICY "Doctors can view their patients" ON public.patients
         public.has_role(auth.uid(), 'doctor') AND 
         public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), id)
     );
+
+CREATE POLICY "Lab technicians can view patients" ON public.patients
+    FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
 
 -- Indexes for patients
 CREATE INDEX idx_patients_status ON public.patients(status);
@@ -849,6 +856,13 @@ CREATE POLICY "Nurses can update lab tests" ON public.lab_tests
 CREATE POLICY "Admins can manage all lab tests" ON public.lab_tests
     FOR ALL USING (public.has_role(auth.uid(), 'admin'))
     WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Lab technicians can view all lab tests" ON public.lab_tests
+    FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
+
+CREATE POLICY "Lab technicians can update lab tests" ON public.lab_tests
+    FOR UPDATE USING (public.has_role(auth.uid(), 'lab_technician'))
+    WITH CHECK (public.has_role(auth.uid(), 'lab_technician'));
 
 -- Indexes for lab_tests
 CREATE INDEX idx_lab_tests_patient_id ON public.lab_tests(patient_id);
