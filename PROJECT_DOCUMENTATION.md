@@ -39,7 +39,7 @@ The Hospital Management System (HMS) is a comprehensive, web-based healthcare ma
 | Benefit | Description |
 |---------|-------------|
 | **Centralized Data Management** | All patient and operational data in one secure location |
-| **Role-Based Access Control** | Secure access with permissions based on 6 different user roles |
+| **Role-Based Access Control** | Secure access with permissions based on 7 different user roles |
 | **Real-Time Updates** | Live data synchronization across all modules |
 | **Responsive Design** | Accessible on desktop, tablet, and mobile devices |
 | **Comprehensive Reporting** | Analytics and insights for informed decision-making |
@@ -65,7 +65,7 @@ The Hospital Management System (HMS) is a comprehensive, web-based healthcare ma
 
 ### 2.2 Dashboard System
 
-The system provides **6 role-specific dashboards**:
+The system provides **7 role-specific dashboards**:
 
 | Dashboard | Target User | Key Widgets |
 |-----------|-------------|-------------|
@@ -75,6 +75,7 @@ The system provides **6 role-specific dashboards**:
 | **Patient Dashboard** | Patients | Upcoming appointments, prescriptions, medical history, doctor messaging |
 | **Receptionist Dashboard** | Front Desk | Appointment scheduling, patient registration queue, billing shortcuts |
 | **Pharmacist Dashboard** | Pharmacy Staff | Prescription queue, inventory alerts, drug dispensing |
+| **Lab Technician Dashboard** | Laboratory Staff | Pending tests, in-progress tests, urgent tests, test results entry |
 
 ---
 
@@ -133,27 +134,45 @@ The system provides **6 role-specific dashboards**:
 | **Patient** | `patient` | Personal health information, appointment booking, messaging, prescription refills |
 | **Receptionist** | `receptionist` | Front desk operations, scheduling, billing, patient registration verification |
 | **Pharmacist** | `pharmacist` | Prescription management, medication dispensing, inventory control |
+| **Lab Technician** | `lab_technician` | Laboratory operations, test processing, results entry, report uploads |
 
 ### 4.2 Complete Module Access Matrix
 
-| Module | Admin | Doctor | Nurse | Patient | Receptionist | Pharmacist |
-|--------|:-----:|:------:|:-----:|:-------:|:------------:|:----------:|
-| Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Patients | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Patient Registry | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Appointments | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Medical Records | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Prescriptions | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Lab Tests | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Rooms & Beds | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
-| Billing | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Pharmacy/Inventory | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Blood Bank | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Operation Theatre | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Departments | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Staff Management | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Reports | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Settings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Module | Admin | Doctor | Nurse | Patient | Receptionist | Pharmacist | Lab Technician |
+|--------|:-----:|:------:|:-----:|:-------:|:------------:|:----------:|:--------------:|
+| Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Patients | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ (View) |
+| Patient Registry | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Appointments | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Medical Records | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Prescriptions | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Lab Tests | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Rooms & Beds | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Billing | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Pharmacy/Inventory | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Blood Bank | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Operation Theatre | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Departments | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Staff Management | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Reports | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Settings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+### 4.3 Lab Technician Permissions
+
+Lab technicians have specific permissions designed for laboratory operations:
+
+| Permission | Description |
+|------------|-------------|
+| `view_lab_tests` | View all laboratory test orders |
+| `manage_lab_results` | Update test status, enter results, upload reports |
+| `view_patients` | View patient information for test context |
+| `view_doctors` | View ordering doctor information |
+
+**Restrictions:**
+- Cannot order new lab tests (only doctors can order)
+- Cannot delete lab tests
+- Cannot modify patient, doctor, or test name fields
+- Can only update: status, results, lab technician, normal range, cost, notes, report images
 
 ### 4.3 Patient Registration Workflow
 
