@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { User, Calendar, Heart, Mail, Phone, MapPin, Shield } from 'lucide-react';
+import { User, Calendar, Heart, Mail, Phone, MapPin, Shield, QrCode, CreditCard } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '../ui/badge';
-
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import PatientIDCard from '../patients/PatientIDCard';
+import QRCodeDisplay from '../shared/QRCodeDisplay';
 interface PersonalInfoProps {
   user: {
     firstName?: string;
@@ -25,6 +28,18 @@ interface PersonalInfoProps {
 }
 
 const PersonalInfoSection: React.FC<PersonalInfoProps> = ({ user, patientInfo }) => {
+  const [showIDCard, setShowIDCard] = useState(false);
+
+  // Prepare QR data for quick scanning
+  const qrData = {
+    type: 'patient_id',
+    id: patientInfo.patientId,
+    name: `${user?.firstName || ''} ${user?.lastName || ''}`,
+    bloodType: patientInfo.bloodType,
+    allergies: patientInfo.allergies,
+    emergency: patientInfo.emergencyContact.phone,
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Card */}
@@ -40,12 +55,65 @@ const PersonalInfoSection: React.FC<PersonalInfoProps> = ({ user, patientInfo })
               <h2 className="text-3xl font-bold mb-1">{user?.firstName} {user?.lastName}</h2>
               <p className="text-primary-foreground/80 text-lg">Patient ID: {patientInfo.patientId}</p>
             </div>
-            <Badge variant="outline" className="bg-primary-foreground/20 border-primary-foreground/40 text-primary-foreground text-sm px-4 py-2">
-              Active Patient
-            </Badge>
+            <div className="flex flex-col items-end gap-3">
+              <Badge variant="outline" className="bg-primary-foreground/20 border-primary-foreground/40 text-primary-foreground text-sm px-4 py-2">
+                Active Patient
+              </Badge>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setShowIDCard(true)}
+                className="flex items-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                View ID Card
+              </Button>
+            </div>
           </div>
         </div>
+        
+        {/* Quick QR Code Section */}
+        <CardContent className="p-4 bg-muted/30 border-t">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <QrCode className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Quick ID QR Code</p>
+                <p className="text-xs text-muted-foreground">Scan for patient identification</p>
+              </div>
+            </div>
+            <QRCodeDisplay
+              data={qrData}
+              size={64}
+              showDownload={false}
+              className="flex-shrink-0"
+            />
+          </div>
+        </CardContent>
       </Card>
+
+      {/* Patient ID Card Dialog */}
+      <Dialog open={showIDCard} onOpenChange={setShowIDCard}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Patient ID Card
+            </DialogTitle>
+          </DialogHeader>
+          <PatientIDCard
+            patient={{
+              id: patientInfo.patientId,
+              firstName: user?.firstName || '',
+              lastName: user?.lastName || '',
+              bloodType: patientInfo.bloodType,
+              allergies: patientInfo.allergies.join(', '),
+              emergencyContactName: patientInfo.emergencyContact.name,
+              emergencyContactPhone: patientInfo.emergencyContact.phone,
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Personal Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
