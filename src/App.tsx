@@ -15,7 +15,8 @@ import Index from './pages/Index';
 import AboutUs from './pages/AboutUs';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
-
+import VerifyLabReport from './pages/VerifyLabReport';
+import VerifyPrescription from './pages/VerifyPrescription';
 // Lazy load components
 const AppointmentScheduler = React.lazy(() => import('./components/appointments/AppointmentScheduler'));
 const MedicalRecords = React.lazy(() => import('./components/medical/MedicalRecords'));
@@ -63,7 +64,11 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
+          <Routes>
+              {/* Public verification routes */}
+              <Route path="/verify/lab-report" element={<VerifyLabReport />} />
+              <Route path="/verify/prescription" element={<VerifyPrescription />} />
+              
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<AboutUs />} />

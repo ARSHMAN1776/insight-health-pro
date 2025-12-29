@@ -10,10 +10,11 @@ import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { dataManager, LabTest, Patient, Doctor } from '../../lib/dataManager';
 import { supabase } from '@/integrations/supabase/client';
-import { TestTube, Plus, Clock, CheckCircle, AlertCircle, Upload, Image, X, Eye } from 'lucide-react';
+import { TestTube, Plus, Clock, CheckCircle, AlertCircle, Upload, Image, X, Eye, QrCode, Printer } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useAuth } from '@/contexts/AuthContext';
+import QRCodeDisplay from '../shared/QRCodeDisplay';
 
 const LabTestManagement: React.FC = () => {
   const { user, isRole } = useAuth();
@@ -28,6 +29,7 @@ const LabTestManagement: React.FC = () => {
   const [selectedLabTest, setSelectedLabTest] = useState<LabTest | null>(null);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedForPrint, setSelectedForPrint] = useState<LabTest | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -304,20 +306,33 @@ const LabTestManagement: React.FC = () => {
     {
       key: 'report_image_url',
       label: 'Report',
-      render: (value: string) => value ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            setPreviewImage(value);
-          }}
-        >
-          <Eye className="w-4 h-4 mr-1" />
-          View
-        </Button>
-      ) : (
-        <span className="text-muted-foreground text-sm">No report</span>
+      render: (value: string, test: LabTest) => (
+        <div className="flex items-center gap-1">
+          {value && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewImage(value);
+              }}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              View
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedForPrint(test);
+            }}
+          >
+            <QrCode className="w-4 h-4 mr-1" />
+            QR
+          </Button>
+        </div>
       ),
     },
     {
@@ -698,6 +713,38 @@ const LabTestManagement: React.FC = () => {
                 alt="Lab report" 
                 className="max-h-[70vh] object-contain rounded-lg"
               />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Print Dialog */}
+      <Dialog open={!!selectedForPrint} onOpenChange={() => setSelectedForPrint(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="w-5 h-5" />
+              Lab Report QR Code
+            </DialogTitle>
+          </DialogHeader>
+          {selectedForPrint && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Scan this QR code to verify the authenticity of this lab report
+                </p>
+                <QRCodeDisplay
+                  data={`${window.location.origin}/verify/lab-report?id=${selectedForPrint.id}`}
+                  size={180}
+                  title={selectedForPrint.test_name}
+                  subtitle={`Patient: ${getPatientName(selectedForPrint.patient_id)}`}
+                  showDownload
+                  showPrint
+                />
+              </div>
+              <div className="text-xs text-center text-muted-foreground border-t pt-3">
+                Report ID: {selectedForPrint.id.slice(0, 8).toUpperCase()}
+              </div>
             </div>
           )}
         </DialogContent>
