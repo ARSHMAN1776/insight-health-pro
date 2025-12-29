@@ -6,7 +6,7 @@ import { Session } from '@supabase/supabase-js';
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 // User roles in the hospital system
-export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'receptionist' | 'pharmacist';
+export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'receptionist' | 'pharmacist' | 'lab_technician';
 
 // User interface
 export interface User {
@@ -109,6 +109,12 @@ const rolePermissions: Record<UserRole, string[]> = {
     'view_inventory',
     'manage_inventory',
     'view_patients'
+  ],
+  lab_technician: [
+    'view_lab_tests',
+    'manage_lab_results',
+    'view_patients',
+    'view_doctors'
   ]
 };
 

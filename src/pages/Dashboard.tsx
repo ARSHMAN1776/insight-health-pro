@@ -6,6 +6,7 @@ import NurseDashboard from '../components/dashboard/NurseDashboard';
 import PatientDashboard from '../components/dashboard/PatientDashboard';
 import ReceptionistDashboard from '../components/dashboard/ReceptionistDashboard';
 import PharmacistDashboard from '../components/dashboard/PharmacistDashboard';
+import LabTechnicianDashboard from '../components/dashboard/LabTechnicianDashboard';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -28,6 +29,8 @@ const Dashboard: React.FC = () => {
         return <ReceptionistDashboard />;
       case 'pharmacist':
         return <PharmacistDashboard />;
+      case 'lab_technician':
+        return <LabTechnicianDashboard />;
       default:
         return (
           <div className="text-center py-8">

@@ -43,7 +43,7 @@ const sidebarItems: SidebarItem[] = [
     label: 'Dashboard',
     icon: Home,
     path: '/dashboard',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist', 'lab_technician']
   },
   {
     label: 'Patients',
@@ -85,7 +85,7 @@ const sidebarItems: SidebarItem[] = [
     label: 'Lab Tests',
     icon: TestTube,
     path: '/lab-tests',
-    roles: ['admin', 'doctor', 'nurse', 'patient']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'lab_technician']
   },
   {
     label: 'Blood Bank',
@@ -139,7 +139,7 @@ const sidebarItems: SidebarItem[] = [
     label: 'Settings',
     icon: Settings,
     path: '/settings',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist', 'lab_technician']
   }
 ];
 

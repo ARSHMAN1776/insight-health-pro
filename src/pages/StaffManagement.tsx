@@ -23,7 +23,8 @@ import {
   Lock,
   CheckCircle2,
   Info,
-  List
+  List,
+  TestTube
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -106,6 +107,7 @@ const StaffManagement: React.FC = () => {
     { value: 'nurse', label: 'Nurse', icon: UserCheck, description: 'Patient care specialist', color: 'bg-success/10 text-success border-success/20' },
     { value: 'receptionist', label: 'Receptionist', icon: Users, description: 'Front desk staff', color: 'bg-info/10 text-info border-info/20' },
     { value: 'pharmacist', label: 'Pharmacist', icon: Pill, description: 'Medication specialist', color: 'bg-warning/10 text-warning border-warning/20' },
+    { value: 'lab_technician', label: 'Lab Technician', icon: TestTube, description: 'Lab test specialist', color: 'bg-violet-500/10 text-violet-600 border-violet-500/20' },
     { value: 'admin', label: 'Administrator', icon: Shield, description: 'System administrator', color: 'bg-destructive/10 text-destructive border-destructive/20' }
   ];
 
@@ -140,8 +142,8 @@ const StaffManagement: React.FC = () => {
       return;
     }
 
-    // License number required for doctors, nurses, pharmacists
-    if (['doctor', 'nurse', 'pharmacist'].includes(formData.role) && !formData.licenseNumber) {
+    // License number required for doctors, nurses, pharmacists, lab technicians
+    if (['doctor', 'nurse', 'pharmacist', 'lab_technician'].includes(formData.role) && !formData.licenseNumber) {
       setError('License number is required for this role');
       return;
     }
@@ -395,7 +397,7 @@ const StaffManagement: React.FC = () => {
                       </div>
 
                       {/* License Number */}
-                      {['doctor', 'nurse', 'pharmacist'].includes(formData.role) && (
+                      {['doctor', 'nurse', 'pharmacist', 'lab_technician'].includes(formData.role) && (
                         <div className="space-y-4">
                           <Label className="text-base font-semibold flex items-center gap-2">
                             <Award className="w-4 h-4 text-muted-foreground" />
