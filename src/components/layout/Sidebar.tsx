@@ -127,7 +127,7 @@ const sidebarItems: SidebarItem[] = [
     label: 'Reports',
     icon: BarChart,
     path: '/reports',
-    roles: ['admin', 'doctor']
+    roles: ['admin']
   },
   {
     label: 'Patient Messages',
