@@ -470,7 +470,21 @@ class DataManager {
     return (data || []) as Appointment[];
   }
 
-  async getAppointmentsByPatient(patientId: string): Promise<Appointment[]> {
+  async getAppointmentsByPatient(patientId: string, includeDeletedCancelled: boolean = true): Promise<Appointment[]> {
+    // For patient portal, include soft-deleted cancelled appointments so they can see their history
+    if (includeDeletedCancelled) {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('patient_id', patientId)
+        .or('deleted_at.is.null,status.eq.cancelled')
+        .order('appointment_date', { ascending: true });
+
+      if (error) throw error;
+      return (data || []) as Appointment[];
+    }
+    
+    // Standard query - exclude all soft-deleted
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
