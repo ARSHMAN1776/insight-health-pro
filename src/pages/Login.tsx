@@ -5,20 +5,21 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Heart, Eye, EyeOff, Stethoscope, Shield, Activity, ArrowRight, Calendar, Phone, User, ArrowLeft, Lock, CheckCircle } from 'lucide-react';
+import { Heart, Eye, EyeOff, Stethoscope, Shield, Activity, ArrowRight, Calendar, Phone, User, ArrowLeft, Lock, CheckCircle, FlaskConical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
-type StaffRole = 'doctor' | 'nurse' | 'admin' | 'receptionist' | 'pharmacist';
+type StaffRole = 'doctor' | 'nurse' | 'admin' | 'receptionist' | 'pharmacist' | 'lab_technician';
 
 const staffRoleOptions: { value: StaffRole; label: string; icon: React.ElementType }[] = [
   { value: 'doctor', label: 'Doctor', icon: Stethoscope },
   { value: 'nurse', label: 'Nurse', icon: User },
   { value: 'admin', label: 'Administrator', icon: Shield },
   { value: 'receptionist', label: 'Receptionist', icon: User },
-  { value: 'pharmacist', label: 'Pharmacist', icon: User }
+  { value: 'pharmacist', label: 'Pharmacist', icon: User },
+  { value: 'lab_technician', label: 'Lab Technician', icon: FlaskConical }
 ];
 
 const Login: React.FC = () => {
