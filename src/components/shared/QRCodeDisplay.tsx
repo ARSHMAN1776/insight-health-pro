@@ -18,7 +18,7 @@ interface QRCodeDisplayProps {
 
 const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   data,
-  size = 128,
+  size = 200,
   title,
   subtitle,
   showDownload = false,
@@ -135,11 +135,11 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
           bgColor={bgColor}
           fgColor={fgColor}
           level="H"
-          includeMargin={false}
+          includeMargin={true}
           imageSettings={logoUrl ? {
             src: logoUrl,
-            height: size * 0.2,
-            width: size * 0.2,
+            height: size * 0.15,
+            width: size * 0.15,
             excavate: true,
           } : undefined}
         />
