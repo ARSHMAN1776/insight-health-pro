@@ -116,7 +116,8 @@ const PatientDashboard: React.FC = () => {
 
   // Build patient info from real database data
   const patientInfo = patientData ? {
-    patientId: patientData.id.slice(0, 8).toUpperCase(),
+    // Use FULL UUID for QR verification + DB lookups
+    patientId: patientData.id,
     age: calculateAge(patientData.date_of_birth),
     bloodType: patientData.blood_type || 'N/A',
     allergies: parseAllergies(patientData.allergies),
