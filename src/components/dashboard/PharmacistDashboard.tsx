@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Pill, Package, AlertTriangle, Clock, Activity, Users } from 'lucide-react';
+import { Pill, Package, AlertTriangle, Clock, Activity } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
@@ -91,7 +91,15 @@ const PharmacistDashboard: React.FC = () => {
               onClick={() => navigate('/prescriptions')}
             >
               <Pill className="w-6 h-6" />
-              <span className="text-sm">Dispense</span>
+              <span className="text-sm">Prescriptions</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/pharmacy')}
+            >
+              <Activity className="w-6 h-6" />
+              <span className="text-sm">Pharmacy</span>
             </Button>
             <Button 
               variant="outline" 
@@ -104,18 +112,10 @@ const PharmacistDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => navigate('/inventory')}
+              onClick={() => navigate('/departments')}
             >
-              <Activity className="w-6 h-6" />
-              <span className="text-sm">Stock Check</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => navigate('/patients')}
-            >
-              <Users className="w-6 h-6" />
-              <span className="text-sm">Consultations</span>
+              <Clock className="w-6 h-6" />
+              <span className="text-sm">Departments</span>
             </Button>
           </div>
         </CardContent>
