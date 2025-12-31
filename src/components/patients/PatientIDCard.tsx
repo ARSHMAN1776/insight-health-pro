@@ -24,14 +24,8 @@ interface PatientIDCardProps {
 const PatientIDCard: React.FC<PatientIDCardProps> = ({ patient, showActions = true }) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const qrData = {
-    type: 'patient_id',
-    id: patient.id,
-    name: `${patient.firstName} ${patient.lastName}`,
-    bloodType: patient.bloodType || 'Unknown',
-    allergies: patient.allergies?.split(',').map(a => a.trim()).filter(Boolean) || [],
-    emergencyContact: patient.emergencyContactPhone || 'Not provided',
-  };
+  // Generate verification URL for QR code scanning
+  const qrData = `${window.location.origin}/verify/patient?id=${patient.id}`;
 
   const allergiesList = patient.allergies?.split(',').map(a => a.trim()).filter(Boolean) || [];
 
@@ -318,9 +312,10 @@ const PatientIDCard: React.FC<PatientIDCardProps> = ({ patient, showActions = tr
           <div className="patient-id-qr flex-shrink-0">
             <div className="bg-white p-2 rounded-lg border-2 border-border">
               <QRCodeSVG
-                value={JSON.stringify(qrData)}
+                value={qrData}
                 size={100}
                 level="H"
+                includeMargin={true}
               />
             </div>
             <p className="text-xs text-muted-foreground text-center mt-2">Scan for info</p>

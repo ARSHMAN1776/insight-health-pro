@@ -30,15 +30,8 @@ interface PersonalInfoProps {
 const PersonalInfoSection: React.FC<PersonalInfoProps> = ({ user, patientInfo }) => {
   const [showIDCard, setShowIDCard] = useState(false);
 
-  // Prepare QR data for quick scanning
-  const qrData = {
-    type: 'patient_id',
-    id: patientInfo.patientId,
-    name: `${user?.firstName || ''} ${user?.lastName || ''}`,
-    bloodType: patientInfo.bloodType,
-    allergies: patientInfo.allergies,
-    emergency: patientInfo.emergencyContact.phone,
-  };
+  // Prepare QR data as a verification URL for easy scanning
+  const qrData = `${window.location.origin}/verify/patient?id=${patientInfo.patientId}`;
 
   return (
     <div className="space-y-6">
