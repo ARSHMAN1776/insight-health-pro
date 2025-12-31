@@ -57,9 +57,9 @@ const ReceptionistDashboard: React.FC = () => {
 
   const todayStats = [
     { title: 'Total Patients', value: loading ? '...' : stats.patients.toString(), icon: Users, color: 'bg-medical-blue' },
-    { title: 'Total Appointments', value: loading ? '...' : stats.appointments.toString(), icon: Calendar, color: 'bg-medical-green' },
+    { title: 'Today\'s Appointments', value: loading ? '...' : stats.appointments.toString(), icon: Calendar, color: 'bg-medical-green' },
     { title: 'Total Revenue', value: loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-medical-purple' },
-    { title: 'Total Payments', value: loading ? '...' : stats.payments.toString(), icon: Phone, color: 'bg-medical-orange' }
+    { title: 'Pending Payments', value: loading ? '...' : stats.payments.toString(), icon: Phone, color: 'bg-medical-orange' }
   ];
 
   return (
@@ -144,14 +144,6 @@ const ReceptionistDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => navigate('/medical-records')}
-            >
-              <FileText className="w-6 h-6" />
-              <span className="text-sm">Medical Records</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="flex flex-col items-center space-y-2 h-20"
               onClick={() => navigate('/patients')}
             >
               <Users className="w-6 h-6" />
@@ -160,10 +152,18 @@ const ReceptionistDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => navigate('/inventory')}
+              onClick={() => navigate('/rooms')}
             >
-              <Phone className="w-6 h-6" />
-              <span className="text-sm">Inventory</span>
+              <FileText className="w-6 h-6" />
+              <span className="text-sm">Rooms & Beds</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20"
+              onClick={() => navigate('/billing')}
+            >
+              <DollarSign className="w-6 h-6" />
+              <span className="text-sm">Billing</span>
             </Button>
           </div>
         </CardContent>
