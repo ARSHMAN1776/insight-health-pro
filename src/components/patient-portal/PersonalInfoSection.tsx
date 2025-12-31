@@ -46,7 +46,7 @@ const PersonalInfoSection: React.FC<PersonalInfoProps> = ({ user, patientInfo })
             </Avatar>
             <div className="flex-1">
               <h2 className="text-3xl font-bold mb-1">{user?.firstName} {user?.lastName}</h2>
-              <p className="text-primary-foreground/80 text-lg">Patient ID: {patientInfo.patientId}</p>
+              <p className="text-primary-foreground/80 text-lg">Patient ID: {patientInfo.patientId.slice(0, 8).toUpperCase()}</p>
             </div>
             <div className="flex flex-col items-end gap-3">
               <Badge variant="outline" className="bg-primary-foreground/20 border-primary-foreground/40 text-primary-foreground text-sm px-4 py-2">
