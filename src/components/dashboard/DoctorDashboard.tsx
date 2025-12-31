@@ -205,26 +205,22 @@ const DoctorDashboard: React.FC = () => {
 
   const recentPatients = patients.slice(0, 3);
 
-  const pendingTasks = [
-    {
-      id: 1,
-      task: `Review lab results for next patient`,
-      priority: 'high',
-      dueTime: '11:00 AM'
-    },
-    {
-      id: 2,
-      task: 'Complete discharge summaries',
-      priority: 'medium', 
-      dueTime: '2:00 PM'
-    },
-    {
-      id: 3,
-      task: 'Update prescriptions',
-      priority: 'low',
-      dueTime: '4:00 PM'
+  // Get actual next upcoming appointment (filter by current time)
+  const getNextPatient = () => {
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    
+    const upcomingToday = todayAppointments.filter(apt => 
+      apt.appointment_time > currentTime && 
+      (apt.status === 'scheduled' || apt.status === 'confirmed')
+    );
+    
+    if (upcomingToday.length > 0) {
+      const nextApt = upcomingToday[0];
+      return `${getPatientName(nextApt.patient_id)} - ${nextApt.appointment_time}`;
     }
-  ];
+    return 'No more appointments today';
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -257,10 +253,7 @@ const DoctorDashboard: React.FC = () => {
             <div className="text-right">
               <p className="text-sm text-blue-100">Next Patient</p>
               <p className="text-lg font-semibold">
-                {todayAppointments.length > 0 
-                  ? `${getPatientName(todayAppointments[0].patient_id)} - ${todayAppointments[0].appointment_time}` 
-                  : 'No appointments today'
-                }
+                {loading ? 'Loading...' : getNextPatient()}
               </p>
             </div>
             <Stethoscope className="w-12 h-12 text-blue-200" />

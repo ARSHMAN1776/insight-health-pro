@@ -5,22 +5,11 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Heart, Eye, EyeOff, Stethoscope, Shield, Activity, ArrowRight, Calendar, Phone, User, ArrowLeft, Lock, CheckCircle, FlaskConical } from 'lucide-react';
+import { Heart, Eye, EyeOff, Stethoscope, Shield, ArrowRight, Calendar, Phone, User, ArrowLeft, Lock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-
-type StaffRole = 'doctor' | 'nurse' | 'admin' | 'receptionist' | 'pharmacist' | 'lab_technician';
-
-const staffRoleOptions: { value: StaffRole; label: string; icon: React.ElementType }[] = [
-  { value: 'doctor', label: 'Doctor', icon: Stethoscope },
-  { value: 'nurse', label: 'Nurse', icon: User },
-  { value: 'admin', label: 'Administrator', icon: Shield },
-  { value: 'receptionist', label: 'Receptionist', icon: User },
-  { value: 'pharmacist', label: 'Pharmacist', icon: User },
-  { value: 'lab_technician', label: 'Lab Technician', icon: FlaskConical }
-];
 
 const Login: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'patient' | 'staff'>('patient');
@@ -29,7 +18,6 @@ const Login: React.FC = () => {
   // Login fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedStaffRole, setSelectedStaffRole] = useState<StaffRole>('doctor');
   
   // Patient signup fields
   const [firstName, setFirstName] = useState('');
@@ -456,7 +444,14 @@ const Login: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label htmlFor="password">Password</Label>
-                          <a href="#" className="text-xs text-primary hover:underline">Forgot password?</a>
+                          <Button 
+                            type="button" 
+                            variant="link" 
+                            className="text-xs text-primary p-0 h-auto"
+                            onClick={() => navigate('/forgot-password')}
+                          >
+                            Forgot password?
+                          </Button>
                         </div>
                         <div className="relative">
                           <Input
@@ -512,25 +507,6 @@ const Login: React.FC = () => {
                 <TabsContent value="staff">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="staffRole">Role</Label>
-                      <Select value={selectedStaffRole} onValueChange={(v) => setSelectedStaffRole(v as StaffRole)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {staffRoleOptions.map((role) => (
-                            <SelectItem key={role.value} value={role.value}>
-                              <div className="flex items-center gap-2">
-                                <role.icon className="w-4 h-4" />
-                                {role.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="staffEmail">Email</Label>
                       <Input
                         id="staffEmail"
@@ -545,7 +521,14 @@ const Login: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="staffPassword">Password</Label>
-                        <a href="#" className="text-xs text-primary hover:underline">Forgot password?</a>
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          className="text-xs text-primary p-0 h-auto"
+                          onClick={() => navigate('/forgot-password')}
+                        >
+                          Forgot password?
+                        </Button>
                       </div>
                       <div className="relative">
                         <Input
@@ -583,6 +566,9 @@ const Login: React.FC = () => {
                   <div className="mt-6 text-center">
                     <p className="text-sm text-muted-foreground">
                       Staff accounts are created by administrators.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Contact your system administrator if you need access.
                     </p>
                   </div>
                 </TabsContent>
