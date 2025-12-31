@@ -66,7 +66,7 @@ const VerifyPatient: React.FC = () => {
 
   const getStatusMessage = () => {
     if (loading) return 'Verifying patient...';
-    if (error) return error;
+    if (error || !patient) return 'Profile Not Verified';
     return 'Patient Verified';
   };
 
@@ -143,10 +143,13 @@ const VerifyPatient: React.FC = () => {
             </>
           )}
 
-          {error && (
-            <div className="text-center text-muted-foreground">
-              <p className="mb-4">The patient information could not be verified. This may be because:</p>
-              <ul className="text-sm text-left list-disc list-inside space-y-1">
+          {(error || !patient) && (
+            <div className="text-center">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+                <p className="text-destructive font-medium">This patient profile could not be verified</p>
+              </div>
+              <p className="text-muted-foreground text-sm">Possible reasons:</p>
+              <ul className="text-sm text-left list-disc list-inside space-y-1 mt-2 text-muted-foreground">
                 <li>The patient ID is invalid</li>
                 <li>The patient record has been removed</li>
                 <li>There was a connection error</li>
