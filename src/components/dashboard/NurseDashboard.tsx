@@ -6,22 +6,41 @@ import {
   Activity, 
   Clock, 
   Heart, 
-  Thermometer,
   Stethoscope,
   Shield,
   AlertTriangle,
   Bed,
   Pill,
-  Droplets
+  Droplets,
+  Info
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Progress } from '../ui/progress';
 import { dataManager, Patient, Prescription } from '../../lib/dataManager';
+import { supabase } from '../../integrations/supabase/client';
 import { useToast } from '../../hooks/use-toast';
 import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
+
+interface RoomAssignment {
+  id: string;
+  patient_id: string;
+  room_id: string;
+  bed_number: number;
+  status: string;
+  admission_date: string;
+  admission_reason: string | null;
+  patients?: {
+    first_name: string;
+    last_name: string;
+    status: string | null;
+  };
+  rooms?: {
+    room_number: string;
+    room_type: string;
+  };
+}
 
 const NurseDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -30,18 +49,39 @@ const NurseDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [roomAssignments, setRoomAssignments] = useState<RoomAssignment[]>([]);
+  const [pendingMedications, setPendingMedications] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        // Fetch patients, prescriptions, and room assignments in parallel
         const [patientsData, prescriptionsData] = await Promise.all([
           dataManager.getPatients(),
           dataManager.getPrescriptions()
         ]);
         
-        setPatients(patientsData.slice(0, 4)); // Show only first 4
+        // Fetch room assignments with patient and room info
+        const { data: assignments } = await supabase
+          .from('room_assignments')
+          .select(`
+            *,
+            patients:patient_id(first_name, last_name, status),
+            rooms:room_id(room_number, room_type)
+          `)
+          .eq('status', 'active')
+          .order('admission_date', { ascending: false })
+          .limit(6);
+        
+        setPatients(patientsData);
         setPrescriptions(prescriptionsData);
+        setRoomAssignments(assignments || []);
+        
+        // Count active prescriptions as pending medications
+        const activePrescriptions = prescriptionsData.filter(p => p.status === 'active');
+        setPendingMedications(activePrescriptions.length);
       } catch (error) {
         toast({
           title: "Error",
@@ -58,8 +98,8 @@ const NurseDashboard: React.FC = () => {
 
   const todayStats = [
     {
-      title: 'Patients Assigned',
-      value: loading ? '...' : patients.length.toString(),
+      title: 'Admitted Patients',
+      value: loading ? '...' : roomAssignments.length.toString(),
       icon: Users,
       color: 'bg-medical-green'
     },
@@ -70,70 +110,34 @@ const NurseDashboard: React.FC = () => {
       color: 'bg-medical-blue'
     },
     {
-      title: 'Medications',
-      value: loading ? '...' : prescriptions.length.toString(),
+      title: 'Pending Medications',
+      value: loading ? '...' : pendingMedications.toString(),
       icon: Pill,
       color: 'bg-medical-purple'
     },
     {
-      title: 'Alerts',
-      value: loading ? '...' : '0',
+      title: 'Active Alerts',
+      value: '0',
       icon: AlertTriangle,
       color: 'bg-medical-orange'
     }
   ];
 
-  const assignedPatients = patients.map((patient, index) => ({
-    id: patient.id,
-    name: `${patient.first_name} ${patient.last_name}`,
-    room: `${101 + index}A`,
-    condition: patient.medical_history || 'General care',
-    lastVitals: '1 hour ago',
-    status: patient.status,
-    priority: index % 3 === 0 ? 'high' : index % 3 === 1 ? 'medium' : 'low'
+  // Use real room assignments for patient display
+  const assignedPatients = roomAssignments.map((assignment) => ({
+    id: assignment.id,
+    name: assignment.patients 
+      ? `${assignment.patients.first_name} ${assignment.patients.last_name}` 
+      : 'Unknown Patient',
+    room: assignment.rooms 
+      ? `${assignment.rooms.room_number}` 
+      : 'Unassigned',
+    roomType: assignment.rooms?.room_type || 'General',
+    condition: assignment.admission_reason || 'General care',
+    admissionDate: new Date(assignment.admission_date).toLocaleDateString(),
+    status: assignment.patients?.status || 'active',
+    bedNumber: assignment.bed_number
   }));
-
-  const upcomingTasks = [
-    {
-      id: 1,
-      task: 'Medication round - Ward A',
-      time: '10:00 AM',
-      type: 'medication',
-      priority: 'high'
-    },
-    {
-      id: 2,
-      task: 'Vital signs check - Next patient',
-      time: '10:30 AM',
-      type: 'vitals',
-      priority: 'high'
-    },
-    {
-      id: 3,
-      task: 'Patient care rounds',
-      time: '11:00 AM',
-      type: 'procedure',
-      priority: 'medium'
-    },
-    {
-      id: 4,
-      task: 'Chart updates',
-      time: '2:00 PM',
-      type: 'documentation',
-      priority: 'medium'
-    }
-  ];
-
-  const criticalAlerts = patients.length > 0 ? [
-    {
-      id: 1,
-      patient: patients[0]?.first_name + ' ' + patients[0]?.last_name,
-      room: '102B',
-      alert: 'Medication due',
-      time: '5 minutes ago',
-      severity: 'medium'
-    }
-  ] : [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -146,24 +150,6 @@ const NurseDashboard: React.FC = () => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-destructive/10 text-destructive border-destructive';
-      case 'medium': return 'bg-warning/10 text-warning border-warning';
-      case 'low': return 'bg-success/10 text-success border-success';
-      default: return 'bg-muted/10 text-muted-foreground border-muted';
-    }
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'high': return 'bg-destructive/10 text-destructive border-destructive';
-      case 'medium': return 'bg-warning/10 text-warning border-warning';
-      case 'low': return 'bg-info/10 text-info border-info';
-      default: return 'bg-muted/10 text-muted-foreground border-muted';
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -171,12 +157,12 @@ const NurseDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Welcome, {user?.firstName}!</h1>
-            <p className="text-green-100">You have {patients.length} patients assigned to you today.</p>
+            <p className="text-green-100">You have {roomAssignments.length} admitted patients to care for today.</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-sm text-green-100">Next Task</p>
-              <p className="text-lg font-semibold">Medication Round - 10:00 AM</p>
+              <p className="text-sm text-green-100">Pending Medications</p>
+              <p className="text-lg font-semibold">{pendingMedications} active prescriptions</p>
             </div>
             <Heart className="w-12 h-12 text-green-200" />
           </div>
@@ -211,8 +197,8 @@ const NurseDashboard: React.FC = () => {
         <Card className="card-gradient lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-medical-green" />
-              <span>Assigned Patients</span>
+              <Bed className="w-5 h-5 text-medical-green" />
+              <span>Admitted Patients</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -223,7 +209,9 @@ const NurseDashboard: React.FC = () => {
                 </div>
               ) : assignedPatients.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">No patients assigned</p>
+                  <Info className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-muted-foreground">No admitted patients</p>
+                  <p className="text-xs text-muted-foreground mt-1">Patients will appear here when assigned to rooms</p>
                 </div>
               ) : (
                 assignedPatients.map((patient) => (
@@ -234,19 +222,17 @@ const NurseDashboard: React.FC = () => {
                       </Avatar>
                       <div>
                         <h4 className="font-medium text-foreground">{patient.name}</h4>
-                        <p className="text-sm text-muted-foreground">Room {patient.room} • {patient.condition}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Room {patient.room} (Bed {patient.bedNumber}) • {patient.roomType}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{patient.condition}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Badge variant="outline" className={getStatusColor(patient.status)}>
-                          {patient.status}
-                        </Badge>
-                        <Badge variant="outline" className={getPriorityColor(patient.priority)}>
-                          {patient.priority}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Last vitals: {patient.lastVitals}</p>
+                      <Badge variant="outline" className={getStatusColor(patient.status)}>
+                        {patient.status}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-1">Since {patient.admissionDate}</p>
                     </div>
                   </div>
                 ))
@@ -255,75 +241,52 @@ const NurseDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Critical Alerts */}
+        {/* Quick Stats */}
         <Card className="card-gradient">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-medical-orange" />
-              <span>Critical Alerts</span>
+              <Activity className="w-5 h-5 text-medical-blue" />
+              <span>Quick Stats</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {loading ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Loading alerts...</p>
+              <div className="p-3 bg-accent/50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Active Prescriptions</span>
+                  <Badge variant="outline">{pendingMedications}</Badge>
                 </div>
-              ) : criticalAlerts.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No critical alerts</p>
+                <p className="text-xs text-muted-foreground">Medications to administer</p>
+              </div>
+              
+              <div className="p-3 bg-accent/50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Room Assignments</span>
+                  <Badge variant="outline">{roomAssignments.length}</Badge>
                 </div>
-              ) : (
-                criticalAlerts.map((alert) => (
-                  <div key={alert.id} className="p-3 bg-accent/50 rounded-lg">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{alert.patient}</p>
-                        <p className="text-xs text-muted-foreground">Room {alert.room}</p>
-                      </div>
-                      <Badge variant="outline" className={getSeverityColor(alert.severity)}>
-                        {alert.severity}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-foreground mb-1">{alert.alert}</p>
-                    <p className="text-xs text-muted-foreground">{alert.time}</p>
-                  </div>
-                ))
-              )}
+                <p className="text-xs text-muted-foreground">Patients currently admitted</p>
+              </div>
+              
+              <div className="p-3 bg-accent/50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Total Patients</span>
+                  <Badge variant="outline">{patients.length}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">In the system</p>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full mt-2"
+                onClick={() => navigate('/rooms')}
+              >
+                <Bed className="w-4 h-4 mr-2" />
+                View All Rooms
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Upcoming Tasks */}
-      <Card className="card-gradient">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-medical-blue" />
-            <span>Upcoming Tasks</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {upcomingTasks.map((task) => (
-              <div key={task.id} className="flex items-center justify-between p-4 bg-accent/50 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-foreground">{task.task}</h4>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{task.time}</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                    {task.priority}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Blood Bank Widget */}
       <BloodAvailabilityWidget compact />

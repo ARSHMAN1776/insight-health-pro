@@ -18,6 +18,8 @@ import Contact from './pages/Contact';
 import VerifyLabReport from './pages/VerifyLabReport';
 import VerifyPrescription from './pages/VerifyPrescription';
 import VerifyPatient from './pages/VerifyPatient';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 // Lazy load components
 const AppointmentScheduler = React.lazy(() => import('./components/appointments/AppointmentScheduler'));
 const MedicalRecords = React.lazy(() => import('./components/medical/MedicalRecords'));
@@ -72,6 +74,8 @@ const App = () => (
               <Route path="/verify/patient" element={<VerifyPatient />} />
               
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/services" element={<Services />} />
