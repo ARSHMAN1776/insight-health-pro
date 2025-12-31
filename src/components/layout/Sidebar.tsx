@@ -112,6 +112,12 @@ const sidebarItems: SidebarItem[] = [
     roles: ['admin', 'pharmacist']
   },
   {
+    label: 'Inventory',
+    icon: ClipboardList,
+    path: '/inventory',
+    roles: ['admin', 'pharmacist']
+  },
+  {
     label: 'Staff',
     icon: Stethoscope,
     path: '/staff',
