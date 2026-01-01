@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, CheckCircle, Loader2, Globe } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, CheckCircle, Loader2, Globe, Zap, Info } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -32,6 +32,8 @@ import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { TimeSlot, getAvailableTimeSlots, DAY_NAMES } from '@/lib/scheduleUtils';
 import { useTimezone } from '@/hooks/useTimezone';
+import { Switch } from '../ui/switch';
+import { Separator } from '../ui/separator';
 
 interface Department {
   department_id: string;
@@ -57,9 +59,18 @@ const appointmentSchema = z.object({
     .min(10, 'Please describe your symptoms (at least 10 characters)')
     .max(500, 'Symptoms description too long (max 500 characters)'),
   notes: z.string().max(500, 'Notes too long (max 500 characters)').optional(),
+  isEmergency: z.boolean().optional(),
+  emergencyReason: z.string().max(300, 'Emergency reason too long').optional(),
 });
 
 type AppointmentFormData = z.infer<typeof appointmentSchema>;
+
+interface DoctorScheduleInfo {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+}
 
 interface PatientAppointmentBookingProps {
   patientData: Patient | null;
@@ -84,6 +95,9 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [noScheduleMessage, setNoScheduleMessage] = useState<string | null>(null);
   const [departmentDoctorsMap, setDepartmentDoctorsMap] = useState<{department_id: string; doctor_id: string}[]>([]);
+  const [doctorSchedule, setDoctorSchedule] = useState<DoctorScheduleInfo[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [isEmergencyMode, setIsEmergencyMode] = useState(false);
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -95,8 +109,39 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
       type: '',
       symptoms: '',
       notes: '',
+      isEmergency: false,
+      emergencyReason: '',
     },
   });
+
+  // Fetch doctor's weekly schedule for display
+  const fetchDoctorSchedule = async (doctorId: string) => {
+    setLoadingSchedule(true);
+    try {
+      const { data, error } = await supabase
+        .from('staff_schedules')
+        .select('day_of_week, start_time, end_time, is_available')
+        .eq('staff_id', doctorId)
+        .eq('staff_type', 'doctor')
+        .order('day_of_week');
+
+      if (error) throw error;
+      
+      const scheduleInfo: DoctorScheduleInfo[] = (data || []).map(s => ({
+        dayOfWeek: s.day_of_week,
+        startTime: s.start_time,
+        endTime: s.end_time,
+        isAvailable: s.is_available ?? true
+      }));
+      
+      setDoctorSchedule(scheduleInfo);
+    } catch (error) {
+      console.error('Error fetching doctor schedule:', error);
+      setDoctorSchedule([]);
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
 
   // Fetch departments and doctors on mount
   useEffect(() => {
@@ -162,12 +207,19 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
     }
   };
 
-  // Handle doctor change - reset time slots
+  // Handle doctor change - reset time slots and fetch schedule
   const handleDoctorChange = (doctorId: string) => {
     form.setValue('doctorId', doctorId);
     form.setValue('time', ''); // Reset time when doctor changes
     setAvailableSlots([]);
     setNoScheduleMessage(null);
+    
+    // Fetch doctor's schedule for display
+    if (doctorId) {
+      fetchDoctorSchedule(doctorId);
+    } else {
+      setDoctorSchedule([]);
+    }
     
     // If date is already selected, fetch available slots
     const selectedDate = form.getValues('date');
@@ -213,9 +265,12 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
     }
   };
 
-  // Get minimum date (tomorrow in hospital timezone)
+  // Get minimum date (tomorrow for regular, today for emergency)
   const getMinDate = () => {
     const currentDate = getCurrentDate();
+    if (isEmergencyMode) {
+      return currentDate; // Allow same-day for emergency
+    }
     const tomorrow = new Date(currentDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
@@ -242,7 +297,12 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
     try {
       setSubmitting(true);
 
-      // Create appointment with 'requested' status (pending confirmation)
+      // Create appointment - emergency requests get special handling
+      const appointmentStatus = data.isEmergency ? 'pending' : 'scheduled';
+      const appointmentNotes = data.isEmergency && data.emergencyReason
+        ? `EMERGENCY REQUEST: ${data.emergencyReason}\n\n${data.notes?.trim() || ''}`
+        : data.notes?.trim() || null;
+      
       const { error } = await supabase
         .from('appointments')
         .insert({
@@ -251,10 +311,10 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
           department_id: data.departmentId,
           appointment_date: data.date,
           appointment_time: data.time,
-          type: data.type,
+          type: data.isEmergency ? 'emergency' : data.type,
           symptoms: data.symptoms.trim(),
-          notes: data.notes?.trim() || null,
-          status: 'scheduled', // Will be confirmed by staff
+          notes: appointmentNotes,
+          status: appointmentStatus,
           duration: 30
         });
 
@@ -267,18 +327,22 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
         .in('role', ['receptionist', 'admin']);
 
       if (staffUsers) {
+        const isEmergencyRequest = data.isEmergency;
         const notifications = staffUsers.map(staff => ({
           user_id: staff.user_id,
-          title: 'New Appointment Request',
-          message: `${patientData.first_name} ${patientData.last_name} has requested an appointment for ${data.date} at ${data.time}.`,
+          title: isEmergencyRequest ? '🚨 Emergency Appointment Request' : 'New Appointment Request',
+          message: isEmergencyRequest
+            ? `URGENT: ${patientData.first_name} ${patientData.last_name} has requested an emergency same-day appointment for ${data.date} at ${data.time}. Reason: ${data.emergencyReason || 'Not specified'}`
+            : `${patientData.first_name} ${patientData.last_name} has requested an appointment for ${data.date} at ${data.time}.`,
           type: 'appointment_request',
-          priority: 'normal',
+          priority: isEmergencyRequest ? 'high' : 'normal',
           action_url: '/appointments',
           metadata: {
             patient_name: `${patientData.first_name} ${patientData.last_name}`,
             appointment_date: data.date,
             appointment_time: data.time,
-            appointment_type: data.type
+            appointment_type: isEmergencyRequest ? 'emergency' : data.type,
+            is_emergency: isEmergencyRequest
           }
         }));
 
@@ -287,6 +351,7 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
 
       setIsDialogOpen(false);
       setSuccessDialogOpen(true);
+      setIsEmergencyMode(false);
       form.reset();
       onAppointmentBooked?.();
 
@@ -318,6 +383,13 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
 
   // Get available slot count for display
   const availableSlotsCount = availableSlots.filter(s => s.available).length;
+
+  // Format schedule display
+  const formatScheduleForDay = (dayNum: number): string => {
+    const schedule = doctorSchedule.find(s => s.dayOfWeek === dayNum);
+    if (!schedule || !schedule.isAvailable) return 'Off';
+    return `${schedule.startTime.slice(0, 5)} - ${schedule.endTime.slice(0, 5)}`;
+  };
 
   // Check if patient is verified
   const isVerified = patientData?.status === 'active';
@@ -436,6 +508,97 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                         )}
                       />
                     </div>
+
+                    {/* Doctor Availability Display */}
+                    {form.getValues('doctorId') && (
+                      <div className="bg-muted/30 rounded-lg p-4 border">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Info className="w-4 h-4 text-primary" />
+                          <span className="font-medium text-sm">Doctor's Weekly Availability</span>
+                          {loadingSchedule && <Loader2 className="w-3 h-3 animate-spin" />}
+                        </div>
+                        {doctorSchedule.length > 0 ? (
+                          <div className="grid grid-cols-7 gap-1 text-xs">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => {
+                              const schedule = doctorSchedule.find(s => s.dayOfWeek === idx);
+                              const isAvailable = schedule?.isAvailable;
+                              return (
+                                <div 
+                                  key={day} 
+                                  className={`text-center p-2 rounded ${isAvailable ? 'bg-success/10 border border-success/30' : 'bg-muted'}`}
+                                >
+                                  <div className="font-medium">{day}</div>
+                                  <div className={`text-[10px] ${isAvailable ? 'text-success' : 'text-muted-foreground'}`}>
+                                    {formatScheduleForDay(idx)}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : !loadingSchedule ? (
+                          <p className="text-xs text-muted-foreground">
+                            No schedule configured. Please contact the hospital for availability.
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {/* Emergency Same-Day Request */}
+                    <div className="bg-destructive/5 rounded-lg p-4 border border-destructive/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Zap className="w-5 h-5 text-destructive" />
+                          <div>
+                            <p className="font-medium text-sm">Emergency Same-Day Appointment</p>
+                            <p className="text-xs text-muted-foreground">
+                              Request urgent care for today (subject to availability)
+                            </p>
+                          </div>
+                        </div>
+                        <Switch 
+                          checked={isEmergencyMode}
+                          onCheckedChange={(checked) => {
+                            setIsEmergencyMode(checked);
+                            form.setValue('isEmergency', checked);
+                            if (checked) {
+                              form.setValue('type', 'emergency');
+                              form.setValue('date', getCurrentDate());
+                            } else {
+                              form.setValue('type', '');
+                              form.setValue('date', '');
+                            }
+                            form.setValue('time', '');
+                            setAvailableSlots([]);
+                          }}
+                        />
+                      </div>
+                      {isEmergencyMode && (
+                        <div className="mt-3">
+                          <FormField
+                            control={form.control}
+                            name="emergencyReason"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm text-destructive">
+                                  Why is this an emergency? *
+                                </FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Please briefly explain why you need an urgent same-day appointment..."
+                                    className="min-h-[60px] resize-none border-destructive/30"
+                                    maxLength={300}
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <Separator />
 
                     {/* Date & Time Selection */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
