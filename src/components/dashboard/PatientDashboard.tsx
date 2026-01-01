@@ -8,10 +8,12 @@ import PersonalInfoSection from '../patient-portal/PersonalInfoSection';
 import MedicalRecordsView from '../patient-portal/MedicalRecordsView';
 import AppointmentsView from '../patient-portal/AppointmentsView';
 import DoctorMessaging from '../patient-portal/DoctorMessaging';
-import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle } from 'lucide-react';
+import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { Progress } from '../ui/progress';
 
 const PatientDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -24,6 +26,72 @@ const PatientDashboard: React.FC = () => {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [labTests, setLabTests] = useState<LabTest[]>([]);
   const [patientData, setPatientData] = useState<Patient | null>(null);
+  const [verificationInfo, setVerificationInfo] = useState<{
+    queuePosition: number;
+    totalPending: number;
+    estimatedWaitTime: string;
+    submittedAt: string | null;
+  } | null>(null);
+
+  const fetchVerificationStatus = async (userId: string) => {
+    try {
+      // Get user's registration in queue
+      const { data: userRegistration, error: userError } = await supabase
+        .from('patient_registration_queue')
+        .select('id, created_at, status')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (userError || !userRegistration || userRegistration.status !== 'pending') {
+        setVerificationInfo(null);
+        return;
+      }
+
+      // Get count of pending registrations submitted before this one
+      const { count: pendingBefore, error: countError } = await supabase
+        .from('patient_registration_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .lt('created_at', userRegistration.created_at);
+
+      // Get total pending count
+      const { count: totalPending, error: totalError } = await supabase
+        .from('patient_registration_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (countError || totalError) {
+        console.error('Error fetching queue info:', countError || totalError);
+        return;
+      }
+
+      const position = (pendingBefore || 0) + 1;
+      const total = totalPending || 1;
+
+      // Estimate wait time based on position (assume ~2 hours per registration during business hours)
+      const hoursPerRegistration = 2;
+      const estimatedHours = position * hoursPerRegistration;
+      
+      let estimatedWaitTime: string;
+      if (estimatedHours < 24) {
+        estimatedWaitTime = estimatedHours <= 1 
+          ? 'Within a few hours' 
+          : `~${estimatedHours} hours`;
+      } else {
+        const days = Math.ceil(estimatedHours / 8); // ~8 working hours per day
+        estimatedWaitTime = days === 1 ? '~1 business day' : `~${days} business days`;
+      }
+
+      setVerificationInfo({
+        queuePosition: position,
+        totalPending: total,
+        estimatedWaitTime,
+        submittedAt: userRegistration.created_at,
+      });
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+    }
+  };
 
   const fetchPatientData = async () => {
     try {
@@ -69,6 +137,10 @@ const PatientDashboard: React.FC = () => {
         setLabTests(labTestsData);
       } else {
         console.warn('No patient record found for user:', user?.id, user?.email);
+        // Fetch verification queue status
+        if (user?.id) {
+          await fetchVerificationStatus(user.id);
+        }
         toast({
           title: "Patient Record Not Found",
           description: "Your registration is pending verification. Please wait for hospital staff to approve your account.",
@@ -158,14 +230,77 @@ const PatientDashboard: React.FC = () => {
     <div className="space-y-8 animate-fade-in">
       {/* Verification Status Banner */}
       {patientData && !isVerified && (
-        <Alert className="bg-warning/10 border-warning/30">
-          <AlertCircle className="h-5 w-5 text-warning" />
-          <AlertTitle className="text-warning font-semibold">Account Pending Verification</AlertTitle>
-          <AlertDescription className="text-warning/80">
-            Your account is being reviewed by our staff. Once verified, you'll be able to book appointments 
-            and access all portal features. This usually takes 1-2 business days.
-          </AlertDescription>
-        </Alert>
+        <Card className="bg-warning/5 border-warning/30">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-warning/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Clock className="h-6 w-6 text-warning" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-warning text-lg mb-2">Account Pending Verification</h3>
+                <p className="text-muted-foreground mb-4">
+                  Your account is being reviewed by our staff. Once verified, you'll be able to book appointments 
+                  and access all portal features.
+                </p>
+                {verificationInfo && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-background/50 rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <Users className="w-4 h-4" />
+                          <span>Queue Position</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          #{verificationInfo.queuePosition}
+                          <span className="text-sm font-normal text-muted-foreground ml-1">
+                            of {verificationInfo.totalPending}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="bg-background/50 rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <Clock className="w-4 h-4" />
+                          <span>Estimated Wait</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          {verificationInfo.estimatedWaitTime}
+                        </p>
+                      </div>
+                      <div className="bg-background/50 rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <Calendar className="w-4 h-4" />
+                          <span>Submitted</span>
+                        </div>
+                        <p className="text-lg font-medium text-foreground">
+                          {verificationInfo.submittedAt 
+                            ? new Date(verificationInfo.submittedAt).toLocaleDateString()
+                            : 'Recently'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Verification Progress</span>
+                        <span className="text-muted-foreground">
+                          {Math.max(10, 100 - (verificationInfo.queuePosition * 20))}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={Math.max(10, 100 - (verificationInfo.queuePosition * 20))} 
+                        className="h-2"
+                      />
+                    </div>
+                  </div>
+                )}
+                {!verificationInfo && (
+                  <p className="text-sm text-muted-foreground">
+                    This usually takes 1-2 business days.
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {patientData && isVerified && (
