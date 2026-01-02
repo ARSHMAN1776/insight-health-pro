@@ -22,7 +22,9 @@ import {
   BarChart,
   Scissors,
   Droplets,
-  MessageCircle
+  MessageCircle,
+  Thermometer,
+  ArrowRightLeft
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -92,6 +94,18 @@ const sidebarItems: SidebarItem[] = [
     icon: Droplets,
     path: '/blood-bank',
     roles: ['admin', 'doctor', 'nurse']
+  },
+  {
+    label: 'Vitals',
+    icon: Thermometer,
+    path: '/vitals',
+    roles: ['admin', 'nurse', 'doctor']
+  },
+  {
+    label: 'Shift Handover',
+    icon: ArrowRightLeft,
+    path: '/shift-handovers',
+    roles: ['admin', 'nurse']
   },
   {
     label: 'Rooms & Beds',

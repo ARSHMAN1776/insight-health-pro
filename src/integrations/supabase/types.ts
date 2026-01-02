@@ -873,6 +873,83 @@ export type Database = {
           },
         ]
       }
+      patient_vitals: {
+        Row: {
+          abnormal_flags: string[] | null
+          blood_glucose: number | null
+          blood_pressure_diastolic: number | null
+          blood_pressure_systolic: number | null
+          bmi: number | null
+          created_at: string | null
+          heart_rate: number | null
+          height: number | null
+          id: string
+          is_abnormal: boolean | null
+          notes: string | null
+          pain_level: number | null
+          patient_id: string
+          recorded_at: string
+          recorded_by: string
+          respiratory_rate: number | null
+          spo2: number | null
+          temperature: number | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          abnormal_flags?: string[] | null
+          blood_glucose?: number | null
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          bmi?: number | null
+          created_at?: string | null
+          heart_rate?: number | null
+          height?: number | null
+          id?: string
+          is_abnormal?: boolean | null
+          notes?: string | null
+          pain_level?: number | null
+          patient_id: string
+          recorded_at?: string
+          recorded_by: string
+          respiratory_rate?: number | null
+          spo2?: number | null
+          temperature?: number | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          abnormal_flags?: string[] | null
+          blood_glucose?: number | null
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          bmi?: number | null
+          created_at?: string | null
+          heart_rate?: number | null
+          height?: number | null
+          id?: string
+          is_abnormal?: boolean | null
+          notes?: string | null
+          pain_level?: number | null
+          patient_id?: string
+          recorded_at?: string
+          recorded_by?: string
+          respiratory_rate?: number | null
+          spo2?: number | null
+          temperature?: number | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_vitals_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
@@ -1434,6 +1511,117 @@ export type Database = {
           room_number?: string
           room_type?: string
           status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shift_handover_patients: {
+        Row: {
+          bed_number: number | null
+          condition_summary: string | null
+          created_at: string | null
+          handover_id: string
+          id: string
+          patient_id: string
+          pending_medications: string | null
+          pending_tests: string | null
+          priority: string | null
+          room_number: string | null
+          special_instructions: string | null
+        }
+        Insert: {
+          bed_number?: number | null
+          condition_summary?: string | null
+          created_at?: string | null
+          handover_id: string
+          id?: string
+          patient_id: string
+          pending_medications?: string | null
+          pending_tests?: string | null
+          priority?: string | null
+          room_number?: string | null
+          special_instructions?: string | null
+        }
+        Update: {
+          bed_number?: number | null
+          condition_summary?: string | null
+          created_at?: string | null
+          handover_id?: string
+          id?: string
+          patient_id?: string
+          pending_medications?: string | null
+          pending_tests?: string | null
+          priority?: string | null
+          room_number?: string | null
+          special_instructions?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_handover_patients_handover_id_fkey"
+            columns: ["handover_id"]
+            isOneToOne: false
+            referencedRelation: "shift_handovers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_handover_patients_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_handovers: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string | null
+          critical_patients: string | null
+          equipment_issues: string | null
+          general_notes: string | null
+          handover_time: string
+          id: string
+          incoming_nurse_id: string | null
+          medication_notes: string | null
+          outgoing_nurse_id: string
+          pending_tasks: Json | null
+          shift_date: string
+          shift_type: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          critical_patients?: string | null
+          equipment_issues?: string | null
+          general_notes?: string | null
+          handover_time?: string
+          id?: string
+          incoming_nurse_id?: string | null
+          medication_notes?: string | null
+          outgoing_nurse_id: string
+          pending_tasks?: Json | null
+          shift_date?: string
+          shift_type: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          critical_patients?: string | null
+          equipment_issues?: string | null
+          general_notes?: string | null
+          handover_time?: string
+          id?: string
+          incoming_nurse_id?: string | null
+          medication_notes?: string | null
+          outgoing_nurse_id?: string
+          pending_tasks?: Json | null
+          shift_date?: string
+          shift_type?: string
+          status?: string
           updated_at?: string | null
         }
         Relationships: []
