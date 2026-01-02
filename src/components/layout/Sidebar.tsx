@@ -24,7 +24,8 @@ import {
   Droplets,
   MessageCircle,
   Thermometer,
-  ArrowRightLeft
+  ArrowRightLeft,
+  GitPullRequest
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -88,6 +89,12 @@ const sidebarItems: SidebarItem[] = [
     icon: TestTube,
     path: '/lab-tests',
     roles: ['admin', 'doctor', 'nurse', 'patient', 'lab_technician']
+  },
+  {
+    label: 'Referrals',
+    icon: GitPullRequest,
+    path: '/referrals',
+    roles: ['admin', 'doctor', 'nurse', 'receptionist']
   },
   {
     label: 'Blood Bank',
