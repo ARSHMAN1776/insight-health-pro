@@ -315,6 +315,36 @@ export type Database = {
           },
         ]
       }
+      diagnosis_codes: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string
+          id: string
+          is_billable: boolean | null
+          subcategory: string | null
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description: string
+          id?: string
+          is_billable?: boolean | null
+          subcategory?: string | null
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_billable?: boolean | null
+          subcategory?: string | null
+        }
+        Relationships: []
+      }
       doctors: {
         Row: {
           availability_schedule: Json | null
@@ -420,6 +450,39 @@ export type Database = {
             referencedColumns: ["group_id"]
           },
         ]
+      }
+      drug_interactions: {
+        Row: {
+          created_at: string | null
+          description: string
+          drug_a: string
+          drug_b: string
+          id: string
+          management: string | null
+          mechanism: string | null
+          severity: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          drug_a: string
+          drug_b: string
+          id?: string
+          management?: string | null
+          mechanism?: string | null
+          severity: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          drug_a?: string
+          drug_b?: string
+          id?: string
+          management?: string | null
+          mechanism?: string | null
+          severity?: string
+        }
+        Relationships: []
       }
       hospital_settings: {
         Row: {
@@ -585,12 +648,14 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           diagnosis: string | null
+          diagnosis_code: string | null
           doctor_id: string
           follow_up_date: string | null
           id: string
           medications: string | null
           notes: string | null
           patient_id: string
+          procedure_codes: string[] | null
           symptoms: string | null
           treatment: string | null
           updated_at: string | null
@@ -600,12 +665,14 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           diagnosis?: string | null
+          diagnosis_code?: string | null
           doctor_id: string
           follow_up_date?: string | null
           id?: string
           medications?: string | null
           notes?: string | null
           patient_id: string
+          procedure_codes?: string[] | null
           symptoms?: string | null
           treatment?: string | null
           updated_at?: string | null
@@ -615,12 +682,14 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           diagnosis?: string | null
+          diagnosis_code?: string | null
           doctor_id?: string
           follow_up_date?: string | null
           id?: string
           medications?: string | null
           notes?: string | null
           patient_id?: string
+          procedure_codes?: string[] | null
           symptoms?: string | null
           treatment?: string | null
           updated_at?: string | null
@@ -1187,6 +1256,56 @@ export type Database = {
           },
         ]
       }
+      prescription_items: {
+        Row: {
+          created_at: string | null
+          dosage: string | null
+          duration: string | null
+          frequency: string | null
+          id: string
+          instructions: string | null
+          medication_name: string
+          prescription_id: string
+          quantity: number | null
+          route: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dosage?: string | null
+          duration?: string | null
+          frequency?: string | null
+          id?: string
+          instructions?: string | null
+          medication_name: string
+          prescription_id: string
+          quantity?: number | null
+          route?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dosage?: string | null
+          duration?: string | null
+          frequency?: string | null
+          id?: string
+          instructions?: string | null
+          medication_name?: string
+          prescription_id?: string
+          quantity?: number | null
+          route?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_items_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescription_refill_requests: {
         Row: {
           created_at: string | null
@@ -1237,6 +1356,50 @@ export type Database = {
             columns: ["prescription_id"]
             isOneToOne: false
             referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescription_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          diagnosis_category: string | null
+          doctor_id: string | null
+          id: string
+          is_global: boolean | null
+          medications: Json
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          diagnosis_category?: string | null
+          doctor_id?: string | null
+          id?: string
+          is_global?: boolean | null
+          medications?: Json
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          diagnosis_category?: string | null
+          doctor_id?: string | null
+          id?: string
+          is_global?: boolean | null
+          medications?: Json
+          template_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_templates_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
             referencedColumns: ["id"]
           },
         ]
@@ -1313,6 +1476,36 @@ export type Database = {
           },
         ]
       }
+      procedure_codes: {
+        Row: {
+          base_price: number | null
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string
+          id: string
+          modifier_allowed: boolean | null
+        }
+        Insert: {
+          base_price?: number | null
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description: string
+          id?: string
+          modifier_allowed?: boolean | null
+        }
+        Update: {
+          base_price?: number | null
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          modifier_allowed?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -1348,6 +1541,99 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          appointment_id: string | null
+          clinical_notes: string | null
+          completed_at: string | null
+          created_at: string | null
+          diagnosis: string | null
+          id: string
+          patient_id: string
+          reason: string
+          receiving_department_id: string | null
+          receiving_doctor_id: string | null
+          referring_doctor_id: string
+          responded_at: string | null
+          response_notes: string | null
+          status: string
+          updated_at: string | null
+          urgency: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          clinical_notes?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          diagnosis?: string | null
+          id?: string
+          patient_id: string
+          reason: string
+          receiving_department_id?: string | null
+          receiving_doctor_id?: string | null
+          referring_doctor_id: string
+          responded_at?: string | null
+          response_notes?: string | null
+          status?: string
+          updated_at?: string | null
+          urgency?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          clinical_notes?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          diagnosis?: string | null
+          id?: string
+          patient_id?: string
+          reason?: string
+          receiving_department_id?: string | null
+          receiving_doctor_id?: string | null
+          referring_doctor_id?: string
+          responded_at?: string | null
+          response_notes?: string | null
+          status?: string
+          updated_at?: string | null
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_receiving_department_id_fkey"
+            columns: ["receiving_department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "referrals_receiving_doctor_id_fkey"
+            columns: ["receiving_doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referring_doctor_id_fkey"
+            columns: ["referring_doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reminders: {
         Row: {
