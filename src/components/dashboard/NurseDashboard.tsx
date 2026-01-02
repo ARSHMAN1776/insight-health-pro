@@ -12,7 +12,9 @@ import {
   Bed,
   Pill,
   Droplets,
-  Info
+  Info,
+  Thermometer,
+  ArrowRightLeft
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -300,14 +302,22 @@ const NurseDashboard: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <Button 
               variant="outline" 
-              className="flex flex-col items-center space-y-2 h-20"
-              onClick={() => navigate('/medical-records')}
+              className="flex flex-col items-center space-y-2 h-20 border-medical-green hover:bg-medical-green/10"
+              onClick={() => navigate('/vitals')}
             >
-              <Activity className="w-6 h-6" />
+              <Thermometer className="w-6 h-6 text-medical-green" />
               <span className="text-sm">Vital Signs</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center space-y-2 h-20 border-medical-blue hover:bg-medical-blue/10"
+              onClick={() => navigate('/shift-handovers')}
+            >
+              <ArrowRightLeft className="w-6 h-6 text-medical-blue" />
+              <span className="text-sm">Shift Handover</span>
             </Button>
             <Button 
               variant="outline" 
@@ -323,7 +333,7 @@ const NurseDashboard: React.FC = () => {
               onClick={() => navigate('/rooms')}
             >
               <Bed className="w-6 h-6" />
-              <span className="text-sm">Rounds</span>
+              <span className="text-sm">Rooms</span>
             </Button>
             <Button 
               variant="outline" 

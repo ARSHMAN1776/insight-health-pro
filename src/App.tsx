@@ -39,6 +39,8 @@ const DepartmentManagement = React.lazy(() => import('./components/departments/D
 const StaffManagement = React.lazy(() => import('./pages/StaffManagement'));
 const BloodBank = React.lazy(() => import('./pages/BloodBank'));
 const PatientMessages = React.lazy(() => import('./pages/PatientMessages'));
+const Vitals = React.lazy(() => import('./pages/Vitals'));
+const ShiftHandovers = React.lazy(() => import('./pages/ShiftHandovers'));
 
 const queryClient = new QueryClient();
 
@@ -245,6 +247,20 @@ const App = () => (
                       <PatientMessages />
                     </Suspense>
                   </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/vitals" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                    <Vitals />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/shift-handovers" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                    <ShiftHandovers />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
