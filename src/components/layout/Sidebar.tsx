@@ -25,7 +25,8 @@ import {
   MessageCircle,
   Thermometer,
   ArrowRightLeft,
-  GitPullRequest
+  GitPullRequest,
+  FileCheck
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -124,6 +125,12 @@ const sidebarItems: SidebarItem[] = [
     label: 'Billing',
     icon: DollarSign,
     path: '/billing',
+    roles: ['admin', 'receptionist']
+  },
+  {
+    label: 'Insurance Claims',
+    icon: FileCheck,
+    path: '/insurance-claims',
     roles: ['admin', 'receptionist']
   },
   {
