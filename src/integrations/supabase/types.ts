@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_waitlist: {
+        Row: {
+          created_at: string
+          department_id: string | null
+          doctor_id: string | null
+          id: string
+          notes: string | null
+          notified_at: string | null
+          patient_id: string
+          preferred_date_end: string | null
+          preferred_date_start: string
+          preferred_time_slots: Json | null
+          priority: string
+          reason: string | null
+          responded_at: string | null
+          response_deadline: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_id?: string | null
+          doctor_id?: string | null
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          patient_id: string
+          preferred_date_end?: string | null
+          preferred_date_start: string
+          preferred_time_slots?: Json | null
+          priority?: string
+          reason?: string | null
+          responded_at?: string | null
+          response_deadline?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string | null
+          doctor_id?: string | null
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          patient_id?: string
+          preferred_date_end?: string | null
+          preferred_date_start?: string
+          preferred_time_slots?: Json | null
+          priority?: string
+          reason?: string | null
+          responded_at?: string | null
+          response_deadline?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_waitlist_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "appointment_waitlist_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_waitlist_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           appointment_date: string

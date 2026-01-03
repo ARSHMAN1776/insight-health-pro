@@ -43,6 +43,7 @@ const Vitals = React.lazy(() => import('./pages/Vitals'));
 const ShiftHandovers = React.lazy(() => import('./pages/ShiftHandovers'));
 const Referrals = React.lazy(() => import('./pages/Referrals'));
 const InsuranceClaims = React.lazy(() => import('./pages/InsuranceClaims'));
+const Waitlist = React.lazy(() => import('./pages/Waitlist'));
 
 const queryClient = new QueryClient();
 
@@ -277,6 +278,15 @@ const App = () => (
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <InsuranceClaims />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/waitlist" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <Waitlist />
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>

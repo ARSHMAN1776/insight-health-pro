@@ -26,7 +26,8 @@ import {
   Thermometer,
   ArrowRightLeft,
   GitPullRequest,
-  FileCheck
+  FileCheck,
+  ListPlus
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -66,6 +67,12 @@ const sidebarItems: SidebarItem[] = [
     icon: Calendar,
     path: '/appointments',
     roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist']
+  },
+  {
+    label: 'Waitlist',
+    icon: ListPlus,
+    path: '/waitlist',
+    roles: ['admin', 'receptionist']
   },
   {
     label: 'Departments',
