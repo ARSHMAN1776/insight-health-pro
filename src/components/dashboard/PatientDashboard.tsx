@@ -8,6 +8,7 @@ import PersonalInfoSection from '../patient-portal/PersonalInfoSection';
 import MedicalRecordsView from '../patient-portal/MedicalRecordsView';
 import AppointmentsView from '../patient-portal/AppointmentsView';
 import DoctorMessaging from '../patient-portal/DoctorMessaging';
+import InsuranceClaimsView from '../patient-portal/InsuranceClaimsView';
 import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -20,7 +21,7 @@ const PatientDashboard: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'records' | 'appointments' | 'messages'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'records' | 'appointments' | 'messages' | 'insurance'>('dashboard');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
@@ -572,6 +573,12 @@ const PatientDashboard: React.FC = () => {
               </p>
             </div>
             <DoctorMessaging patientData={patientData} />
+          </div>
+        )}
+
+        {activeTab === 'insurance' && patientData && (
+          <div className="animate-fade-in">
+            <InsuranceClaimsView patientId={patientData.id} />
           </div>
         )}
       </main>
