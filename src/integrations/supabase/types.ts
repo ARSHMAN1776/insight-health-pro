@@ -514,6 +514,158 @@ export type Database = {
         }
         Relationships: []
       }
+      insurance_claim_items: {
+        Row: {
+          claim_id: string
+          created_at: string | null
+          denial_reason: string | null
+          diagnosis_code: string | null
+          id: string
+          procedure_code: string
+          procedure_description: string | null
+          quantity: number | null
+          service_date: string
+          status: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string | null
+          denial_reason?: string | null
+          diagnosis_code?: string | null
+          id?: string
+          procedure_code: string
+          procedure_description?: string | null
+          quantity?: number | null
+          service_date: string
+          status?: string | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string | null
+          denial_reason?: string | null
+          diagnosis_code?: string | null
+          id?: string
+          procedure_code?: string
+          procedure_description?: string | null
+          quantity?: number | null
+          service_date?: string
+          status?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claim_items_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_claims: {
+        Row: {
+          appeal_deadline: string | null
+          appeal_notes: string | null
+          appeal_submitted: boolean | null
+          appointment_id: string | null
+          approved_amount: number | null
+          claim_number: string | null
+          created_at: string | null
+          denial_code: string | null
+          denial_reason: string | null
+          diagnosis_codes: string[] | null
+          id: string
+          insurance_provider: string
+          notes: string | null
+          patient_id: string
+          patient_responsibility: number | null
+          policy_number: string
+          procedure_codes: string[] | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_date: string
+          status: string | null
+          submission_date: string | null
+          submitted_by: string | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          appeal_deadline?: string | null
+          appeal_notes?: string | null
+          appeal_submitted?: boolean | null
+          appointment_id?: string | null
+          approved_amount?: number | null
+          claim_number?: string | null
+          created_at?: string | null
+          denial_code?: string | null
+          denial_reason?: string | null
+          diagnosis_codes?: string[] | null
+          id?: string
+          insurance_provider: string
+          notes?: string | null
+          patient_id: string
+          patient_responsibility?: number | null
+          policy_number: string
+          procedure_codes?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_date: string
+          status?: string | null
+          submission_date?: string | null
+          submitted_by?: string | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          appeal_deadline?: string | null
+          appeal_notes?: string | null
+          appeal_submitted?: boolean | null
+          appointment_id?: string | null
+          approved_amount?: number | null
+          claim_number?: string | null
+          created_at?: string | null
+          denial_code?: string | null
+          denial_reason?: string | null
+          diagnosis_codes?: string[] | null
+          id?: string
+          insurance_provider?: string
+          notes?: string | null
+          patient_id?: string
+          patient_responsibility?: number | null
+          policy_number?: string
+          procedure_codes?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_date?: string
+          status?: string | null
+          submission_date?: string | null
+          submitted_by?: string | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claims_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory: {
         Row: {
           batch_number: string | null
