@@ -9,6 +9,7 @@ import { Textarea } from '../ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Appointment, Patient, dataManager } from '../../lib/dataManager';
 import PatientAppointmentBooking from './PatientAppointmentBooking';
+import WaitlistSignup from '../appointments/WaitlistSignup';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -162,6 +163,12 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
       <PatientAppointmentBooking 
         patientData={patientData || null} 
         onAppointmentBooked={onAppointmentBooked}
+      />
+
+      {/* Waitlist Signup */}
+      <WaitlistSignup 
+        patientData={patientData || null}
+        onWaitlistJoined={onAppointmentBooked}
       />
 
       {/* Upcoming Appointments */}
