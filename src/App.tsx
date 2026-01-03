@@ -42,6 +42,7 @@ const PatientMessages = React.lazy(() => import('./pages/PatientMessages'));
 const Vitals = React.lazy(() => import('./pages/Vitals'));
 const ShiftHandovers = React.lazy(() => import('./pages/ShiftHandovers'));
 const Referrals = React.lazy(() => import('./pages/Referrals'));
+const InsuranceClaims = React.lazy(() => import('./pages/InsuranceClaims'));
 
 const queryClient = new QueryClient();
 
@@ -269,6 +270,15 @@ const App = () => (
                   <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                     <Referrals />
                   </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/insurance-claims" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <InsuranceClaims />
+                    </Suspense>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
