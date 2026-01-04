@@ -18,7 +18,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { Calendar, TrendingUp, Users, Activity, DollarSign, FileText, Download, Bed, UserCheck, Clock, Briefcase } from 'lucide-react';
+import { Calendar, TrendingUp, Users, Activity, DollarSign, FileText, Download, Bed, UserCheck, Clock, Briefcase, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,9 +26,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTimezone } from '@/hooks/useTimezone';
 import { exportToCSV, patientColumns, appointmentColumns, paymentColumns } from '@/lib/exportUtils';
+import { generatePDFReport, downloadPDF, exportToCSV as exportCSVNew } from '@/lib/reportGenerator';
 import { dataManager } from '@/lib/dataManager';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface CensusData {
   currentInpatients: number;
@@ -417,6 +419,136 @@ const Reports: React.FC = () => {
     }
   };
 
+  const handlePDFExport = (reportType: 'appointments' | 'revenue' | 'census' | 'workload') => {
+    try {
+      const currentDate = getCurrentDate();
+      const daysAgo = new Date(currentDate);
+      daysAgo.setDate(daysAgo.getDate() - parseInt(timeRange));
+      
+      const dateRange = {
+        start: daysAgo.toISOString().split('T')[0],
+        end: currentDate
+      };
+
+      let doc;
+
+      switch (reportType) {
+        case 'appointments':
+          doc = generatePDFReport(
+            {
+              title: 'Appointment Analytics Report',
+              dateRange,
+              hospitalName: 'Hospital Management System'
+            },
+            {
+              headers: ['Metric', 'Value'],
+              rows: [
+                ['Total Appointments', appointmentAnalytics.totalAppointments],
+                ['Completed', appointmentAnalytics.completedCount],
+                ['Cancelled', appointmentAnalytics.cancelledCount],
+                ['No Shows', appointmentAnalytics.noShowCount],
+                ['Completion Rate', `${appointmentAnalytics.completionRate.toFixed(1)}%`],
+                ['Average Per Day', appointmentAnalytics.avgPerDay.toFixed(1)],
+              ]
+            },
+            [
+              { label: 'Total', value: appointmentAnalytics.totalAppointments },
+              { label: 'Completed', value: appointmentAnalytics.completedCount },
+              { label: 'Completion Rate', value: `${appointmentAnalytics.completionRate.toFixed(1)}%` },
+              { label: 'No-Show Rate', value: `${appointmentAnalytics.noShowRate.toFixed(1)}%` },
+            ]
+          );
+          downloadPDF(doc, 'appointment_report');
+          break;
+
+        case 'revenue':
+          doc = generatePDFReport(
+            {
+              title: 'Revenue Analytics Report',
+              dateRange,
+              hospitalName: 'Hospital Management System'
+            },
+            {
+              headers: ['Payment Method', 'Amount', 'Transactions'],
+              rows: revenueAnalytics.byMethod.map(m => [m.method, `$${m.amount.toFixed(2)}`, m.count])
+            },
+            [
+              { label: 'Total Revenue', value: `$${revenueAnalytics.totalRevenue.toFixed(2)}` },
+              { label: 'Paid', value: `$${revenueAnalytics.paidRevenue.toFixed(2)}` },
+              { label: 'Pending', value: `$${revenueAnalytics.pendingRevenue.toFixed(2)}` },
+              { label: 'Avg Transaction', value: `$${revenueAnalytics.avgTransactionValue.toFixed(2)}` },
+            ]
+          );
+          downloadPDF(doc, 'revenue_report');
+          break;
+
+        case 'census':
+          doc = generatePDFReport(
+            {
+              title: 'Daily Census Report',
+              hospitalName: 'Hospital Management System'
+            },
+            {
+              headers: ['Room', 'Type', 'Occupied', 'Capacity', 'Occupancy %'],
+              rows: censusData.roomOccupancy.map(r => [
+                r.room,
+                r.type,
+                r.occupied,
+                r.capacity,
+                r.capacity > 0 ? `${((r.occupied / r.capacity) * 100).toFixed(0)}%` : '0%'
+              ])
+            },
+            [
+              { label: 'Current Inpatients', value: censusData.currentInpatients },
+              { label: 'Available Beds', value: censusData.availableBeds },
+              { label: 'Total Beds', value: censusData.totalBeds },
+              { label: 'Occupancy Rate', value: `${censusData.occupancyRate.toFixed(1)}%` },
+            ]
+          );
+          downloadPDF(doc, 'census_report');
+          break;
+
+        case 'workload':
+          doc = generatePDFReport(
+            {
+              title: 'Staff Workload Report',
+              dateRange,
+              hospitalName: 'Hospital Management System'
+            },
+            {
+              headers: ['Doctor', 'Specialization', 'Appointments', 'Patients', 'Avg/Day'],
+              rows: staffWorkload.doctors.slice(0, 15).map(d => [
+                d.name,
+                d.specialization,
+                d.appointments,
+                d.patients,
+                d.avgPerDay.toFixed(1)
+              ])
+            },
+            [
+              { label: 'Active Doctors', value: staffWorkload.doctors.length },
+              { label: 'Total Appointments', value: staffWorkload.doctors.reduce((s, d) => s + d.appointments, 0) },
+              { label: 'Departments', value: staffWorkload.departmentLoad.length },
+            ]
+          );
+          downloadPDF(doc, 'workload_report');
+          break;
+      }
+
+      toast({
+        title: 'PDF Generated',
+        description: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report downloaded successfully.`,
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to generate PDF report.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -447,17 +579,44 @@ const Reports: React.FC = () => {
               <SelectItem value="365">Last year</SelectItem>
             </SelectContent>
           </Select>
-          <Select onValueChange={(v) => handleExport(v as any)}>
-            <SelectTrigger className="w-[150px]">
-              <Download className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Export" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="patients">Patients</SelectItem>
-              <SelectItem value="appointments">Appointments</SelectItem>
-              <SelectItem value="payments">Payments</SelectItem>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => handleExport('patients')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Patients (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('appointments')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Appointments (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('payments')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Payments (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePDFExport('census')}>
+                <FileText className="h-4 w-4 mr-2" />
+                Census Report (PDF)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePDFExport('appointments')}>
+                <FileText className="h-4 w-4 mr-2" />
+                Appointments Report (PDF)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePDFExport('revenue')}>
+                <FileText className="h-4 w-4 mr-2" />
+                Revenue Report (PDF)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePDFExport('workload')}>
+                <FileText className="h-4 w-4 mr-2" />
+                Workload Report (PDF)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
