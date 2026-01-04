@@ -1,8 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Get allowed origin from environment or use production URL
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://fdllddffiihycbtgawbr.lovableproject.com';
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
 };
 
 interface DepartmentInput {
@@ -28,11 +34,35 @@ function sanitizeString(input: string | undefined | null): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
+    .replace(/`/g, '&#x60;')
+    .replace(/\$/g, '&#x24;')
     .slice(0, 1000); // Max length safety
 }
 
 function sanitizeDepartmentName(name: string): string {
   return sanitizeString(name).slice(0, 255);
+}
+
+// ============= Rate Limiting =============
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX = 30; // max 30 requests per minute
+
+function checkRateLimit(identifier: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(identifier);
+  
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+  }
+  
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count };
 }
 
 // ============= Validation Helpers =============
@@ -77,10 +107,10 @@ function validateUUID(id: string | null): boolean {
   return uuidPattern.test(id);
 }
 
-function createResponse(response: ApiResponse, status: number): Response {
+function createResponse(response: ApiResponse, status: number, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(response), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, ...extraHeaders, 'Content-Type': 'application/json' },
   });
 }
 
@@ -126,6 +156,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const { allowed, remaining } = checkRateLimit(clientIp);
+    
+    if (!allowed) {
+      console.log(`[Departments API] Rate limit exceeded for: ${clientIp}`);
+      return createResponse(
+        { success: false, message: 'Rate limit exceeded. Please try again later.' },
+        429,
+        { 'X-RateLimit-Remaining': '0', 'Retry-After': '60' }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -152,7 +195,7 @@ Deno.serve(async (req) => {
         return createResponse({ 
           success: false, 
           message: authError 
-        }, 401);
+        }, 401, { 'X-RateLimit-Remaining': remaining.toString() });
       }
       
       if (!isAdmin) {
@@ -160,65 +203,67 @@ Deno.serve(async (req) => {
         return createResponse({ 
           success: false, 
           message: 'Access denied. Administrator privileges are required to perform this action.' 
-        }, 403);
+        }, 403, { 'X-RateLimit-Remaining': remaining.toString() });
       }
       
       console.log(`[Departments API] Admin access granted for user: ${userId}`);
     }
 
+    const extraHeaders = { 'X-RateLimit-Remaining': remaining.toString() };
+
     switch (action) {
       case 'list':
-        return await listDepartments(supabaseAdmin);
+        return await listDepartments(supabaseAdmin, extraHeaders);
       
       case 'add':
         if (req.method !== 'POST') {
-          return createResponse({ success: false, message: 'Method not allowed. Use POST for adding departments.' }, 405);
+          return createResponse({ success: false, message: 'Method not allowed. Use POST for adding departments.' }, 405, extraHeaders);
         }
         const addBody = await req.json().catch(() => ({}));
-        return await addDepartment(supabaseAdmin, addBody);
+        return await addDepartment(supabaseAdmin, addBody, extraHeaders);
       
       case 'update':
         if (req.method !== 'PUT' && req.method !== 'PATCH') {
-          return createResponse({ success: false, message: 'Method not allowed. Use PUT or PATCH for updating departments.' }, 405);
+          return createResponse({ success: false, message: 'Method not allowed. Use PUT or PATCH for updating departments.' }, 405, extraHeaders);
         }
         const updateData = await req.json().catch(() => ({}));
         const departmentId = url.searchParams.get('id');
         if (!departmentId) {
-          return createResponse({ success: false, message: 'Department ID is required in the URL parameters' }, 400);
+          return createResponse({ success: false, message: 'Department ID is required in the URL parameters' }, 400, extraHeaders);
         }
         if (!validateUUID(departmentId)) {
-          return createResponse({ success: false, message: 'Invalid department ID format' }, 400);
+          return createResponse({ success: false, message: 'Invalid department ID format' }, 400, extraHeaders);
         }
-        return await updateDepartment(supabaseAdmin, departmentId, updateData);
+        return await updateDepartment(supabaseAdmin, departmentId, updateData, extraHeaders);
       
       case 'deactivate':
         if (req.method !== 'PUT' && req.method !== 'PATCH') {
-          return createResponse({ success: false, message: 'Method not allowed. Use PUT or PATCH for deactivation.' }, 405);
+          return createResponse({ success: false, message: 'Method not allowed. Use PUT or PATCH for deactivation.' }, 405, extraHeaders);
         }
         const deactivateId = url.searchParams.get('id');
         if (!deactivateId) {
-          return createResponse({ success: false, message: 'Department ID is required in the URL parameters' }, 400);
+          return createResponse({ success: false, message: 'Department ID is required in the URL parameters' }, 400, extraHeaders);
         }
         if (!validateUUID(deactivateId)) {
-          return createResponse({ success: false, message: 'Invalid department ID format' }, 400);
+          return createResponse({ success: false, message: 'Invalid department ID format' }, 400, extraHeaders);
         }
-        return await deactivateDepartment(supabaseAdmin, deactivateId);
+        return await deactivateDepartment(supabaseAdmin, deactivateId, extraHeaders);
       
       case 'get':
         const getId = url.searchParams.get('id');
         if (!getId) {
-          return createResponse({ success: false, message: 'Department ID is required in the URL parameters' }, 400);
+          return createResponse({ success: false, message: 'Department ID is required in the URL parameters' }, 400, extraHeaders);
         }
         if (!validateUUID(getId)) {
-          return createResponse({ success: false, message: 'Invalid department ID format' }, 400);
+          return createResponse({ success: false, message: 'Invalid department ID format' }, 400, extraHeaders);
         }
-        return await getDepartment(supabaseAdmin, getId);
+        return await getDepartment(supabaseAdmin, getId, extraHeaders);
       
       default:
         return createResponse({ 
           success: false, 
           message: 'Invalid or missing action parameter. Valid actions: list, add, update, deactivate, get' 
-        }, 400);
+        }, 400, extraHeaders);
     }
   } catch (error) {
     console.error('[Departments API] Unexpected error:', error);
@@ -230,7 +275,7 @@ Deno.serve(async (req) => {
 });
 
 // List all departments
-async function listDepartments(supabase: any): Promise<Response> {
+async function listDepartments(supabase: any, extraHeaders: Record<string, string>): Promise<Response> {
   console.log('[Departments API] Fetching department list');
   
   const { data, error } = await supabase
@@ -246,8 +291,7 @@ async function listDepartments(supabase: any): Promise<Response> {
     return createResponse({
       success: false,
       message: 'Failed to fetch departments',
-      error: error.message,
-    }, 500);
+    }, 500, extraHeaders);
   }
 
   console.log(`[Departments API] Found ${data?.length || 0} departments`);
@@ -255,11 +299,11 @@ async function listDepartments(supabase: any): Promise<Response> {
     success: true,
     message: 'Departments retrieved successfully',
     data,
-  }, 200);
+  }, 200, extraHeaders);
 }
 
 // Get single department
-async function getDepartment(supabase: any, id: string): Promise<Response> {
+async function getDepartment(supabase: any, id: string, extraHeaders: Record<string, string>): Promise<Response> {
   console.log(`[Departments API] Fetching department: ${id}`);
   
   const { data, error } = await supabase
@@ -276,26 +320,25 @@ async function getDepartment(supabase: any, id: string): Promise<Response> {
     return createResponse({
       success: false,
       message: 'Failed to fetch department',
-      error: error.message,
-    }, 500);
+    }, 500, extraHeaders);
   }
 
   if (!data) {
     return createResponse({
       success: false,
       message: 'Department not found',
-    }, 404);
+    }, 404, extraHeaders);
   }
 
   return createResponse({
     success: true,
     message: 'Department retrieved successfully',
     data,
-  }, 200);
+  }, 200, extraHeaders);
 }
 
 // Add new department
-async function addDepartment(supabase: any, input: DepartmentInput): Promise<Response> {
+async function addDepartment(supabase: any, input: DepartmentInput, extraHeaders: Record<string, string>): Promise<Response> {
   console.log('[Departments API] Adding new department');
 
   // Collect all validation errors
@@ -328,7 +371,7 @@ async function addDepartment(supabase: any, input: DepartmentInput): Promise<Res
       success: false,
       message: validationErrors.length === 1 ? validationErrors[0] : 'Please fix the following errors:',
       errors: validationErrors.length > 1 ? validationErrors : undefined,
-    }, 400);
+    }, 400, extraHeaders);
   }
 
   // Check for duplicate department name (case-insensitive)
@@ -343,7 +386,7 @@ async function addDepartment(supabase: any, input: DepartmentInput): Promise<Res
     return createResponse({
       success: false,
       message: 'Unable to verify department name availability. Please try again.',
-    }, 500);
+    }, 500, extraHeaders);
   }
 
   if (existing) {
@@ -351,7 +394,7 @@ async function addDepartment(supabase: any, input: DepartmentInput): Promise<Res
     return createResponse({
       success: false,
       message: `A department named "${sanitizedName}" already exists. Please choose a different name.`,
-    }, 409);
+    }, 409, extraHeaders);
   }
 
   // Validate department_head exists if provided
@@ -368,14 +411,14 @@ async function addDepartment(supabase: any, input: DepartmentInput): Promise<Res
       return createResponse({
         success: false,
         message: 'Unable to verify department head. Please try again.',
-      }, 500);
+      }, 500, extraHeaders);
     }
 
     if (!doctor) {
       return createResponse({
         success: false,
         message: 'The selected department head was not found or is no longer active. Please select a different doctor.',
-      }, 400);
+      }, 400, extraHeaders);
     }
   }
 
@@ -399,13 +442,13 @@ async function addDepartment(supabase: any, input: DepartmentInput): Promise<Res
       return createResponse({
         success: false,
         message: `A department named "${sanitizedName}" already exists. Please choose a different name.`,
-      }, 409);
+      }, 409, extraHeaders);
     }
     
     return createResponse({
       success: false,
       message: 'Failed to create department. Please try again.',
-    }, 500);
+    }, 500, extraHeaders);
   }
 
   console.log('[Departments API] Department created:', data.department_id);
@@ -413,11 +456,11 @@ async function addDepartment(supabase: any, input: DepartmentInput): Promise<Res
     success: true,
     message: `Department "${sanitizedName}" has been created successfully.`,
     data,
-  }, 201);
+  }, 201, extraHeaders);
 }
 
 // Update department
-async function updateDepartment(supabase: any, id: string, input: Partial<DepartmentInput>): Promise<Response> {
+async function updateDepartment(supabase: any, id: string, input: Partial<DepartmentInput>, extraHeaders: Record<string, string>): Promise<Response> {
   console.log(`[Departments API] Updating department: ${id}`);
 
   // Check if department exists
@@ -432,14 +475,14 @@ async function updateDepartment(supabase: any, id: string, input: Partial<Depart
     return createResponse({
       success: false,
       message: 'Unable to find department. Please try again.',
-    }, 500);
+    }, 500, extraHeaders);
   }
 
   if (!existingDept) {
     return createResponse({
       success: false,
       message: 'The department you are trying to update was not found. It may have been deleted.',
-    }, 404);
+    }, 404, extraHeaders);
   }
 
   const updateData: any = {};
@@ -466,14 +509,14 @@ async function updateDepartment(supabase: any, id: string, input: Partial<Depart
         return createResponse({
           success: false,
           message: 'Unable to verify department name availability. Please try again.',
-        }, 500);
+        }, 500, extraHeaders);
       }
 
       if (duplicate) {
         return createResponse({
           success: false,
           message: `A department named "${sanitizedName}" already exists. Please choose a different name.`,
-        }, 409);
+        }, 409, extraHeaders);
       }
 
       updateData.department_name = sanitizedName;
@@ -509,21 +552,24 @@ async function updateDepartment(supabase: any, id: string, input: Partial<Depart
           return createResponse({
             success: false,
             message: 'Unable to verify department head. Please try again.',
-          }, 500);
+          }, 500, extraHeaders);
         }
 
         if (!doctor) {
-          validationErrors.push('The selected department head was not found or is no longer active');
-        } else {
-          updateData.department_head = input.department_head;
+          return createResponse({
+            success: false,
+            message: 'The selected department head was not found or is no longer active.',
+          }, 400, extraHeaders);
         }
+
+        updateData.department_head = input.department_head;
       }
     } else {
       updateData.department_head = null;
     }
   }
 
-  // Set status if provided
+  // Validate status if provided
   if (input.status !== undefined) {
     if (!['Active', 'Inactive'].includes(input.status)) {
       validationErrors.push('Status must be either "Active" or "Inactive"');
@@ -532,23 +578,24 @@ async function updateDepartment(supabase: any, id: string, input: Partial<Depart
     }
   }
 
-  // Return all validation errors
+  // Return validation errors
   if (validationErrors.length > 0) {
     return createResponse({
       success: false,
       message: validationErrors.length === 1 ? validationErrors[0] : 'Please fix the following errors:',
       errors: validationErrors.length > 1 ? validationErrors : undefined,
-    }, 400);
+    }, 400, extraHeaders);
   }
 
+  // Check if there's anything to update
   if (Object.keys(updateData).length === 0) {
     return createResponse({
       success: false,
-      message: 'No changes provided. Please modify at least one field to update.',
-    }, 400);
+      message: 'No valid fields provided for update.',
+    }, 400, extraHeaders);
   }
 
-  // Perform update
+  // Update department
   const { data, error } = await supabase
     .from('departments')
     .update(updateData)
@@ -558,26 +605,34 @@ async function updateDepartment(supabase: any, id: string, input: Partial<Depart
 
   if (error) {
     console.error('[Departments API] Update error:', error);
+    
+    if (error.code === '23505') {
+      return createResponse({
+        success: false,
+        message: 'A department with this name already exists.',
+      }, 409, extraHeaders);
+    }
+    
     return createResponse({
       success: false,
       message: 'Failed to update department. Please try again.',
-    }, 500);
+    }, 500, extraHeaders);
   }
 
   console.log('[Departments API] Department updated:', id);
   return createResponse({
     success: true,
-    message: `Department "${data.department_name}" has been updated successfully.`,
+    message: 'Department updated successfully.',
     data,
-  }, 200);
+  }, 200, extraHeaders);
 }
 
-// Deactivate department (soft delete)
-async function deactivateDepartment(supabase: any, id: string): Promise<Response> {
+// Deactivate department
+async function deactivateDepartment(supabase: any, id: string, extraHeaders: Record<string, string>): Promise<Response> {
   console.log(`[Departments API] Deactivating department: ${id}`);
 
-  // Check if department exists
-  const { data: dept, error: checkError } = await supabase
+  // Check if department exists and is active
+  const { data: existingDept, error: checkError } = await supabase
     .from('departments')
     .select('department_id, department_name, status')
     .eq('department_id', id)
@@ -588,70 +643,24 @@ async function deactivateDepartment(supabase: any, id: string): Promise<Response
     return createResponse({
       success: false,
       message: 'Unable to find department. Please try again.',
-    }, 500);
+    }, 500, extraHeaders);
   }
 
-  if (!dept) {
+  if (!existingDept) {
     return createResponse({
       success: false,
-      message: 'The department you are trying to deactivate was not found. It may have been deleted.',
-    }, 404);
+      message: 'The department was not found. It may have been deleted.',
+    }, 404, extraHeaders);
   }
 
-  if (dept.status === 'Inactive') {
+  if (existingDept.status === 'Inactive') {
     return createResponse({
       success: false,
-      message: `"${dept.department_name}" is already inactive.`,
-    }, 400);
+      message: 'This department is already inactive.',
+    }, 400, extraHeaders);
   }
 
-  // Check for assigned doctors (optimized count query)
-  const { count: doctorCount, error: doctorError } = await supabase
-    .from('doctors')
-    .select('id', { count: 'exact', head: true })
-    .eq('department_id', id)
-    .eq('status', 'active');
-
-  if (doctorError) {
-    console.error('[Departments API] Doctor count error:', doctorError);
-    return createResponse({
-      success: false,
-      message: 'Unable to check for assigned doctors. Please try again.',
-    }, 500);
-  }
-
-  if (doctorCount && doctorCount > 0) {
-    console.log(`[Departments API] Cannot deactivate - ${doctorCount} doctors assigned`);
-    return createResponse({
-      success: false,
-      message: `Cannot deactivate "${dept.department_name}" because ${doctorCount} active doctor${doctorCount > 1 ? 's are' : ' is'} currently assigned. Please reassign ${doctorCount > 1 ? 'them' : 'the doctor'} to another department first.`,
-    }, 409);
-  }
-
-  // Check for assigned patients (optimized count query)
-  const { count: patientCount, error: patientError } = await supabase
-    .from('patients')
-    .select('id', { count: 'exact', head: true })
-    .eq('department_id', id)
-    .eq('status', 'active');
-
-  if (patientError) {
-    console.error('[Departments API] Patient count error:', patientError);
-    return createResponse({
-      success: false,
-      message: 'Unable to check for assigned patients. Please try again.',
-    }, 500);
-  }
-
-  if (patientCount && patientCount > 0) {
-    console.log(`[Departments API] Cannot deactivate - ${patientCount} patients assigned`);
-    return createResponse({
-      success: false,
-      message: `Cannot deactivate "${dept.department_name}" because ${patientCount} active patient${patientCount > 1 ? 's are' : ' is'} currently assigned. Please reassign ${patientCount > 1 ? 'them' : 'the patient'} to another department first.`,
-    }, 409);
-  }
-
-  // Perform soft delete
+  // Deactivate department
   const { data, error } = await supabase
     .from('departments')
     .update({ status: 'Inactive' })
@@ -660,17 +669,17 @@ async function deactivateDepartment(supabase: any, id: string): Promise<Response
     .single();
 
   if (error) {
-    console.error('[Departments API] Deactivation error:', error);
+    console.error('[Departments API] Deactivate error:', error);
     return createResponse({
       success: false,
       message: 'Failed to deactivate department. Please try again.',
-    }, 500);
+    }, 500, extraHeaders);
   }
 
   console.log('[Departments API] Department deactivated:', id);
   return createResponse({
     success: true,
-    message: `"${dept.department_name}" has been deactivated successfully. It will no longer be visible to patients.`,
+    message: `Department "${existingDept.department_name}" has been deactivated.`,
     data,
-  }, 200);
+  }, 200, extraHeaders);
 }
