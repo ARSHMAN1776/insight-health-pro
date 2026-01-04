@@ -254,23 +254,29 @@ const App = () => (
               } />
               <Route path="/vitals" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                    <Vitals />
-                  </Suspense>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <Vitals />
+                    </Suspense>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
               <Route path="/shift-handovers" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                    <ShiftHandovers />
-                  </Suspense>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <ShiftHandovers />
+                    </Suspense>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
               <Route path="/referrals" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                    <Referrals />
-                  </Suspense>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <Referrals />
+                    </Suspense>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
               <Route path="/insurance-claims" element={
