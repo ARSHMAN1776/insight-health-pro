@@ -758,8 +758,10 @@ export type Database = {
           location: string | null
           maximum_stock: number | null
           minimum_stock: number | null
+          reorder_point: number | null
           status: string | null
           supplier: string | null
+          supplier_id: string | null
           unit_price: number | null
           updated_at: string | null
         }
@@ -775,8 +777,10 @@ export type Database = {
           location?: string | null
           maximum_stock?: number | null
           minimum_stock?: number | null
+          reorder_point?: number | null
           status?: string | null
           supplier?: string | null
+          supplier_id?: string | null
           unit_price?: number | null
           updated_at?: string | null
         }
@@ -792,12 +796,22 @@ export type Database = {
           location?: string | null
           maximum_stock?: number | null
           minimum_stock?: number | null
+          reorder_point?: number | null
           status?: string | null
           supplier?: string | null
+          supplier_id?: string | null
           unit_price?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inventory_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lab_tests: {
         Row: {
@@ -1773,6 +1787,119 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_item_id: string | null
+          item_name: string
+          purchase_order_id: string
+          quantity: number
+          received_quantity: number | null
+          status: string
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          item_name: string
+          purchase_order_id: string
+          quantity: number
+          received_quantity?: number | null
+          status?: string
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          item_name?: string
+          purchase_order_id?: string
+          quantity?: number
+          received_quantity?: number | null
+          status?: string
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          actual_delivery: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          expected_delivery: string | null
+          id: string
+          notes: string | null
+          order_date: string
+          po_number: string
+          status: string
+          supplier_id: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          actual_delivery?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_delivery?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          po_number: string
+          status?: string
+          supplier_id: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          actual_delivery?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_delivery?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          po_number?: string
+          status?: string
+          supplier_id?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
         Row: {
           appointment_id: string | null
@@ -2188,6 +2315,51 @@ export type Database = {
           staff_type?: string
           start_time?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          lead_time_days: number | null
+          name: string
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_time_days?: number | null
+          name: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_time_days?: number | null
+          name?: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }

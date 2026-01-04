@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Pill, Package, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Pill, Package, AlertTriangle, TrendingUp, Building2, FileText } from 'lucide-react';
 import InventoryManagement from '../components/inventory/InventoryManagement';
 import PrescriptionManagement from '../components/prescriptions/PrescriptionManagement';
+import SupplierManagement from '../components/inventory/SupplierManagement';
+import PurchaseOrderManagement from '../components/inventory/PurchaseOrderManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const Pharmacy: React.FC = () => {
@@ -11,7 +13,7 @@ const Pharmacy: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Pharmacy Management</h1>
         <p className="text-muted-foreground mt-1">
-          Manage medications, inventory, and prescriptions
+          Manage medications, inventory, suppliers, and prescriptions
         </p>
       </div>
 
@@ -76,11 +78,21 @@ const Pharmacy: React.FC = () => {
       <Tabs defaultValue="inventory" className="space-y-6">
         <TabsList>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
+          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+          <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
           <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory">
           <InventoryManagement />
+        </TabsContent>
+
+        <TabsContent value="suppliers">
+          <SupplierManagement />
+        </TabsContent>
+
+        <TabsContent value="purchase-orders">
+          <PurchaseOrderManagement />
         </TabsContent>
 
         <TabsContent value="prescriptions">
