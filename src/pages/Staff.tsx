@@ -3,11 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { Users, Stethoscope, Activity, Building2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import DoctorRegistrationForm from '../components/forms/DoctorRegistrationForm';
-import NurseRegistrationForm from '../components/forms/NurseRegistrationForm';
 import DataTable from '../components/shared/DataTable';
 import { supabase } from '@/integrations/supabase/client';
-
 interface Department {
   department_id: string;
   department_name: string;
@@ -258,33 +255,19 @@ const Staff: React.FC = () => {
         </TabsList>
 
         <TabsContent value="doctors">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <DataTable
-                title="All Doctors"
-                data={doctorsTableData}
-                columns={doctorColumns}
-              />
-            </div>
-            <div>
-              <DoctorRegistrationForm onClose={loadStaffData} />
-            </div>
-          </div>
+          <DataTable
+            title="All Doctors"
+            data={doctorsTableData}
+            columns={doctorColumns}
+          />
         </TabsContent>
 
         <TabsContent value="nurses">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <DataTable
-                title="All Nurses"
-                data={nursesTableData}
-                columns={nurseColumns}
-              />
-            </div>
-            <div>
-              <NurseRegistrationForm onClose={loadStaffData} />
-            </div>
-          </div>
+          <DataTable
+            title="All Nurses"
+            data={nursesTableData}
+            columns={nurseColumns}
+          />
         </TabsContent>
       </Tabs>
     </div>
