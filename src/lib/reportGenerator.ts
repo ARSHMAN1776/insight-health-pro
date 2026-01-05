@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReportOptions {
   title: string;
@@ -295,3 +296,149 @@ export const exportToCSV = (headers: string[], rows: any[][], filename: string) 
   link.click();
   URL.revokeObjectURL(link.href);
 };
+
+// ============= HIPAA COMPLIANCE AUDIT REPORTS =============
+
+export interface AuditReportEntry {
+  id: string;
+  table_name: string;
+  record_id: string;
+  patient_id: string | null;
+  action: string;
+  performed_by: string;
+  performer_role: string | null;
+  performer_name: string | null;
+  changed_fields: string[] | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface AccessSummary {
+  totalAccesses: number;
+  byAction: Record<string, number>;
+  byTable: Record<string, number>;
+  byUser: Record<string, { count: number; name: string; role: string }>;
+  byPatient: Record<string, number>;
+}
+
+export interface DateRange {
+  startDate: Date;
+  endDate: Date;
+}
+
+/**
+ * Generate PHI Access Audit Report
+ */
+export async function generatePhiAccessReport(
+  dateRange: DateRange
+): Promise<{ entries: AuditReportEntry[]; summary: AccessSummary }> {
+  const { data, error } = await supabase
+    .from('phi_audit_log')
+    .select('*')
+    .gte('created_at', dateRange.startDate.toISOString())
+    .lte('created_at', dateRange.endDate.toISOString())
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const entries = (data || []) as AuditReportEntry[];
+  
+  const summary: AccessSummary = {
+    totalAccesses: entries.length,
+    byAction: {},
+    byTable: {},
+    byUser: {},
+    byPatient: {},
+  };
+
+  for (const entry of entries) {
+    summary.byAction[entry.action] = (summary.byAction[entry.action] || 0) + 1;
+    summary.byTable[entry.table_name] = (summary.byTable[entry.table_name] || 0) + 1;
+    
+    if (!summary.byUser[entry.performed_by]) {
+      summary.byUser[entry.performed_by] = {
+        count: 0,
+        name: entry.performer_name || 'Unknown',
+        role: entry.performer_role || 'Unknown',
+      };
+    }
+    summary.byUser[entry.performed_by].count++;
+    
+    if (entry.patient_id) {
+      summary.byPatient[entry.patient_id] = (summary.byPatient[entry.patient_id] || 0) + 1;
+    }
+  }
+
+  return { entries, summary };
+}
+
+/**
+ * Generate User Access Report
+ */
+export async function generateUserAccessReport(
+  userId: string,
+  dateRange: DateRange
+): Promise<AuditReportEntry[]> {
+  const { data, error } = await supabase
+    .from('phi_audit_log')
+    .select('*')
+    .eq('performed_by', userId)
+    .gte('created_at', dateRange.startDate.toISOString())
+    .lte('created_at', dateRange.endDate.toISOString())
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as AuditReportEntry[];
+}
+
+/**
+ * Detect suspicious access patterns for security monitoring
+ */
+export function detectSuspiciousPatterns(
+  entries: AuditReportEntry[]
+): { type: string; description: string; count: number }[] {
+  const alerts: { type: string; description: string; count: number }[] = [];
+
+  // High volume access detection
+  const userCounts: Record<string, number> = {};
+  for (const entry of entries) {
+    userCounts[entry.performed_by] = (userCounts[entry.performed_by] || 0) + 1;
+  }
+  
+  for (const [userId, count] of Object.entries(userCounts)) {
+    if (count > 100) {
+      const userName = entries.find(e => e.performed_by === userId)?.performer_name || userId;
+      alerts.push({
+        type: 'high_volume_access',
+        description: `User ${userName} accessed ${count} records`,
+        count,
+      });
+    }
+  }
+
+  // After hours access
+  const afterHoursCount = entries.filter(entry => {
+    const hour = new Date(entry.created_at).getHours();
+    return hour < 6 || hour > 22;
+  }).length;
+
+  if (afterHoursCount > 0) {
+    alerts.push({
+      type: 'after_hours_access',
+      description: `${afterHoursCount} accesses outside normal hours (6 AM - 10 PM)`,
+      count: afterHoursCount,
+    });
+  }
+
+  // Bulk exports
+  const exportCount = entries.filter(e => e.action === 'export').length;
+  if (exportCount > 10) {
+    alerts.push({
+      type: 'bulk_export',
+      description: `${exportCount} export operations detected`,
+      count: exportCount,
+    });
+  }
+
+  return alerts;
+}

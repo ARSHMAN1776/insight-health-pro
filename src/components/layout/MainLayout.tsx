@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInventoryAlerts } from '../../hooks/useInventoryAlerts';
+import { SkipLink } from '../shared/SkipLink';
 
 const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -20,7 +21,8 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   if (user?.role === 'patient') {
     return (
       <div className="flex flex-col h-screen bg-background">
-        <main className="flex-1 overflow-y-auto">
+        <SkipLink />
+        <main id="main-content" className="flex-1 overflow-y-auto" role="main">
           {children || <Outlet />}
         </main>
       </div>
@@ -30,12 +32,18 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   // All other roles use sidebar layout
   return (
     <div className="flex h-screen bg-background">
+      <SkipLink />
       <Sidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
       
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header onToggleSidebar={toggleSidebar} />
         
-        <main className="flex-1 overflow-y-auto p-6">
+        <main 
+          id="main-content" 
+          className="flex-1 overflow-y-auto p-6" 
+          role="main"
+          aria-label="Main content"
+        >
           {children || <Outlet />}
         </main>
       </div>
