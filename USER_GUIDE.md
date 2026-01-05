@@ -764,6 +764,38 @@ Login → Dashboard → Navigate Sidebar → Perform Tasks → Logout
 3. **Report suspicious activity** to administrators
 4. **Don't access records** you're not authorized to view
 5. **Protect patient privacy** at all times
+---
+
+## 🔒 Security & Privacy
+
+### Your Data is Protected
+MediFlow implements strict security measures to protect your health information:
+
+- **HIPAA Compliant**: All patient data is protected per federal regulations
+- **Audit Logging**: All access to medical records is logged
+- **Role-Based Access**: Staff can only see data relevant to their role
+- **Encrypted Communications**: All data transmitted securely
+
+### Reporting Suspicious Activity
+If you notice any unusual activity or suspect unauthorized access:
+1. Contact your system administrator immediately
+2. Do not share your login credentials
+3. Report any phishing emails or suspicious messages
+
+---
+
+## ♿ Accessibility Features
+
+MediFlow is designed to be accessible to all users:
+
+| Feature | How to Use |
+|---------|------------|
+| **Keyboard Navigation** | Use Tab to move between elements, Enter to select |
+| **Skip Links** | Press Tab on page load to skip to main content |
+| **Screen Readers** | Full support for JAWS, NVDA, VoiceOver |
+| **High Contrast** | Automatically detects your system preferences |
+| **Reduced Motion** | Animations disabled if you prefer reduced motion |
+| **Help Tooltips** | Hover or focus on ? icons for context help |
 
 ---
 
@@ -771,8 +803,8 @@ Login → Dashboard → Navigate Sidebar → Perform Tasks → Logout
 
 | | |
 |---|---|
-| **Version** | 2.0 |
-| **Last Updated** | December 2025 |
+| **Version** | 3.0 |
+| **Last Updated** | January 2025 |
 | **Document Type** | User Guide |
 | **Audience** | All Hospital Staff & Patients |
 

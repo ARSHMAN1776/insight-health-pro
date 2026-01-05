@@ -2495,17 +2495,106 @@ CREATE TYPE app_role AS ENUM (
 | 1.1 | December 2024 | Added blood bank, OT modules |
 | 1.2 | December 2024 | Added patient portal, messaging |
 | 1.3 | December 2024 | Added contact form email delivery |
+---
+
+## 23. HIPAA Compliance Features
+
+### 23.1 PHI Audit Logging
+
+All access to Protected Health Information is automatically logged for HIPAA compliance.
+
+**Audit Log Table: `phi_audit_log`**
+
+| Field | Description |
+|-------|-------------|
+| `table_name` | Which PHI table was accessed (medical_records, prescriptions, etc.) |
+| `record_id` | Specific record identifier |
+| `patient_id` | Patient whose data was accessed |
+| `action` | view, create, update, delete, export, print |
+| `performed_by` | User ID who performed the action |
+| `performer_role` | Role of the user |
+| `performer_name` | Name of the user |
+| `old_values` | Previous values (for updates) |
+| `new_values` | New values (for creates/updates) |
+| `changed_fields` | List of fields modified |
+| `user_agent` | Browser/device information |
+| `created_at` | Timestamp of access |
+
+**Usage:**
+```typescript
+import { logPhiAccess, getUserContextFromAuth } from '@/lib/auditLogger';
+
+// Log a view action
+await logPhiAccess({
+  table_name: 'medical_records',
+  record_id: recordId,
+  patient_id: patientId,
+  action: 'view',
+}, userContext);
+```
+
+### 23.2 Compliance Reports
+
+Generate HIPAA compliance reports from the `reportGenerator.ts`:
+
+- **PHI Access Report**: All access to patient data within date range
+- **User Access Report**: All PHI accessed by specific user
+- **Suspicious Activity Detection**: Automatic detection of unusual patterns
+
+### 23.3 Security Features
+
+| Feature | Description |
+|---------|-------------|
+| Row Level Security | All tables have RLS policies |
+| Immutable Audit Logs | No UPDATE/DELETE policies on audit table |
+| Sensitive Data Redaction | Passwords/SSN redacted in logs |
+| Session Tracking | User agent logged for forensics |
+
+### 23.4 Data Retention
+
+- Active patient records: Retained indefinitely
+- Audit logs: Retained for 7 years (HIPAA requirement)
+- Deleted records: Soft-deleted with `deleted_at` timestamp
 
 ---
 
-**Document Version:** 2.0  
-**Last Updated:** December 26, 2024  
-**System Version:** HMS v2.0  
-**Total Components:** 100+  
-**Total Database Tables:** 25+  
-**Total Edge Functions:** 2  
-**Total Custom Hooks:** 8  
-**Total Utility Libraries:** 9  
+## 24. Accessibility (WCAG 2.1 AA)
+
+### 24.1 Implemented Features
+
+| Feature | Description |
+|---------|-------------|
+| Skip Links | Keyboard users can skip navigation |
+| Focus Management | Visible focus indicators, focus trapping |
+| Screen Reader Support | ARIA labels, live regions |
+| Reduced Motion | Respects `prefers-reduced-motion` |
+| High Contrast | Supports `prefers-contrast` |
+| Semantic HTML | Proper heading hierarchy, landmarks |
+
+### 24.2 Components
+
+- `SkipLink.tsx`: Skip to main content link
+- `VisuallyHidden.tsx`: Screen reader only content
+- `HelpTooltip.tsx`: Accessible help tooltips
+- `useFocusManagement.ts`: Focus trap and roving tabindex hooks
+
+### 24.3 Color Contrast
+
+All text meets WCAG AA contrast requirements:
+- Normal text: 4.5:1 minimum
+- Large text (18px+): 3:1 minimum
+- UI components: 3:1 minimum
+
+---
+
+**Document Version:** 3.0  
+**Last Updated:** January 2025  
+**System Version:** HMS v3.0  
+**Total Components:** 110+  
+**Total Database Tables:** 26+  
+**Total Edge Functions:** 5  
+**Total Custom Hooks:** 12  
+**Total Utility Libraries:** 12  
 
 ---
 
