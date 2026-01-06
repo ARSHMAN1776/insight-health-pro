@@ -1,2473 +1,1647 @@
 -- ============================================================================
 -- HOSPITAL MANAGEMENT SYSTEM - COMPLETE DATABASE SCHEMA
 -- ============================================================================
--- Version: 2.1.0
+-- Version: 2.3.0
 -- Database: PostgreSQL (Supabase)
--- Last Updated: December 2025
+-- Last Updated: January 2026
 -- Description: Complete SQL schema for the Hospital Management System
--- Total Tables: 30
+-- Total Tables: 45+
+-- 
+-- IMPORTANT: This schema is designed for fresh database setup.
+-- Execute in order: Extensions -> Types -> Functions -> Tables -> RLS -> FK
 -- ============================================================================
 
 -- ============================================================================
--- EXTENSIONS
+-- STEP 1: EXTENSIONS
 -- ============================================================================
 
--- Enable UUID generation extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================================
--- CUSTOM TYPES / ENUMS
+-- STEP 2: CUSTOM TYPES / ENUMS
 -- ============================================================================
 
--- User roles enum for role-based access control
-CREATE TYPE public.app_role AS ENUM (
-    'admin',
-    'doctor',
-    'nurse',
-    'pharmacist',
-    'receptionist',
-    'patient',
-    'lab_technician'
-);
+DO $$ BEGIN
+    CREATE TYPE public.app_role AS ENUM (
+        'admin',
+        'doctor',
+        'nurse',
+        'pharmacist',
+        'receptionist',
+        'patient',
+        'lab_technician'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- ============================================================================
+-- STEP 3: HELPER FUNCTIONS (MUST BE CREATED BEFORE TABLES WITH RLS)
+-- ============================================================================
+
+-- Function to check if user has a specific role
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.user_roles
+        WHERE user_id = _user_id AND role = _role
+    );
+$$;
+
+-- Function to get user's role
+CREATE OR REPLACE FUNCTION public.get_user_role(_user_id UUID)
+RETURNS public.app_role
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT role FROM public.user_roles WHERE user_id = _user_id LIMIT 1;
+$$;
+
+-- Function to get patient ID for a user
+CREATE OR REPLACE FUNCTION public.get_patient_id_for_user(_user_id UUID)
+RETURNS UUID
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT id FROM public.patients WHERE user_id = _user_id LIMIT 1;
+$$;
+
+-- Function to get doctor ID for a user
+CREATE OR REPLACE FUNCTION public.get_doctor_id_for_user(_user_id UUID)
+RETURNS UUID
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT id FROM public.doctors WHERE user_id = _user_id LIMIT 1;
+$$;
+
+-- Function to check if doctor has relationship with patient
+CREATE OR REPLACE FUNCTION public.doctor_has_patient_relationship(_doctor_id UUID, _patient_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.appointments
+        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
+        UNION
+        SELECT 1 FROM public.medical_records
+        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
+        UNION
+        SELECT 1 FROM public.prescriptions
+        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
+    );
+$$;
+
+-- Function to get doctor's departments
+CREATE OR REPLACE FUNCTION public.get_doctor_departments(_doctor_id UUID)
+RETURNS SETOF UUID
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT department_id FROM public.department_doctors WHERE doctor_id = _doctor_id;
+$$;
+
+-- Timestamp update function
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$;
+
+-- ============================================================================
+-- STEP 4: CREATE ALL TABLES (WITHOUT RLS POLICIES)
+-- ============================================================================
 
 -- ============================================================================
 -- SECTION 1: USER MANAGEMENT TABLES
 -- ============================================================================
 
--- ============================================================================
 -- TABLE: profiles
--- Description: Stores user profile information linked to auth.users
--- ============================================================================
-CREATE TABLE public.profiles (
-    id UUID NOT NULL PRIMARY KEY,                    -- References auth.users(id)
-    first_name TEXT NOT NULL,                        -- User's first name
-    last_name TEXT NOT NULL,                         -- User's last name
-    phone TEXT,                                      -- Contact phone number
-    department TEXT,                                 -- Department assignment
-    specialization TEXT,                             -- Medical specialization (for doctors)
-    license_number TEXT,                             -- Professional license number
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID NOT NULL PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    phone TEXT,
+    department TEXT,
+    specialization TEXT,
+    license_number TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for profiles
-CREATE POLICY "Users can view their own profile" ON public.profiles
-    FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update their own profile" ON public.profiles
-    FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Allow signup to create profile" ON public.profiles
-    FOR INSERT WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Admins can view all profiles" ON public.profiles
-    FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for profiles
-CREATE INDEX idx_profiles_first_name ON public.profiles(first_name);
-CREATE INDEX idx_profiles_last_name ON public.profiles(last_name);
-
--- ============================================================================
 -- TABLE: user_roles
--- Description: Stores user role assignments for RBAC
--- ============================================================================
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL,                           -- References auth.users(id)
-    role public.app_role NOT NULL,                   -- Assigned role
+    user_id UUID NOT NULL,
+    role public.app_role NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    UNIQUE (user_id, role)                           -- One role per user
+    UNIQUE (user_id, role)
 );
 
--- Enable RLS
-ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for user_roles
-CREATE POLICY "Users can view their own roles" ON public.user_roles
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Allow signup to create role" ON public.user_roles
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Admins can manage all roles" ON public.user_roles
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for user_roles
-CREATE INDEX idx_user_roles_user_id ON public.user_roles(user_id);
-CREATE INDEX idx_user_roles_role ON public.user_roles(role);
-
--- ============================================================================
 -- TABLE: user_settings
--- Description: Stores user-specific application settings
--- ============================================================================
-CREATE TABLE public.user_settings (
+CREATE TABLE IF NOT EXISTS public.user_settings (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL,                           -- Reference to user
-    setting_key TEXT NOT NULL,                       -- Setting identifier
-    setting_value JSONB NOT NULL,                    -- Setting value (JSON)
+    user_id UUID NOT NULL,
+    setting_key TEXT NOT NULL,
+    setting_value JSONB NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    UNIQUE (user_id, setting_key)                    -- One value per setting per user
+    UNIQUE (user_id, setting_key)
 );
 
--- Enable RLS
-ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for user_settings
-CREATE POLICY "Users can view their own settings" ON public.user_settings
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own settings" ON public.user_settings
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own settings" ON public.user_settings
-    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own settings" ON public.user_settings
-    FOR DELETE USING (auth.uid() = user_id);
-
--- Indexes for user_settings
-CREATE INDEX idx_user_settings_user_id ON public.user_settings(user_id);
-CREATE INDEX idx_user_settings_key ON public.user_settings(setting_key);
-
--- ============================================================================
 -- TABLE: hospital_settings
--- Description: Stores global hospital configuration settings
--- ============================================================================
-CREATE TABLE public.hospital_settings (
+CREATE TABLE IF NOT EXISTS public.hospital_settings (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    setting_category TEXT NOT NULL,                  -- Setting category
-    setting_key TEXT NOT NULL,                       -- Setting identifier
-    setting_value JSONB NOT NULL,                    -- Setting value (JSON)
-    updated_by UUID,                                 -- Last updated by user
+    setting_category TEXT NOT NULL,
+    setting_key TEXT NOT NULL,
+    setting_value JSONB NOT NULL,
+    updated_by UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    UNIQUE (setting_category, setting_key)           -- Unique per category
+    UNIQUE (setting_category, setting_key)
 );
-
--- Enable RLS
-ALTER TABLE public.hospital_settings ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for hospital_settings (Admin only)
-CREATE POLICY "Admins can view hospital settings" ON public.hospital_settings
-    FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Admins can insert hospital settings" ON public.hospital_settings
-    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Admins can update hospital settings" ON public.hospital_settings
-    FOR UPDATE USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for hospital_settings
-CREATE INDEX idx_hospital_settings_category ON public.hospital_settings(setting_category);
-CREATE INDEX idx_hospital_settings_key ON public.hospital_settings(setting_key);
 
 -- ============================================================================
 -- SECTION 2: DEPARTMENT & STAFF TABLES
 -- ============================================================================
 
--- ============================================================================
 -- TABLE: departments
--- Description: Stores hospital department information
--- ============================================================================
-CREATE TABLE public.departments (
+CREATE TABLE IF NOT EXISTS public.departments (
     department_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    department_name VARCHAR(100) NOT NULL,           -- Department name
-    description TEXT,                                -- Department description
-    department_head UUID,                            -- Reference to doctor (department head)
-    status VARCHAR(20) NOT NULL DEFAULT 'Active'     -- Department status
-        CHECK (status IN ('Active', 'Inactive')),
+    department_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    department_head UUID,
+    status VARCHAR(20) NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for departments
-CREATE POLICY "Anyone can view active departments" ON public.departments
-    FOR SELECT USING (status = 'Active');
-
-CREATE POLICY "Admins can manage departments" ON public.departments
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for departments
-CREATE INDEX idx_departments_status ON public.departments(status);
-CREATE INDEX idx_departments_name ON public.departments(department_name);
-
--- ============================================================================
 -- TABLE: doctors
--- Description: Stores doctor/physician information
--- ============================================================================
-CREATE TABLE public.doctors (
+CREATE TABLE IF NOT EXISTS public.doctors (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    first_name VARCHAR(100) NOT NULL,                -- Doctor first name
-    last_name VARCHAR(100) NOT NULL,                 -- Doctor last name
-    specialization VARCHAR(100) NOT NULL,            -- Medical specialization
-    phone VARCHAR(20),                               -- Contact phone
-    email VARCHAR(255),                              -- Email address
-    license_number VARCHAR(50) NOT NULL,             -- Medical license number
-    department VARCHAR(100),                         -- Hospital department (legacy)
-    department_id UUID,                              -- Reference to departments table
-    years_of_experience INTEGER                      -- Years in practice
-        CHECK (years_of_experience >= 0),
-    consultation_fee NUMERIC(10, 2),                 -- Standard consultation fee
-    availability_schedule JSONB,                     -- Weekly availability schedule
-    user_id UUID REFERENCES auth.users(id),          -- Link to auth user for doctor login
-    status VARCHAR(20) DEFAULT 'active'              -- Employment status
-        CHECK (status IN ('active', 'inactive', 'on_leave')),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    specialization VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    license_number VARCHAR(50) NOT NULL,
+    department VARCHAR(100),
+    department_id UUID,
+    years_of_experience INTEGER CHECK (years_of_experience >= 0),
+    consultation_fee NUMERIC(10, 2),
+    availability_schedule JSONB,
+    user_id UUID,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'on_leave')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.doctors ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for doctors
-CREATE POLICY "Anyone can view active doctors" ON public.doctors
-    FOR SELECT USING (status = 'active');
-
-CREATE POLICY "Admins can manage all doctors" ON public.doctors
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Doctors can update own profile" ON public.doctors
-    FOR UPDATE USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY "Lab technicians can view doctors" ON public.doctors
-    FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
-
--- Indexes for doctors
-CREATE INDEX idx_doctors_specialization ON public.doctors(specialization);
-CREATE INDEX idx_doctors_department ON public.doctors(department);
-CREATE INDEX idx_doctors_department_id ON public.doctors(department_id);
-CREATE INDEX idx_doctors_status ON public.doctors(status);
-CREATE INDEX idx_doctors_user_id ON public.doctors(user_id);
-
--- ============================================================================
 -- TABLE: department_doctors
--- Description: Many-to-many relationship between departments and doctors
--- ============================================================================
-CREATE TABLE public.department_doctors (
+CREATE TABLE IF NOT EXISTS public.department_doctors (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    department_id UUID NOT NULL,                     -- Reference to department
-    doctor_id UUID NOT NULL,                         -- Reference to doctor
-    role TEXT DEFAULT 'member',                      -- Role in department (member, head, consultant)
-    notes TEXT,                                      -- Additional notes
+    department_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    role TEXT DEFAULT 'member',
+    notes TEXT,
     assigned_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    UNIQUE (department_id, doctor_id)                -- Prevent duplicates
+    UNIQUE (department_id, doctor_id)
 );
 
--- Enable RLS
-ALTER TABLE public.department_doctors ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for department_doctors
-CREATE POLICY "Anyone can view department doctors" ON public.department_doctors
-    FOR SELECT USING (true);
-
-CREATE POLICY "Admins can manage department doctors" ON public.department_doctors
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for department_doctors
-CREATE INDEX idx_department_doctors_department ON public.department_doctors(department_id);
-CREATE INDEX idx_department_doctors_doctor ON public.department_doctors(doctor_id);
-
--- ============================================================================
 -- TABLE: nurses
--- Description: Stores nursing staff information
--- ============================================================================
-CREATE TABLE public.nurses (
+CREATE TABLE IF NOT EXISTS public.nurses (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    first_name VARCHAR(100) NOT NULL,                -- Nurse first name
-    last_name VARCHAR(100) NOT NULL,                 -- Nurse last name
-    phone VARCHAR(20),                               -- Contact phone
-    email VARCHAR(255),                              -- Email address
-    license_number VARCHAR(50) NOT NULL,             -- Nursing license number
-    department VARCHAR(100),                         -- Hospital department
-    shift_schedule VARCHAR(50),                      -- Work shift (day/night/rotating)
-    specialization VARCHAR(100),                     -- Nursing specialization
-    years_of_experience INTEGER                      -- Years in practice
-        CHECK (years_of_experience >= 0),
-    status VARCHAR(20) DEFAULT 'active'              -- Employment status
-        CHECK (status IN ('active', 'inactive', 'on_leave')),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    license_number VARCHAR(50) NOT NULL,
+    department VARCHAR(100),
+    shift_schedule VARCHAR(50),
+    specialization VARCHAR(100),
+    years_of_experience INTEGER CHECK (years_of_experience >= 0),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'on_leave')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.nurses ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for nurses
-CREATE POLICY "Staff can view nurses" ON public.nurses
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'doctor') OR
-        public.has_role(auth.uid(), 'nurse') OR
-        public.has_role(auth.uid(), 'receptionist')
-    );
-
-CREATE POLICY "Admins can manage all nurses" ON public.nurses
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for nurses
-CREATE INDEX idx_nurses_department ON public.nurses(department);
-CREATE INDEX idx_nurses_status ON public.nurses(status);
-
--- ============================================================================
 -- TABLE: staff_schedules
--- Description: Stores staff work schedules
--- ============================================================================
-CREATE TABLE public.staff_schedules (
+CREATE TABLE IF NOT EXISTS public.staff_schedules (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    staff_id UUID NOT NULL,                          -- Reference to staff member
-    staff_type VARCHAR(20) NOT NULL                  -- Type of staff (doctor, nurse)
-        CHECK (staff_type IN ('doctor', 'nurse', 'receptionist', 'pharmacist')),
-    day_of_week INTEGER NOT NULL                     -- Day of week (0=Sunday, 6=Saturday)
-        CHECK (day_of_week >= 0 AND day_of_week <= 6),
-    start_time TIME NOT NULL,                        -- Shift start time
-    end_time TIME NOT NULL,                          -- Shift end time
-    is_available BOOLEAN DEFAULT true,               -- Is staff available this slot
-    notes TEXT,                                      -- Schedule notes
+    staff_id UUID NOT NULL,
+    staff_type VARCHAR(20) NOT NULL CHECK (staff_type IN ('doctor', 'nurse', 'receptionist', 'pharmacist')),
+    day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    break_start TIME,
+    break_end TIME,
+    slot_duration INTEGER DEFAULT 30,
+    is_available BOOLEAN DEFAULT true,
+    notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
--- Enable RLS
-ALTER TABLE public.staff_schedules ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for staff_schedules
-CREATE POLICY "Staff can view schedules" ON public.staff_schedules
-    FOR SELECT USING (true);
-
-CREATE POLICY "Admins can manage schedules" ON public.staff_schedules
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for staff_schedules
-CREATE INDEX idx_staff_schedules_staff ON public.staff_schedules(staff_id);
-CREATE INDEX idx_staff_schedules_day ON public.staff_schedules(day_of_week);
 
 -- ============================================================================
 -- SECTION 3: PATIENT MANAGEMENT TABLES
 -- ============================================================================
 
--- ============================================================================
 -- TABLE: patients
--- Description: Stores patient demographic and medical information
--- ============================================================================
-CREATE TABLE public.patients (
+CREATE TABLE IF NOT EXISTS public.patients (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    first_name VARCHAR(100) NOT NULL,                -- Patient first name
-    last_name VARCHAR(100) NOT NULL,                 -- Patient last name
-    date_of_birth DATE NOT NULL,                     -- Date of birth
-    gender VARCHAR(10) NOT NULL                      -- Gender (Male/Female/Other)
-        CHECK (gender IN ('Male', 'Female', 'Other')),
-    phone VARCHAR(20),                               -- Contact phone
-    email VARCHAR(255),                              -- Email address
-    address TEXT,                                    -- Residential address
-    emergency_contact_name VARCHAR(200),             -- Emergency contact name
-    emergency_contact_phone VARCHAR(20),             -- Emergency contact phone
-    blood_type VARCHAR(5)                            -- Blood type
-        CHECK (blood_type IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')),
-    allergies TEXT,                                  -- Known allergies
-    medical_history TEXT,                            -- Past medical history
-    insurance_provider VARCHAR(255),                 -- Insurance company name
-    insurance_policy_number VARCHAR(100),            -- Insurance policy number
-    department_id UUID,                              -- Assigned department
-    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- Link to auth user
-    status VARCHAR(30) DEFAULT 'active'              -- Patient status
-        CHECK (status IN ('active', 'inactive', 'deceased', 'pending_verification')),
-    deleted_at TIMESTAMP WITH TIME ZONE,             -- Soft delete timestamp
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    date_of_birth DATE NOT NULL,
+    gender VARCHAR(10) NOT NULL CHECK (gender IN ('Male', 'Female', 'Other')),
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    address TEXT,
+    emergency_contact_name VARCHAR(200),
+    emergency_contact_phone VARCHAR(20),
+    blood_type VARCHAR(5),
+    allergies TEXT,
+    medical_history TEXT,
+    insurance_provider VARCHAR(100),
+    insurance_policy_number VARCHAR(50),
+    user_id UUID,
+    department_id UUID,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'discharged', 'deceased')),
+    deleted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for patients
-CREATE POLICY "Patients can view own record" ON public.patients
-    FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY "Patients can update own record" ON public.patients
-    FOR UPDATE USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY "System can insert patients" ON public.patients
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Admins can manage all patients" ON public.patients
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Receptionists can view all patients" ON public.patients
-    FOR SELECT USING (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Receptionists can insert patients" ON public.patients
-    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Receptionists can update patients" ON public.patients
-    FOR UPDATE USING (public.has_role(auth.uid(), 'receptionist'))
-    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Nurses can view all patients" ON public.patients
-    FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Doctors can view their patients" ON public.patients
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'doctor') AND 
-        public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), id)
-    );
-
-CREATE POLICY "Lab technicians can view patients" ON public.patients
-    FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
-
--- Indexes for patients
-CREATE INDEX idx_patients_status ON public.patients(status);
-CREATE INDEX idx_patients_name ON public.patients(last_name, first_name);
-CREATE INDEX idx_patients_email ON public.patients(email);
-CREATE INDEX idx_patients_department ON public.patients(department_id);
-CREATE INDEX idx_patients_user_id ON public.patients(user_id);
-CREATE INDEX idx_patients_deleted_at ON public.patients(deleted_at);
-
--- ============================================================================
 -- TABLE: patient_registration_queue
--- Description: Tracks new patient registrations pending verification
--- ============================================================================
-CREATE TABLE public.patient_registration_queue (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    user_id UUID NOT NULL,                           -- Reference to auth user
-    status TEXT NOT NULL DEFAULT 'pending' 
-        CHECK (status IN ('pending', 'approved', 'rejected')),
-    reviewed_by UUID,                                -- Staff who reviewed
-    reviewed_at TIMESTAMP WITH TIME ZONE,            -- When reviewed
-    rejection_reason TEXT,                           -- Reason if rejected
-    notes TEXT,                                      -- Additional notes
+CREATE TABLE IF NOT EXISTS public.patient_registration_queue (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    notes TEXT,
+    rejection_reason TEXT,
+    reviewed_by UUID,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.patient_registration_queue ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for patient_registration_queue
-CREATE POLICY "Staff can view all patient registrations" 
-ON public.patient_registration_queue 
-FOR SELECT 
-USING (
-    public.has_role(auth.uid(), 'admin') OR 
-    public.has_role(auth.uid(), 'receptionist') OR
-    public.has_role(auth.uid(), 'doctor') OR
-    public.has_role(auth.uid(), 'nurse')
-);
-
-CREATE POLICY "System can insert patient registrations" 
-ON public.patient_registration_queue 
-FOR INSERT 
-WITH CHECK (true);
-
-CREATE POLICY "Staff can update patient registrations" 
-ON public.patient_registration_queue 
-FOR UPDATE 
-USING (
-    public.has_role(auth.uid(), 'admin') OR 
-    public.has_role(auth.uid(), 'receptionist')
-);
-
-CREATE POLICY "Patients can view their own registration" 
-ON public.patient_registration_queue 
-FOR SELECT 
-USING (auth.uid() = user_id);
-
--- Indexes for patient_registration_queue
-CREATE INDEX idx_patient_registration_queue_status ON public.patient_registration_queue(status);
-CREATE INDEX idx_patient_registration_queue_patient ON public.patient_registration_queue(patient_id);
-CREATE INDEX idx_patient_registration_queue_user ON public.patient_registration_queue(user_id);
-
--- ============================================================================
 -- TABLE: patient_messages
--- Description: Stores messages between patients and doctors
--- ============================================================================
-CREATE TABLE public.patient_messages (
+CREATE TABLE IF NOT EXISTS public.patient_messages (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    doctor_id UUID NOT NULL,                         -- Reference to doctor
-    message TEXT NOT NULL,                           -- Message content
-    sender_type TEXT NOT NULL                        -- Who sent the message
-        CHECK (sender_type IN ('patient', 'doctor')),
-    read BOOLEAN DEFAULT false,                      -- Read status
+    patient_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    message TEXT NOT NULL,
+    sender_type TEXT NOT NULL CHECK (sender_type IN ('patient', 'doctor')),
+    read BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.patient_messages ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for patient_messages
-CREATE POLICY "Patients can view their own messages" ON public.patient_messages
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Patients can send messages" ON public.patient_messages
-    FOR INSERT WITH CHECK (
-        patient_id = public.get_patient_id_for_user(auth.uid()) AND 
-        sender_type = 'patient'
-    );
-
-CREATE POLICY "Doctors can view messages from their patients" ON public.patient_messages
-    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can send messages" ON public.patient_messages
-    FOR INSERT WITH CHECK (
-        doctor_id = public.get_doctor_id_for_user(auth.uid()) AND 
-        sender_type = 'doctor'
-    );
-
-CREATE POLICY "Message participants can update read status" ON public.patient_messages
-    FOR UPDATE USING (
-        patient_id = public.get_patient_id_for_user(auth.uid()) OR
-        doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Admins can manage all messages" ON public.patient_messages
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for patient_messages
-CREATE INDEX idx_patient_messages_patient ON public.patient_messages(patient_id);
-CREATE INDEX idx_patient_messages_doctor ON public.patient_messages(doctor_id);
-CREATE INDEX idx_patient_messages_read ON public.patient_messages(read);
-CREATE INDEX idx_patient_messages_created ON public.patient_messages(created_at DESC);
+-- TABLE: patient_vitals
+CREATE TABLE IF NOT EXISTS public.patient_vitals (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    recorded_by UUID NOT NULL,
+    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    blood_pressure_systolic INTEGER,
+    blood_pressure_diastolic INTEGER,
+    heart_rate INTEGER,
+    temperature NUMERIC(4, 1),
+    spo2 INTEGER,
+    respiratory_rate INTEGER,
+    weight NUMERIC(5, 2),
+    height NUMERIC(5, 2),
+    bmi NUMERIC(4, 1),
+    pain_level INTEGER CHECK (pain_level >= 0 AND pain_level <= 10),
+    blood_glucose NUMERIC(6, 2),
+    is_abnormal BOOLEAN DEFAULT false,
+    abnormal_flags TEXT[],
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
 -- ============================================================================
 -- SECTION 4: CLINICAL TABLES
 -- ============================================================================
 
--- ============================================================================
 -- TABLE: appointments
--- Description: Stores patient appointment scheduling
--- ============================================================================
-CREATE TABLE public.appointments (
+CREATE TABLE IF NOT EXISTS public.appointments (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    doctor_id UUID NOT NULL,                         -- Reference to doctor
-    department_id UUID,                              -- Reference to department
-    appointment_date DATE NOT NULL,                  -- Date of appointment
-    appointment_time TIME NOT NULL,                  -- Time of appointment
-    duration INTEGER DEFAULT 30,                     -- Duration in minutes
-    type VARCHAR(50) DEFAULT 'consultation'          -- Appointment type
-        CHECK (type IN ('consultation', 'follow_up', 'emergency', 'surgery', 'lab_test', 'other')),
-    status VARCHAR(20) DEFAULT 'scheduled'           -- Appointment status
-        CHECK (status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show')),
-    symptoms TEXT,                                   -- Patient reported symptoms
-    notes TEXT,                                      -- Additional notes
-    deleted_at TIMESTAMP WITH TIME ZONE,             -- Soft delete timestamp
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for appointments
-CREATE POLICY "Patients can view own appointments" ON public.appointments
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Patients can create own appointments" ON public.appointments
-    FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can view own appointments" ON public.appointments
-    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can update own appointments" ON public.appointments
-    FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()))
-    WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Nurses can view all appointments" ON public.appointments
-    FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Receptionists can view all appointments" ON public.appointments
-    FOR SELECT USING (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Receptionists can insert appointments" ON public.appointments
-    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Receptionists can update appointments" ON public.appointments
-    FOR UPDATE USING (public.has_role(auth.uid(), 'receptionist'))
-    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Receptionists can delete appointments" ON public.appointments
-    FOR DELETE USING (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Admins can manage all appointments" ON public.appointments
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for appointments
-CREATE INDEX idx_appointments_patient_id ON public.appointments(patient_id);
-CREATE INDEX idx_appointments_doctor_id ON public.appointments(doctor_id);
-CREATE INDEX idx_appointments_department_id ON public.appointments(department_id);
-CREATE INDEX idx_appointments_date ON public.appointments(appointment_date);
-CREATE INDEX idx_appointments_status ON public.appointments(status);
-CREATE INDEX idx_appointments_date_time ON public.appointments(appointment_date, appointment_time);
-CREATE INDEX idx_appointments_deleted_at ON public.appointments(deleted_at);
-
--- ============================================================================
--- TABLE: medical_records
--- Description: Stores patient medical visit records
--- ============================================================================
-CREATE TABLE public.medical_records (
-    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    doctor_id UUID NOT NULL,                         -- Reference to treating doctor
-    visit_date DATE NOT NULL,                        -- Date of visit
-    diagnosis TEXT,                                  -- Medical diagnosis
-    symptoms TEXT,                                   -- Reported symptoms
-    treatment TEXT,                                  -- Treatment prescribed
-    medications TEXT,                                -- Medications prescribed
-    notes TEXT,                                      -- Doctor's notes
-    follow_up_date DATE,                             -- Scheduled follow-up date
-    deleted_at TIMESTAMP WITH TIME ZONE,             -- Soft delete timestamp
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.medical_records ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for medical_records
-CREATE POLICY "Patients can view own medical records" ON public.medical_records
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can view own medical records" ON public.medical_records
-    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can create medical records" ON public.medical_records
-    FOR INSERT WITH CHECK (
-        public.has_role(auth.uid(), 'doctor') AND 
-        doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Doctors can update own medical records" ON public.medical_records
-    FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()))
-    WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Nurses can view all medical records" ON public.medical_records
-    FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Admins can manage all medical records" ON public.medical_records
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for medical_records
-CREATE INDEX idx_medical_records_patient_id ON public.medical_records(patient_id);
-CREATE INDEX idx_medical_records_doctor_id ON public.medical_records(doctor_id);
-CREATE INDEX idx_medical_records_visit_date ON public.medical_records(visit_date);
-CREATE INDEX idx_medical_records_deleted_at ON public.medical_records(deleted_at);
-
--- ============================================================================
--- TABLE: prescriptions
--- Description: Stores medication prescriptions
--- ============================================================================
-CREATE TABLE public.prescriptions (
-    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    doctor_id UUID NOT NULL,                         -- Reference to prescribing doctor
-    medication_name VARCHAR(255) NOT NULL,           -- Name of medication
-    dosage VARCHAR(100),                             -- Dosage instructions
-    frequency VARCHAR(100),                          -- How often to take
-    duration VARCHAR(100),                           -- Duration of prescription
-    quantity INTEGER,                                -- Quantity prescribed
-    instructions TEXT,                               -- Special instructions
-    side_effects TEXT,                               -- Known side effects
-    drug_interactions TEXT,                          -- Drug interaction warnings
-    date_prescribed DATE DEFAULT CURRENT_DATE,       -- Date prescribed
-    status VARCHAR(20) DEFAULT 'active'              -- Prescription status
-        CHECK (status IN ('active', 'completed', 'cancelled', 'expired')),
-    deleted_at TIMESTAMP WITH TIME ZONE,             -- Soft delete timestamp
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.prescriptions ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for prescriptions
-CREATE POLICY "Patients can view own prescriptions" ON public.prescriptions
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can view own prescriptions" ON public.prescriptions
-    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can create prescriptions" ON public.prescriptions
-    FOR INSERT WITH CHECK (
-        public.has_role(auth.uid(), 'doctor') AND 
-        doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Doctors can update own prescriptions" ON public.prescriptions
-    FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()))
-    WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Nurses can view all prescriptions" ON public.prescriptions
-    FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Pharmacists can view all prescriptions" ON public.prescriptions
-    FOR SELECT USING (public.has_role(auth.uid(), 'pharmacist'));
-
-CREATE POLICY "Pharmacists can update prescriptions" ON public.prescriptions
-    FOR UPDATE USING (public.has_role(auth.uid(), 'pharmacist'))
-    WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
-
-CREATE POLICY "Admins can manage all prescriptions" ON public.prescriptions
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for prescriptions
-CREATE INDEX idx_prescriptions_patient_id ON public.prescriptions(patient_id);
-CREATE INDEX idx_prescriptions_doctor_id ON public.prescriptions(doctor_id);
-CREATE INDEX idx_prescriptions_status ON public.prescriptions(status);
-CREATE INDEX idx_prescriptions_date ON public.prescriptions(date_prescribed);
-CREATE INDEX idx_prescriptions_deleted_at ON public.prescriptions(deleted_at);
-
--- ============================================================================
--- TABLE: prescription_refill_requests
--- Description: Stores patient prescription refill requests
--- ============================================================================
-CREATE TABLE public.prescription_refill_requests (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    prescription_id UUID NOT NULL,                   -- Reference to original prescription
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    status TEXT NOT NULL DEFAULT 'pending'           -- Request status
-        CHECK (status IN ('pending', 'approved', 'denied', 'completed')),
-    reason TEXT,                                     -- Reason for refill
-    notes TEXT,                                      -- Additional notes
-    reviewed_by UUID,                                -- Staff who reviewed
-    reviewed_at TIMESTAMP WITH TIME ZONE,            -- When reviewed
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.prescription_refill_requests ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for prescription_refill_requests
-CREATE POLICY "Patients can view their own refill requests" ON public.prescription_refill_requests
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Patients can create refill requests" ON public.prescription_refill_requests
-    FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can view refill requests for their prescriptions" ON public.prescription_refill_requests
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.prescriptions p 
-            WHERE p.id = prescription_id 
-            AND p.doctor_id = public.get_doctor_id_for_user(auth.uid())
-        )
-    );
-
-CREATE POLICY "Doctors can update refill requests for their prescriptions" ON public.prescription_refill_requests
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.prescriptions p 
-            WHERE p.id = prescription_id 
-            AND p.doctor_id = public.get_doctor_id_for_user(auth.uid())
-        )
-    );
-
-CREATE POLICY "Pharmacists can view all refill requests" ON public.prescription_refill_requests
-    FOR SELECT USING (public.has_role(auth.uid(), 'pharmacist'));
-
-CREATE POLICY "Pharmacists can update refill requests" ON public.prescription_refill_requests
-    FOR UPDATE USING (public.has_role(auth.uid(), 'pharmacist'));
-
-CREATE POLICY "Admins can manage all refill requests" ON public.prescription_refill_requests
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for prescription_refill_requests
-CREATE INDEX idx_refill_requests_prescription ON public.prescription_refill_requests(prescription_id);
-CREATE INDEX idx_refill_requests_patient ON public.prescription_refill_requests(patient_id);
-CREATE INDEX idx_refill_requests_status ON public.prescription_refill_requests(status);
-
--- ============================================================================
--- TABLE: lab_tests
--- Description: Stores laboratory test orders and results
--- ============================================================================
-CREATE TABLE public.lab_tests (
-    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    doctor_id UUID NOT NULL,                         -- Reference to ordering doctor
-    test_name VARCHAR(255) NOT NULL,                 -- Name of laboratory test
-    test_type VARCHAR(100),                          -- Category of test
-    test_date DATE DEFAULT CURRENT_DATE,             -- Date test was conducted
-    results TEXT,                                    -- Test results
-    normal_range VARCHAR(100),                       -- Normal reference range
-    status VARCHAR(20) DEFAULT 'pending'             -- Test status
-        CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
-    priority VARCHAR(20) DEFAULT 'normal'            -- Priority level
-        CHECK (priority IN ('normal', 'urgent', 'stat')),
-    lab_technician VARCHAR(200),                     -- Technician who performed test
-    cost NUMERIC(10, 2),                             -- Cost of test
-    notes TEXT,                                      -- Additional notes
-    report_image_url TEXT,                           -- URL to lab report image
-    deleted_at TIMESTAMP WITH TIME ZONE,             -- Soft delete timestamp
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.lab_tests ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for lab_tests
-CREATE POLICY "Patients can view own lab tests" ON public.lab_tests
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can view own lab tests" ON public.lab_tests
-    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can create lab tests" ON public.lab_tests
-    FOR INSERT WITH CHECK (
-        public.has_role(auth.uid(), 'doctor') AND 
-        doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Doctors can update own lab tests" ON public.lab_tests
-    FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()))
-    WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Nurses can view all lab tests" ON public.lab_tests
-    FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Nurses can update lab tests" ON public.lab_tests
-    FOR UPDATE USING (public.has_role(auth.uid(), 'nurse'))
-    WITH CHECK (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Admins can manage all lab tests" ON public.lab_tests
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Lab technicians can view all lab tests" ON public.lab_tests
-    FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
-
-CREATE POLICY "Lab technicians can update lab tests" ON public.lab_tests
-    FOR UPDATE USING (public.has_role(auth.uid(), 'lab_technician'))
-    WITH CHECK (public.has_role(auth.uid(), 'lab_technician'));
-
--- Indexes for lab_tests
-CREATE INDEX idx_lab_tests_patient_id ON public.lab_tests(patient_id);
-CREATE INDEX idx_lab_tests_doctor_id ON public.lab_tests(doctor_id);
-CREATE INDEX idx_lab_tests_status ON public.lab_tests(status);
-CREATE INDEX idx_lab_tests_date ON public.lab_tests(test_date);
-CREATE INDEX idx_lab_tests_deleted_at ON public.lab_tests(deleted_at);
-
--- ============================================================================
--- SECTION 5: FACILITY MANAGEMENT TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: rooms
--- Description: Stores hospital room information
--- ============================================================================
-CREATE TABLE public.rooms (
-    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    room_number VARCHAR(20) NOT NULL UNIQUE,         -- Room number/identifier
-    room_type VARCHAR(50) NOT NULL                   -- Type of room
-        CHECK (room_type IN ('general', 'private', 'icu', 'operating', 'emergency', 'maternity', 'pediatric')),
-    department VARCHAR(100),                         -- Department assignment
-    capacity INTEGER DEFAULT 1,                      -- Maximum patient capacity
-    current_occupancy INTEGER DEFAULT 0,             -- Current occupancy
-    floor INTEGER,                                   -- Floor number
-    amenities TEXT[],                                -- Array of amenities
-    daily_rate NUMERIC(10, 2),                       -- Daily room rate
-    status VARCHAR(20) DEFAULT 'available'           -- Room status
-        CHECK (status IN ('available', 'occupied', 'maintenance', 'reserved', 'cleaning')),
-    notes TEXT,                                      -- Additional notes
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for rooms
-CREATE POLICY "Staff can view rooms" ON public.rooms
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'doctor') OR
-        public.has_role(auth.uid(), 'nurse') OR
-        public.has_role(auth.uid(), 'receptionist')
-    );
-
-CREATE POLICY "Admins and nurses can manage rooms" ON public.rooms
-    FOR ALL USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'nurse')
-    )
-    WITH CHECK (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'nurse')
-    );
-
--- Indexes for rooms
-CREATE INDEX idx_rooms_type ON public.rooms(room_type);
-CREATE INDEX idx_rooms_status ON public.rooms(status);
-CREATE INDEX idx_rooms_department ON public.rooms(department);
-CREATE INDEX idx_rooms_floor ON public.rooms(floor);
-
--- ============================================================================
--- TABLE: room_assignments
--- Description: Stores patient room/bed assignments
--- ============================================================================
-CREATE TABLE public.room_assignments (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    room_id UUID NOT NULL,                           -- Reference to room
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    bed_number INTEGER NOT NULL,                     -- Bed number in room
-    admission_date DATE NOT NULL DEFAULT CURRENT_DATE, -- Admission date
-    discharge_date DATE,                             -- Discharge date (null if current)
-    admission_reason TEXT DEFAULT 'general',         -- Reason for admission
-    surgery_id UUID,                                 -- Reference to surgery (if surgical admission)
-    assigned_by UUID,                                -- Staff who made assignment
-    status VARCHAR(20) NOT NULL DEFAULT 'active'     -- Assignment status
-        CHECK (status IN ('active', 'discharged', 'transferred')),
-    notes TEXT,                                      -- Additional notes
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.room_assignments ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for room_assignments
-CREATE POLICY "Staff can view room assignments" ON public.room_assignments
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'doctor') OR
-        public.has_role(auth.uid(), 'nurse') OR
-        public.has_role(auth.uid(), 'receptionist')
-    );
-
-CREATE POLICY "Admins and nurses can manage room assignments" ON public.room_assignments
-    FOR ALL USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'nurse')
-    )
-    WITH CHECK (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'nurse')
-    );
-
--- Indexes for room_assignments
-CREATE INDEX idx_room_assignments_room ON public.room_assignments(room_id);
-CREATE INDEX idx_room_assignments_patient ON public.room_assignments(patient_id);
-CREATE INDEX idx_room_assignments_status ON public.room_assignments(status);
-CREATE INDEX idx_room_assignments_surgery ON public.room_assignments(surgery_id);
-
--- ============================================================================
--- TABLE: inventory
--- Description: Stores hospital inventory and medical supplies
--- ============================================================================
-CREATE TABLE public.inventory (
-    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    item_name VARCHAR(255) NOT NULL,                 -- Name of inventory item
-    category VARCHAR(100),                           -- Item category
-    current_stock INTEGER NOT NULL DEFAULT 0,        -- Current stock quantity
-    minimum_stock INTEGER DEFAULT 10,                -- Minimum stock threshold
-    maximum_stock INTEGER DEFAULT 1000,              -- Maximum stock capacity
-    unit_price NUMERIC(10, 2),                       -- Price per unit
-    supplier VARCHAR(255),                           -- Supplier name
-    batch_number VARCHAR(100),                       -- Batch/lot number
-    expiry_date DATE,                                -- Expiration date
-    location VARCHAR(100),                           -- Storage location
-    last_restocked DATE,                             -- Last restock date
-    status VARCHAR(20) DEFAULT 'available'           -- Item status
-        CHECK (status IN ('available', 'low_stock', 'out_of_stock', 'expired', 'discontinued')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for inventory
-CREATE POLICY "Staff can view inventory" ON public.inventory
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'pharmacist') OR
-        public.has_role(auth.uid(), 'nurse')
-    );
-
-CREATE POLICY "Pharmacists can insert inventory" ON public.inventory
-    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
-
-CREATE POLICY "Pharmacists can update inventory" ON public.inventory
-    FOR UPDATE USING (public.has_role(auth.uid(), 'pharmacist'))
-    WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
-
-CREATE POLICY "Admins can manage all inventory" ON public.inventory
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for inventory
-CREATE INDEX idx_inventory_category ON public.inventory(category);
-CREATE INDEX idx_inventory_status ON public.inventory(status);
-CREATE INDEX idx_inventory_expiry ON public.inventory(expiry_date);
-CREATE INDEX idx_inventory_stock ON public.inventory(current_stock);
-
--- ============================================================================
--- SECTION 6: FINANCIAL TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: payments
--- Description: Stores billing and payment transactions
--- ============================================================================
-CREATE TABLE public.payments (
-    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    amount NUMERIC(12, 2) NOT NULL,                  -- Payment amount
-    payment_date DATE DEFAULT CURRENT_DATE,          -- Date of payment
-    payment_method VARCHAR(50) DEFAULT 'cash'        -- Payment method
-        CHECK (payment_method IN ('cash', 'credit_card', 'debit_card', 'insurance', 'bank_transfer', 'check')),
-    payment_status VARCHAR(20) DEFAULT 'pending'     -- Payment status
-        CHECK (payment_status IN ('pending', 'completed', 'failed', 'refunded', 'partial')),
-    description TEXT,                                -- Payment description
-    invoice_number VARCHAR(50),                      -- Invoice reference number
-    transaction_id VARCHAR(100),                     -- Transaction ID for electronic payments
-    deleted_at TIMESTAMP WITH TIME ZONE,             -- Soft delete timestamp
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for payments
-CREATE POLICY "Patients can view own payments" ON public.payments
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Receptionists can view all payments" ON public.payments
-    FOR SELECT USING (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Receptionists can insert payments" ON public.payments
-    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Receptionists can update payments" ON public.payments
-    FOR UPDATE USING (public.has_role(auth.uid(), 'receptionist'))
-    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Admins can manage all payments" ON public.payments
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for payments
-CREATE INDEX idx_payments_patient_id ON public.payments(patient_id);
-CREATE INDEX idx_payments_status ON public.payments(payment_status);
-CREATE INDEX idx_payments_date ON public.payments(payment_date);
-CREATE INDEX idx_payments_invoice ON public.payments(invoice_number);
-CREATE INDEX idx_payments_deleted_at ON public.payments(deleted_at);
-
--- ============================================================================
--- SECTION 7: BLOOD BANK TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: blood_groups
--- Description: Stores blood group reference data
--- ============================================================================
-CREATE TABLE public.blood_groups (
-    group_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    group_name VARCHAR(10) NOT NULL UNIQUE,          -- Blood group name (A+, A-, B+, etc.)
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.blood_groups ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for blood_groups
-CREATE POLICY "Anyone can view blood groups" ON public.blood_groups
-    FOR SELECT USING (true);
-
-CREATE POLICY "Admins can manage blood groups" ON public.blood_groups
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- ============================================================================
--- TABLE: blood_stock
--- Description: Stores current blood inventory levels
--- ============================================================================
-CREATE TABLE public.blood_stock (
-    stock_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    blood_group_id UUID NOT NULL,                    -- Reference to blood group
-    total_units INTEGER NOT NULL DEFAULT 0,          -- Current stock units
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.blood_stock ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for blood_stock
-CREATE POLICY "Authenticated users can view blood stock" ON public.blood_stock
-    FOR SELECT USING (true);
-
-CREATE POLICY "Staff can manage blood stock" ON public.blood_stock
-    FOR ALL USING (true) WITH CHECK (true);
-
--- Indexes for blood_stock
-CREATE INDEX idx_blood_stock_group ON public.blood_stock(blood_group_id);
-
--- ============================================================================
--- TABLE: donors
--- Description: Stores blood donor information
--- ============================================================================
-CREATE TABLE public.donors (
-    donor_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    name VARCHAR(200) NOT NULL,                      -- Donor name
-    contact VARCHAR(20),                             -- Contact number
-    blood_group_id UUID NOT NULL,                    -- Reference to blood group
-    last_donation_date DATE,                         -- Last donation date
-    status VARCHAR(20) NOT NULL DEFAULT 'Eligible'   -- Donor status
-        CHECK (status IN ('Eligible', 'Deferred', 'Ineligible')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.donors ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for donors
-CREATE POLICY "Authenticated users can view donors" ON public.donors
-    FOR SELECT USING (true);
-
-CREATE POLICY "Staff can insert donors" ON public.donors
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Staff can update donors" ON public.donors
-    FOR UPDATE USING (true) WITH CHECK (true);
-
-CREATE POLICY "Admins can delete donors" ON public.donors
-    FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for donors
-CREATE INDEX idx_donors_blood_group ON public.donors(blood_group_id);
-CREATE INDEX idx_donors_status ON public.donors(status);
-
--- ============================================================================
--- TABLE: blood_issues
--- Description: Stores blood issue/transfusion records
--- ============================================================================
-CREATE TABLE public.blood_issues (
-    issue_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    blood_group_id UUID NOT NULL,                    -- Reference to blood group
-    units_given INTEGER NOT NULL,                    -- Units issued
-    issue_date DATE NOT NULL DEFAULT CURRENT_DATE,   -- Date of issue
-    issued_by UUID,                                  -- Staff who issued
-    notes TEXT,                                      -- Clinical notes
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.blood_issues ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for blood_issues
-CREATE POLICY "Authenticated users can view blood issues" ON public.blood_issues
-    FOR SELECT USING (true);
-
-CREATE POLICY "Staff can create blood issues" ON public.blood_issues
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Staff can update blood issues" ON public.blood_issues
-    FOR UPDATE USING (true) WITH CHECK (true);
-
-CREATE POLICY "Admins can delete blood issues" ON public.blood_issues
-    FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for blood_issues
-CREATE INDEX idx_blood_issues_patient ON public.blood_issues(patient_id);
-CREATE INDEX idx_blood_issues_group ON public.blood_issues(blood_group_id);
-CREATE INDEX idx_blood_issues_date ON public.blood_issues(issue_date);
-
--- ============================================================================
--- TABLE: blood_stock_transactions
--- Description: Logs all blood stock changes for audit
--- ============================================================================
-CREATE TABLE public.blood_stock_transactions (
-    transaction_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    blood_group_id UUID NOT NULL,                    -- Reference to blood group
-    transaction_type VARCHAR(20) NOT NULL,           -- add, issue, expired, adjustment
-    units INTEGER NOT NULL,                          -- Units changed
-    previous_balance INTEGER NOT NULL,               -- Balance before
-    new_balance INTEGER NOT NULL,                    -- Balance after
-    source VARCHAR(100),                             -- Source of change
-    reference_id UUID,                               -- Reference to related record
-    performed_by UUID,                               -- Staff who performed
-    notes TEXT,                                      -- Transaction notes
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.blood_stock_transactions ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for blood_stock_transactions
-CREATE POLICY "Authenticated users can view stock transactions" ON public.blood_stock_transactions
-    FOR SELECT USING (true);
-
-CREATE POLICY "Staff can insert stock transactions" ON public.blood_stock_transactions
-    FOR INSERT WITH CHECK (true);
-
--- Indexes for blood_stock_transactions
-CREATE INDEX idx_blood_transactions_group ON public.blood_stock_transactions(blood_group_id);
-CREATE INDEX idx_blood_transactions_date ON public.blood_stock_transactions(created_at);
-CREATE INDEX idx_blood_transactions_type ON public.blood_stock_transactions(transaction_type);
-
--- ============================================================================
--- SECTION 8: OPERATION DEPARTMENT TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: operation_theatres
--- Description: Stores operation theatre information
--- ============================================================================
-CREATE TABLE public.operation_theatres (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    ot_name VARCHAR(100) NOT NULL,                   -- OT name/number
-    floor INTEGER,                                   -- Floor location
-    equipment TEXT[],                                -- Available equipment
-    status VARCHAR(20) NOT NULL DEFAULT 'available'  -- OT status
-        CHECK (status IN ('available', 'occupied', 'maintenance', 'cleaning')),
-    notes TEXT,                                      -- Additional notes
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.operation_theatres ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for operation_theatres
-CREATE POLICY "Public select operation_theatres" ON public.operation_theatres
-    FOR SELECT USING (true);
-
-CREATE POLICY "Public insert operation_theatres" ON public.operation_theatres
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Public update operation_theatres" ON public.operation_theatres
-    FOR UPDATE USING (true) WITH CHECK (true);
-
-CREATE POLICY "Public delete operation_theatres" ON public.operation_theatres
-    FOR DELETE USING (true);
-
--- Indexes for operation_theatres
-CREATE INDEX idx_ot_status ON public.operation_theatres(status);
-CREATE INDEX idx_ot_floor ON public.operation_theatres(floor);
-
--- ============================================================================
--- TABLE: surgeries
--- Description: Stores surgery/operation records
--- ============================================================================
-CREATE TABLE public.surgeries (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    doctor_id UUID NOT NULL,                         -- Reference to lead surgeon
-    theatre_id UUID,                                 -- Reference to operation theatre
-    surgery_type VARCHAR(200) NOT NULL,              -- Type of surgery
-    scheduled_date DATE NOT NULL,                    -- Scheduled date
-    scheduled_time TIME NOT NULL,                    -- Scheduled time
-    actual_start_time TIMESTAMP WITH TIME ZONE,      -- Actual start time
-    actual_end_time TIMESTAMP WITH TIME ZONE,        -- Actual end time
-    estimated_duration INTEGER,                      -- Estimated duration in minutes
-    anesthesia_type VARCHAR(50),                     -- Type of anesthesia
-    pre_operative_diagnosis TEXT,                    -- Pre-op diagnosis
-    post_operative_diagnosis TEXT,                   -- Post-op diagnosis
-    procedure_notes TEXT,                            -- Procedure notes
-    complications TEXT,                              -- Any complications
-    blood_units_used INTEGER DEFAULT 0,              -- Blood units used
-    status VARCHAR(20) NOT NULL DEFAULT 'scheduled'  -- Surgery status
-        CHECK (status IN ('scheduled', 'in_progress', 'completed', 'cancelled', 'postponed')),
-    priority VARCHAR(20) DEFAULT 'normal'            -- Priority level
-        CHECK (priority IN ('normal', 'urgent', 'emergency')),
-    consent_signed BOOLEAN DEFAULT false,            -- Consent form signed
-    consent_signed_at TIMESTAMP WITH TIME ZONE,      -- When consent was signed
-    consent_signature_url TEXT,                      -- URL to signature image
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.surgeries ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for surgeries
-CREATE POLICY "Public select surgeries" ON public.surgeries
-    FOR SELECT USING (true);
-
-CREATE POLICY "Public insert surgeries" ON public.surgeries
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Public update surgeries" ON public.surgeries
-    FOR UPDATE USING (true) WITH CHECK (true);
-
-CREATE POLICY "Public delete surgeries" ON public.surgeries
-    FOR DELETE USING (true);
-
--- Indexes for surgeries
-CREATE INDEX idx_surgeries_patient ON public.surgeries(patient_id);
-CREATE INDEX idx_surgeries_doctor ON public.surgeries(doctor_id);
-CREATE INDEX idx_surgeries_theatre ON public.surgeries(theatre_id);
-CREATE INDEX idx_surgeries_status ON public.surgeries(status);
-CREATE INDEX idx_surgeries_date ON public.surgeries(scheduled_date);
-
--- ============================================================================
--- TABLE: surgery_team
--- Description: Stores surgery team member assignments
--- ============================================================================
-CREATE TABLE public.surgery_team (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    surgery_id UUID NOT NULL,                        -- Reference to surgery
-    staff_id UUID NOT NULL,                          -- Reference to staff member
-    staff_type VARCHAR(50) NOT NULL,                 -- Type of staff (doctor, nurse, anesthetist)
-    role VARCHAR(100) NOT NULL,                      -- Role in surgery
-    notes TEXT,                                      -- Additional notes
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.surgery_team ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for surgery_team
-CREATE POLICY "Public select surgery_team" ON public.surgery_team
-    FOR SELECT USING (true);
-
-CREATE POLICY "Public insert surgery_team" ON public.surgery_team
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Public update surgery_team" ON public.surgery_team
-    FOR UPDATE USING (true) WITH CHECK (true);
-
-CREATE POLICY "Public delete surgery_team" ON public.surgery_team
-    FOR DELETE USING (true);
-
--- Indexes for surgery_team
-CREATE INDEX idx_surgery_team_surgery ON public.surgery_team(surgery_id);
-CREATE INDEX idx_surgery_team_staff ON public.surgery_team(staff_id);
-
--- ============================================================================
--- TABLE: post_operation
--- Description: Stores post-operative care records
--- ============================================================================
-CREATE TABLE public.post_operation (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    surgery_id UUID NOT NULL,                        -- Reference to surgery
-    vital_signs JSONB,                               -- Post-op vital signs
-    recovery_notes TEXT,                             -- Recovery notes
-    complications TEXT,                              -- Any complications
-    medication_notes TEXT,                           -- Post-op medications
-    discharge_status VARCHAR(20) NOT NULL DEFAULT 'stable'
-        CHECK (discharge_status IN ('stable', 'critical', 'discharged', 'transferred')),
-    follow_up_date DATE,                             -- Follow-up appointment
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.post_operation ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for post_operation
-CREATE POLICY "Public select post_operation" ON public.post_operation
-    FOR SELECT USING (true);
-
-CREATE POLICY "Public insert post_operation" ON public.post_operation
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Public update post_operation" ON public.post_operation
-    FOR UPDATE USING (true) WITH CHECK (true);
-
-CREATE POLICY "Public delete post_operation" ON public.post_operation
-    FOR DELETE USING (true);
-
--- Indexes for post_operation
-CREATE INDEX idx_post_op_surgery ON public.post_operation(surgery_id);
-
--- ============================================================================
--- SECTION 9: NOTIFICATION & COMMUNICATION TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: notifications
--- Description: Stores system notifications for users
--- ============================================================================
-CREATE TABLE public.notifications (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL,                           -- Reference to user
-    title TEXT NOT NULL,                             -- Notification title
-    message TEXT NOT NULL,                           -- Notification message body
-    type TEXT NOT NULL                               -- Notification type
-        CHECK (type IN (
-            'appointment', 'prescription', 'lab_result', 'payment', 
-            'system', 'reminder', 'alert', 'medication', 'critical', 
-            'general', 'patient_registration', 'surgery', 'blood_bank'
-        )),
-    priority TEXT NOT NULL DEFAULT 'normal'          -- Priority level
-        CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
-    read BOOLEAN NOT NULL DEFAULT false,             -- Read status
-    action_url TEXT,                                 -- URL for action button
-    metadata JSONB DEFAULT '{}'::jsonb,              -- Additional metadata
-    expires_at TIMESTAMP WITH TIME ZONE,             -- Expiration timestamp
-    sent_via_email BOOLEAN DEFAULT false,            -- Email sent flag
-    sent_via_sms BOOLEAN DEFAULT false,              -- SMS sent flag
-    sent_via_push BOOLEAN DEFAULT false,             -- Push notification flag
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for notifications
-CREATE POLICY "Users can view their own notifications" ON public.notifications
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own notifications" ON public.notifications
-    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own notifications" ON public.notifications
-    FOR DELETE USING (auth.uid() = user_id);
-
-CREATE POLICY "System can insert notifications" ON public.notifications
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Admins can manage all notifications" ON public.notifications
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for notifications
-CREATE INDEX idx_notifications_user_id ON public.notifications(user_id);
-CREATE INDEX idx_notifications_read ON public.notifications(read);
-CREATE INDEX idx_notifications_type ON public.notifications(type);
-CREATE INDEX idx_notifications_created_at ON public.notifications(created_at DESC);
-CREATE INDEX idx_notifications_priority ON public.notifications(priority);
-
--- ============================================================================
--- TABLE: reminders
--- Description: Stores user reminders and scheduled tasks
--- ============================================================================
-CREATE TABLE public.reminders (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL,                           -- Reference to user
-    title TEXT NOT NULL,                             -- Reminder title
-    description TEXT,                                -- Reminder description
-    reminder_type TEXT NOT NULL                      -- Type of reminder
-        CHECK (reminder_type IN ('appointment', 'medication', 'follow_up', 'lab_test', 'payment', 'general', 'custom')),
-    reminder_time TIMESTAMP WITH TIME ZONE NOT NULL, -- When to trigger reminder
-    status TEXT NOT NULL DEFAULT 'pending'           -- Reminder status
-        CHECK (status IN ('pending', 'sent', 'completed', 'cancelled', 'dismissed', 'expired')),
-    recurring BOOLEAN DEFAULT false,                 -- Is this recurring?
-    recurring_pattern TEXT,                          -- Recurring pattern (daily, weekly, monthly)
-    related_table TEXT,                              -- Related table name
-    related_id UUID,                                 -- Related record ID
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for reminders
-CREATE POLICY "Users can view their own reminders" ON public.reminders
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own reminders" ON public.reminders
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own reminders" ON public.reminders
-    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own reminders" ON public.reminders
-    FOR DELETE USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can manage all reminders" ON public.reminders
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for reminders
-CREATE INDEX idx_reminders_user_id ON public.reminders(user_id);
-CREATE INDEX idx_reminders_time ON public.reminders(reminder_time);
-CREATE INDEX idx_reminders_status ON public.reminders(status);
-
--- ============================================================================
--- SECTION 10: AUDIT & COMPLIANCE TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: phi_audit_log
--- Description: HIPAA-compliant audit log for PHI access
--- ============================================================================
-CREATE TABLE public.phi_audit_log (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    performed_by UUID NOT NULL,                      -- User who performed action
-    performer_name TEXT,                             -- Name of performer
-    performer_role TEXT,                             -- Role of performer
-    action TEXT NOT NULL                             -- Action performed
-        CHECK (action IN ('view', 'create', 'update', 'delete', 'export', 'print')),
-    table_name TEXT NOT NULL,                        -- Table accessed
-    record_id UUID NOT NULL,                         -- Record accessed
-    patient_id UUID,                                 -- Patient if applicable
-    old_values JSONB,                                -- Previous values (for updates)
-    new_values JSONB,                                -- New values (for creates/updates)
-    changed_fields TEXT[],                           -- Fields that changed
-    reason TEXT,                                     -- Reason for access
-    ip_address TEXT,                                 -- Client IP address
-    user_agent TEXT,                                 -- Client user agent
-    session_id TEXT,                                 -- Session identifier
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.phi_audit_log ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for phi_audit_log
-CREATE POLICY "Admins can view all audit logs" ON public.phi_audit_log
-    FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "System can insert audit logs" ON public.phi_audit_log
-    FOR INSERT WITH CHECK (true);
-
--- Indexes for phi_audit_log
-CREATE INDEX idx_phi_audit_performed_by ON public.phi_audit_log(performed_by);
-CREATE INDEX idx_phi_audit_table ON public.phi_audit_log(table_name);
-CREATE INDEX idx_phi_audit_record ON public.phi_audit_log(record_id);
-CREATE INDEX idx_phi_audit_patient ON public.phi_audit_log(patient_id);
-CREATE INDEX idx_phi_audit_action ON public.phi_audit_log(action);
-CREATE INDEX idx_phi_audit_created_at ON public.phi_audit_log(created_at DESC);
-
--- ============================================================================
--- SECTION 11: ADDITIONAL CLINICAL TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: patient_vitals
--- Description: Stores patient vital signs measurements
--- ============================================================================
-CREATE TABLE public.patient_vitals (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    recorded_by UUID NOT NULL,                       -- Staff who recorded vitals
-    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    blood_pressure_systolic INTEGER,                 -- Systolic BP (mmHg)
-    blood_pressure_diastolic INTEGER,                -- Diastolic BP (mmHg)
-    heart_rate INTEGER,                              -- Heart rate (bpm)
-    temperature NUMERIC(4,1),                        -- Temperature (°F or °C)
-    spo2 INTEGER,                                    -- Oxygen saturation (%)
-    respiratory_rate INTEGER,                        -- Breaths per minute
-    weight NUMERIC(5,2),                             -- Weight (kg)
-    height NUMERIC(5,2),                             -- Height (cm)
-    bmi NUMERIC(4,1),                                -- Body Mass Index
-    pain_level INTEGER CHECK (pain_level >= 0 AND pain_level <= 10),
-    blood_glucose NUMERIC(5,1),                      -- Blood glucose (mg/dL)
-    is_abnormal BOOLEAN DEFAULT false,               -- Flag for abnormal readings
-    abnormal_flags TEXT[],                           -- List of abnormal readings
+    patient_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    department_id UUID,
+    appointment_date DATE NOT NULL,
+    appointment_time TIME NOT NULL,
+    duration INTEGER DEFAULT 30,
+    type VARCHAR(50) DEFAULT 'consultation',
+    status VARCHAR(20) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show')),
+    symptoms TEXT,
     notes TEXT,
+    deleted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.patient_vitals ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for patient_vitals
-CREATE POLICY "Admins can manage all vitals" ON public.patient_vitals
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Patients can view own vitals" ON public.patient_vitals
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Nurses can view all vitals" ON public.patient_vitals
-    FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Nurses can insert vitals" ON public.patient_vitals
-    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Nurses can update vitals" ON public.patient_vitals
-    FOR UPDATE USING (public.has_role(auth.uid(), 'nurse'))
-    WITH CHECK (public.has_role(auth.uid(), 'nurse'));
-
-CREATE POLICY "Doctors can view vitals for their patients" ON public.patient_vitals
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'doctor') AND 
-        public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), patient_id)
-    );
-
--- Indexes for patient_vitals
-CREATE INDEX idx_patient_vitals_patient_id ON public.patient_vitals(patient_id);
-CREATE INDEX idx_patient_vitals_recorded_at ON public.patient_vitals(recorded_at DESC);
-CREATE INDEX idx_patient_vitals_is_abnormal ON public.patient_vitals(is_abnormal);
-
--- ============================================================================
 -- TABLE: appointment_waitlist
--- Description: Manages appointment waiting list
--- ============================================================================
-CREATE TABLE public.appointment_waitlist (
+CREATE TABLE IF NOT EXISTS public.appointment_waitlist (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Reference to patient
-    doctor_id UUID,                                  -- Preferred doctor (optional)
-    department_id UUID,                              -- Preferred department
-    preferred_date_start DATE NOT NULL,              -- Earliest acceptable date
-    preferred_date_end DATE,                         -- Latest acceptable date
-    preferred_time_slots JSONB DEFAULT '[]'::jsonb,  -- Preferred time slots
-    priority VARCHAR(20) NOT NULL DEFAULT 'normal'
-        CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
-    status VARCHAR(20) NOT NULL DEFAULT 'waiting'
-        CHECK (status IN ('waiting', 'notified', 'scheduled', 'cancelled', 'expired')),
-    reason TEXT,                                     -- Reason for appointment
+    patient_id UUID NOT NULL,
+    doctor_id UUID,
+    department_id UUID,
+    preferred_date_start DATE NOT NULL,
+    preferred_date_end DATE,
+    preferred_time_slots JSONB DEFAULT '[]'::jsonb,
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    status VARCHAR(20) NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'notified', 'scheduled', 'cancelled', 'expired')),
+    reason TEXT,
     notes TEXT,
-    notified_at TIMESTAMP WITH TIME ZONE,            -- When patient was notified
-    responded_at TIMESTAMP WITH TIME ZONE,           -- When patient responded
-    response_deadline TIMESTAMP WITH TIME ZONE,      -- Deadline to respond
+    notified_at TIMESTAMP WITH TIME ZONE,
+    responded_at TIMESTAMP WITH TIME ZONE,
+    response_deadline TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.appointment_waitlist ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for appointment_waitlist
-CREATE POLICY "Admins can manage all waitlist entries" ON public.appointment_waitlist
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Receptionists can manage all waitlist entries" ON public.appointment_waitlist
-    FOR ALL USING (public.has_role(auth.uid(), 'receptionist'))
-    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Patients can view own waitlist entries" ON public.appointment_waitlist
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Patients can create own waitlist entries" ON public.appointment_waitlist
-    FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Patients can update own waitlist entries" ON public.appointment_waitlist
-    FOR UPDATE USING (patient_id = public.get_patient_id_for_user(auth.uid()))
-    WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Patients can cancel own waitlist entries" ON public.appointment_waitlist
-    FOR DELETE USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can view waitlist for their appointments" ON public.appointment_waitlist
-    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
--- Indexes for appointment_waitlist
-CREATE INDEX idx_appointment_waitlist_patient ON public.appointment_waitlist(patient_id);
-CREATE INDEX idx_appointment_waitlist_doctor ON public.appointment_waitlist(doctor_id);
-CREATE INDEX idx_appointment_waitlist_status ON public.appointment_waitlist(status);
-CREATE INDEX idx_appointment_waitlist_priority ON public.appointment_waitlist(priority);
-
--- ============================================================================
--- TABLE: referrals
--- Description: Manages patient referrals between doctors/departments
--- ============================================================================
-CREATE TABLE public.referrals (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Patient being referred
-    referring_doctor_id UUID NOT NULL,               -- Doctor making referral
-    receiving_doctor_id UUID,                        -- Doctor receiving referral
-    receiving_department_id UUID,                    -- Department receiving referral
-    reason TEXT NOT NULL,                            -- Reason for referral
-    diagnosis TEXT,                                  -- Current diagnosis
-    clinical_notes TEXT,                             -- Clinical notes
-    urgency VARCHAR(20) NOT NULL DEFAULT 'routine'
-        CHECK (urgency IN ('routine', 'urgent', 'emergency')),
-    status VARCHAR(20) NOT NULL DEFAULT 'pending'
-        CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled')),
-    response_notes TEXT,                             -- Notes from receiving doctor
-    responded_at TIMESTAMP WITH TIME ZONE,           -- When referral was responded to
-    completed_at TIMESTAMP WITH TIME ZONE,           -- When referral was completed
-    appointment_id UUID,                             -- Resulting appointment if any
+-- TABLE: medical_records
+CREATE TABLE IF NOT EXISTS public.medical_records (
+    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    visit_date DATE NOT NULL,
+    symptoms TEXT,
+    diagnosis TEXT,
+    diagnosis_code VARCHAR(20),
+    procedure_codes TEXT[],
+    treatment TEXT,
+    medications TEXT,
+    notes TEXT,
+    follow_up_date DATE,
+    deleted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
+-- TABLE: prescriptions
+CREATE TABLE IF NOT EXISTS public.prescriptions (
+    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    medication_name VARCHAR(200) NOT NULL,
+    dosage VARCHAR(100),
+    frequency VARCHAR(100),
+    duration VARCHAR(100),
+    quantity INTEGER,
+    instructions TEXT,
+    side_effects TEXT,
+    drug_interactions TEXT,
+    date_prescribed DATE DEFAULT CURRENT_DATE,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled', 'expired')),
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- RLS Policies for referrals
-CREATE POLICY "Admins can manage all referrals" ON public.referrals
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Doctors can view referrals they made or received" ON public.referrals
-    FOR SELECT USING (
-        referring_doctor_id = public.get_doctor_id_for_user(auth.uid()) OR
-        receiving_doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Doctors can create referrals" ON public.referrals
-    FOR INSERT WITH CHECK (
-        public.has_role(auth.uid(), 'doctor') AND
-        referring_doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Doctors can update referrals they're involved in" ON public.referrals
-    FOR UPDATE USING (
-        referring_doctor_id = public.get_doctor_id_for_user(auth.uid()) OR
-        receiving_doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Patients can view their own referrals" ON public.referrals
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
--- Indexes for referrals
-CREATE INDEX idx_referrals_patient ON public.referrals(patient_id);
-CREATE INDEX idx_referrals_referring_doctor ON public.referrals(referring_doctor_id);
-CREATE INDEX idx_referrals_receiving_doctor ON public.referrals(receiving_doctor_id);
-CREATE INDEX idx_referrals_status ON public.referrals(status);
-CREATE INDEX idx_referrals_urgency ON public.referrals(urgency);
-
--- ============================================================================
--- SECTION 12: INSURANCE & BILLING TABLES
--- ============================================================================
-
--- ============================================================================
--- TABLE: insurance_claims
--- Description: Manages insurance claim submissions
--- ============================================================================
-CREATE TABLE public.insurance_claims (
+-- TABLE: prescription_items
+CREATE TABLE IF NOT EXISTS public.prescription_items (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    patient_id UUID NOT NULL,                        -- Patient for the claim
-    appointment_id UUID,                             -- Related appointment
-    insurance_provider VARCHAR(100) NOT NULL,        -- Insurance company
-    policy_number VARCHAR(50) NOT NULL,              -- Policy number
-    claim_number VARCHAR(50),                        -- Claim reference number
-    service_date DATE NOT NULL,                      -- Date of service
-    submission_date DATE DEFAULT CURRENT_DATE,       -- When claim was submitted
-    total_amount NUMERIC(10,2) NOT NULL,             -- Total amount claimed
-    approved_amount NUMERIC(10,2),                   -- Amount approved
-    patient_responsibility NUMERIC(10,2),            -- Patient's portion
-    status VARCHAR(20) DEFAULT 'draft'
-        CHECK (status IN ('draft', 'submitted', 'pending', 'approved', 'denied', 'appealed', 'paid')),
-    diagnosis_codes TEXT[] DEFAULT '{}',             -- ICD-10 codes
-    procedure_codes TEXT[] DEFAULT '{}',             -- CPT codes
+    prescription_id UUID NOT NULL,
+    medication_name VARCHAR(200) NOT NULL,
+    dosage VARCHAR(100),
+    frequency VARCHAR(100),
+    duration VARCHAR(100),
+    quantity INTEGER,
+    route VARCHAR(50),
+    instructions TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: prescription_refill_requests
+CREATE TABLE IF NOT EXISTS public.prescription_refill_requests (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    prescription_id UUID NOT NULL,
+    patient_id UUID NOT NULL,
+    reason TEXT,
     notes TEXT,
-    denial_code VARCHAR(20),                         -- Denial reason code
-    denial_reason TEXT,                              -- Denial explanation
-    appeal_deadline DATE,                            -- Deadline for appeal
-    appeal_submitted BOOLEAN DEFAULT false,
-    appeal_notes TEXT,
-    submitted_by UUID,                               -- Who submitted the claim
-    reviewed_by UUID,                                -- Who reviewed the claim
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'denied')),
+    reviewed_by UUID,
     reviewed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.insurance_claims ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for insurance_claims
-CREATE POLICY "Admins can manage all claims" ON public.insurance_claims
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Receptionists can manage claims" ON public.insurance_claims
-    FOR ALL USING (public.has_role(auth.uid(), 'receptionist'))
-    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Patients can view own claims" ON public.insurance_claims
-    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can view claims for their patients" ON public.insurance_claims
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'doctor') AND
-        public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), patient_id)
-    );
-
--- Indexes for insurance_claims
-CREATE INDEX idx_insurance_claims_patient ON public.insurance_claims(patient_id);
-CREATE INDEX idx_insurance_claims_status ON public.insurance_claims(status);
-CREATE INDEX idx_insurance_claims_service_date ON public.insurance_claims(service_date);
-CREATE INDEX idx_insurance_claims_submission_date ON public.insurance_claims(submission_date);
-
--- ============================================================================
--- TABLE: insurance_claim_items
--- Description: Line items for insurance claims
--- ============================================================================
-CREATE TABLE public.insurance_claim_items (
+-- TABLE: prescription_templates
+CREATE TABLE IF NOT EXISTS public.prescription_templates (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    claim_id UUID NOT NULL,                          -- Parent claim
-    procedure_code VARCHAR(20) NOT NULL,             -- CPT code
-    procedure_description TEXT,                      -- Description of procedure
-    diagnosis_code VARCHAR(20),                      -- Related ICD-10 code
-    service_date DATE NOT NULL,                      -- Date of this service
-    unit_price NUMERIC(10,2) NOT NULL,               -- Price per unit
-    quantity INTEGER DEFAULT 1,                      -- Number of units
-    total_price NUMERIC(10,2) NOT NULL,              -- Total for this item
-    status VARCHAR(20) DEFAULT 'pending'
-        CHECK (status IN ('pending', 'approved', 'denied', 'partial')),
+    doctor_id UUID,
+    template_name VARCHAR(200) NOT NULL,
+    description TEXT,
+    diagnosis_category VARCHAR(100),
+    medications JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_global BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: lab_tests
+CREATE TABLE IF NOT EXISTS public.lab_tests (
+    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    test_name VARCHAR(200) NOT NULL,
+    test_type VARCHAR(100),
+    test_date DATE DEFAULT CURRENT_DATE,
+    results TEXT,
+    normal_range VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    lab_technician VARCHAR(200),
+    report_image_url TEXT,
+    cost NUMERIC(10, 2),
+    notes TEXT,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: referrals
+CREATE TABLE IF NOT EXISTS public.referrals (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    referring_doctor_id UUID NOT NULL,
+    receiving_doctor_id UUID,
+    receiving_department_id UUID,
+    appointment_id UUID,
+    reason TEXT NOT NULL,
+    diagnosis TEXT,
+    clinical_notes TEXT,
+    urgency VARCHAR(20) NOT NULL DEFAULT 'routine' CHECK (urgency IN ('routine', 'urgent', 'emergency')),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled')),
+    response_notes TEXT,
+    responded_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ============================================================================
+-- SECTION 5: FACILITY MANAGEMENT TABLES
+-- ============================================================================
+
+-- TABLE: rooms
+CREATE TABLE IF NOT EXISTS public.rooms (
+    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    room_number VARCHAR(20) NOT NULL UNIQUE,
+    room_type VARCHAR(50) NOT NULL CHECK (room_type IN ('general', 'private', 'icu', 'emergency', 'operating', 'recovery')),
+    department VARCHAR(100),
+    floor INTEGER,
+    capacity INTEGER DEFAULT 1,
+    current_occupancy INTEGER DEFAULT 0,
+    daily_rate NUMERIC(10, 2),
+    amenities TEXT[],
+    status VARCHAR(20) DEFAULT 'available' CHECK (status IN ('available', 'occupied', 'maintenance', 'reserved')),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: room_assignments
+CREATE TABLE IF NOT EXISTS public.room_assignments (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    room_id UUID NOT NULL,
+    patient_id UUID NOT NULL,
+    bed_number INTEGER NOT NULL,
+    admission_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    admission_reason TEXT,
+    discharge_date DATE,
+    surgery_id UUID,
+    assigned_by UUID,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'discharged', 'transferred')),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: inventory
+CREATE TABLE IF NOT EXISTS public.inventory (
+    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    item_name VARCHAR(200) NOT NULL,
+    category VARCHAR(100),
+    current_stock INTEGER NOT NULL DEFAULT 0,
+    minimum_stock INTEGER DEFAULT 10,
+    maximum_stock INTEGER DEFAULT 1000,
+    reorder_point INTEGER DEFAULT 10,
+    unit_price NUMERIC(10, 2),
+    batch_number VARCHAR(50),
+    expiry_date DATE,
+    supplier VARCHAR(200),
+    supplier_id UUID,
+    location VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'available' CHECK (status IN ('available', 'low_stock', 'out_of_stock', 'expired')),
+    last_restocked DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ============================================================================
+-- SECTION 6: FINANCIAL TABLES
+-- ============================================================================
+
+-- TABLE: payments
+CREATE TABLE IF NOT EXISTS public.payments (
+    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL,
+    payment_method VARCHAR(50) CHECK (payment_method IN ('cash', 'card', 'insurance', 'bank_transfer', 'online')),
+    payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'completed', 'failed', 'refunded')),
+    payment_date DATE DEFAULT CURRENT_DATE,
+    description TEXT,
+    invoice_number VARCHAR(50),
+    transaction_id VARCHAR(100),
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: insurance_claims
+CREATE TABLE IF NOT EXISTS public.insurance_claims (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    appointment_id UUID,
+    insurance_provider VARCHAR(200) NOT NULL,
+    policy_number VARCHAR(100) NOT NULL,
+    claim_number VARCHAR(100),
+    service_date DATE NOT NULL,
+    submission_date DATE DEFAULT CURRENT_DATE,
+    total_amount NUMERIC(12, 2) NOT NULL,
+    approved_amount NUMERIC(12, 2),
+    patient_responsibility NUMERIC(12, 2),
+    diagnosis_codes TEXT[] DEFAULT '{}',
+    procedure_codes TEXT[] DEFAULT '{}',
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'pending', 'approved', 'denied', 'appealed', 'paid')),
+    denial_code VARCHAR(20),
+    denial_reason TEXT,
+    appeal_deadline DATE,
+    appeal_submitted BOOLEAN DEFAULT false,
+    appeal_notes TEXT,
+    notes TEXT,
+    submitted_by UUID,
+    reviewed_by UUID,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: insurance_claim_items
+CREATE TABLE IF NOT EXISTS public.insurance_claim_items (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    claim_id UUID NOT NULL,
+    procedure_code VARCHAR(20) NOT NULL,
+    procedure_description TEXT,
+    diagnosis_code VARCHAR(20),
+    service_date DATE NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    total_price NUMERIC(12, 2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'denied')),
     denial_reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.insurance_claim_items ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for insurance_claim_items
-CREATE POLICY "Admins can manage all claim items" ON public.insurance_claim_items
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Receptionists can manage claim items" ON public.insurance_claim_items
-    FOR ALL USING (public.has_role(auth.uid(), 'receptionist'))
-    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-
-CREATE POLICY "Patients can view own claim items" ON public.insurance_claim_items
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.insurance_claims c
-            WHERE c.id = insurance_claim_items.claim_id
-            AND c.patient_id = public.get_patient_id_for_user(auth.uid())
-        )
-    );
-
-CREATE POLICY "Doctors can view claim items for their patients" ON public.insurance_claim_items
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.insurance_claims c
-            WHERE c.id = insurance_claim_items.claim_id
-            AND public.has_role(auth.uid(), 'doctor')
-            AND public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), c.patient_id)
-        )
-    );
-
--- Indexes for insurance_claim_items
-CREATE INDEX idx_insurance_claim_items_claim ON public.insurance_claim_items(claim_id);
-CREATE INDEX idx_insurance_claim_items_procedure ON public.insurance_claim_items(procedure_code);
-
 -- ============================================================================
--- SECTION 13: CLINICAL CODES TABLES
+-- SECTION 7: BLOOD BANK TABLES
 -- ============================================================================
 
--- ============================================================================
--- TABLE: diagnosis_codes (ICD-10)
--- Description: Standard diagnosis codes
--- ============================================================================
-CREATE TABLE public.diagnosis_codes (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE,                -- ICD-10 code
-    description TEXT NOT NULL,                       -- Code description
-    category VARCHAR(100),                           -- Category
-    subcategory VARCHAR(100),                        -- Subcategory
-    is_billable BOOLEAN DEFAULT true,                -- Can be billed
+-- TABLE: blood_groups
+CREATE TABLE IF NOT EXISTS public.blood_groups (
+    group_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    group_name VARCHAR(10) NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.diagnosis_codes ENABLE ROW LEVEL SECURITY;
+-- TABLE: blood_stock
+CREATE TABLE IF NOT EXISTS public.blood_stock (
+    stock_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    blood_group_id UUID NOT NULL,
+    total_units INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- RLS Policies for diagnosis_codes
-CREATE POLICY "Anyone can view diagnosis codes" ON public.diagnosis_codes
-    FOR SELECT USING (true);
+-- TABLE: donors
+CREATE TABLE IF NOT EXISTS public.donors (
+    donor_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    blood_group_id UUID NOT NULL,
+    contact VARCHAR(20),
+    last_donation_date DATE,
+    status VARCHAR(20) NOT NULL DEFAULT 'Eligible' CHECK (status IN ('Eligible', 'Deferred', 'Permanent Deferral')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
-CREATE POLICY "Admins can manage diagnosis codes" ON public.diagnosis_codes
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for diagnosis_codes
-CREATE INDEX idx_diagnosis_codes_code ON public.diagnosis_codes(code);
-CREATE INDEX idx_diagnosis_codes_category ON public.diagnosis_codes(category);
-
--- ============================================================================
--- TABLE: procedure_codes (CPT)
--- Description: Standard procedure codes
--- ============================================================================
-CREATE TABLE public.procedure_codes (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE,                -- CPT code
-    description TEXT NOT NULL,                       -- Code description
-    category VARCHAR(100),                           -- Category
-    base_price NUMERIC(10,2),                        -- Standard price
-    modifier_allowed BOOLEAN DEFAULT true,           -- Can use modifiers
+-- TABLE: blood_issues
+CREATE TABLE IF NOT EXISTS public.blood_issues (
+    issue_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    blood_group_id UUID NOT NULL,
+    units_given INTEGER NOT NULL,
+    issued_by UUID,
+    issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.procedure_codes ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for procedure_codes
-CREATE POLICY "Anyone can view procedure codes" ON public.procedure_codes
-    FOR SELECT USING (true);
-
-CREATE POLICY "Admins can manage procedure codes" ON public.procedure_codes
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for procedure_codes
-CREATE INDEX idx_procedure_codes_code ON public.procedure_codes(code);
-CREATE INDEX idx_procedure_codes_category ON public.procedure_codes(category);
+-- TABLE: blood_stock_transactions
+CREATE TABLE IF NOT EXISTS public.blood_stock_transactions (
+    transaction_id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    blood_group_id UUID NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL CHECK (transaction_type IN ('donation', 'issue', 'expired', 'transfer_in', 'transfer_out', 'adjustment')),
+    units INTEGER NOT NULL,
+    previous_balance INTEGER NOT NULL,
+    new_balance INTEGER NOT NULL,
+    source VARCHAR(100),
+    reference_id UUID,
+    performed_by UUID,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
 -- ============================================================================
+-- SECTION 8: OPERATION DEPARTMENT TABLES
+-- ============================================================================
+
+-- TABLE: operation_theatres
+CREATE TABLE IF NOT EXISTS public.operation_theatres (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    ot_name VARCHAR(100) NOT NULL,
+    floor INTEGER,
+    equipment TEXT[],
+    status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'occupied', 'maintenance', 'reserved')),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: surgeries
+CREATE TABLE IF NOT EXISTS public.surgeries (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    ot_id UUID NOT NULL,
+    surgery_type VARCHAR(200) NOT NULL,
+    surgery_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    priority VARCHAR(20) DEFAULT 'scheduled' CHECK (priority IN ('emergency', 'urgent', 'scheduled')),
+    status VARCHAR(20) NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in_progress', 'completed', 'cancelled', 'postponed')),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: surgery_team
+CREATE TABLE IF NOT EXISTS public.surgery_team (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    surgery_id UUID NOT NULL,
+    staff_name VARCHAR(200) NOT NULL,
+    role VARCHAR(100) NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: post_operation
+CREATE TABLE IF NOT EXISTS public.post_operation (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    surgery_id UUID NOT NULL,
+    recovery_notes TEXT,
+    complications TEXT,
+    vital_signs JSONB,
+    medication_notes TEXT,
+    discharge_status VARCHAR(20) NOT NULL DEFAULT 'recovering' CHECK (discharge_status IN ('recovering', 'stable', 'critical', 'discharged')),
+    follow_up_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ============================================================================
+-- SECTION 9: SHIFT HANDOVER TABLES
+-- ============================================================================
+
+-- TABLE: shift_handovers
+CREATE TABLE IF NOT EXISTS public.shift_handovers (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    outgoing_nurse_id UUID NOT NULL,
+    incoming_nurse_id UUID,
+    shift_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    shift_type VARCHAR(20) NOT NULL CHECK (shift_type IN ('morning', 'afternoon', 'night')),
+    handover_time TIME NOT NULL DEFAULT CURRENT_TIME,
+    critical_patients TEXT,
+    medication_notes TEXT,
+    equipment_issues TEXT,
+    general_notes TEXT,
+    pending_tasks JSONB,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'acknowledged', 'completed')),
+    acknowledged_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: shift_handover_patients
+CREATE TABLE IF NOT EXISTS public.shift_handover_patients (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    handover_id UUID NOT NULL,
+    patient_id UUID NOT NULL,
+    room_number VARCHAR(20),
+    bed_number INTEGER,
+    condition_summary TEXT,
+    pending_medications TEXT,
+    pending_tests TEXT,
+    special_instructions TEXT,
+    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'critical')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ============================================================================
+-- SECTION 10: NOTIFICATIONS & REMINDERS TABLES
+-- ============================================================================
+
+-- TABLE: notifications
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    action_url TEXT,
+    read BOOLEAN NOT NULL DEFAULT false,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    sent_via_email BOOLEAN DEFAULT false,
+    sent_via_sms BOOLEAN DEFAULT false,
+    sent_via_push BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- TABLE: reminders
+CREATE TABLE IF NOT EXISTS public.reminders (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    reminder_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    reminder_type TEXT NOT NULL,
+    related_table TEXT,
+    related_id UUID,
+    recurring BOOLEAN DEFAULT false,
+    recurring_pattern TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'dismissed', 'snoozed')),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- ============================================================================
+-- SECTION 11: HIPAA AUDIT LOG
+-- ============================================================================
+
+-- TABLE: phi_audit_log
+CREATE TABLE IF NOT EXISTS public.phi_audit_log (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    performed_by UUID NOT NULL,
+    performer_name TEXT,
+    performer_role TEXT,
+    action TEXT NOT NULL CHECK (action IN ('view', 'create', 'update', 'delete', 'export', 'print')),
+    table_name TEXT NOT NULL,
+    record_id TEXT NOT NULL,
+    patient_id UUID,
+    old_values JSONB,
+    new_values JSONB,
+    changed_fields TEXT[],
+    reason TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    session_id TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- ============================================================================
+-- SECTION 12: CLINICAL CODES TABLES
+-- ============================================================================
+
+-- TABLE: diagnosis_codes
+CREATE TABLE IF NOT EXISTS public.diagnosis_codes (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    category VARCHAR(100),
+    subcategory VARCHAR(100),
+    is_billable BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: procedure_codes
+CREATE TABLE IF NOT EXISTS public.procedure_codes (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    category VARCHAR(100),
+    base_price NUMERIC(10, 2),
+    modifier_allowed BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- TABLE: drug_interactions
--- Description: Known drug-drug interactions database
--- ============================================================================
-CREATE TABLE public.drug_interactions (
+CREATE TABLE IF NOT EXISTS public.drug_interactions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    drug_a VARCHAR(100) NOT NULL,                    -- First drug
-    drug_b VARCHAR(100) NOT NULL,                    -- Second drug
-    severity VARCHAR(20) NOT NULL
-        CHECK (severity IN ('mild', 'moderate', 'severe', 'contraindicated')),
-    description TEXT NOT NULL,                       -- Interaction description
-    mechanism TEXT,                                  -- How they interact
-    management TEXT,                                 -- How to manage
+    drug_a VARCHAR(200) NOT NULL,
+    drug_b VARCHAR(200) NOT NULL,
+    severity VARCHAR(20) NOT NULL CHECK (severity IN ('minor', 'moderate', 'major', 'contraindicated')),
+    description TEXT NOT NULL,
+    mechanism TEXT,
+    management TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.drug_interactions ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for drug_interactions
-CREATE POLICY "Anyone can view drug interactions" ON public.drug_interactions
-    FOR SELECT USING (true);
-
-CREATE POLICY "Admins can manage drug interactions" ON public.drug_interactions
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for drug_interactions
-CREATE INDEX idx_drug_interactions_drug_a ON public.drug_interactions(drug_a);
-CREATE INDEX idx_drug_interactions_drug_b ON public.drug_interactions(drug_b);
-CREATE INDEX idx_drug_interactions_severity ON public.drug_interactions(severity);
-
 -- ============================================================================
--- SECTION 14: PRESCRIPTION TEMPLATES
+-- SECTION 13: SUPPLY CHAIN TABLES
 -- ============================================================================
 
--- ============================================================================
--- TABLE: prescription_templates
--- Description: Reusable prescription templates for common conditions
--- ============================================================================
-CREATE TABLE public.prescription_templates (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    doctor_id UUID,                                  -- Doctor who created template
-    template_name VARCHAR(100) NOT NULL,             -- Template name
-    description TEXT,                                -- Template description
-    diagnosis_category VARCHAR(100),                 -- Related diagnosis category
-    medications JSONB NOT NULL DEFAULT '[]',         -- Array of medications
-    is_global BOOLEAN DEFAULT false,                 -- Available to all doctors
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.prescription_templates ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for prescription_templates
-CREATE POLICY "Anyone can view global templates" ON public.prescription_templates
-    FOR SELECT USING (is_global = true);
-
-CREATE POLICY "Doctors can view own templates" ON public.prescription_templates
-    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can create templates" ON public.prescription_templates
-    FOR INSERT WITH CHECK (
-        public.has_role(auth.uid(), 'doctor') AND
-        doctor_id = public.get_doctor_id_for_user(auth.uid())
-    );
-
-CREATE POLICY "Doctors can update own templates" ON public.prescription_templates
-    FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()))
-    WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Doctors can delete own templates" ON public.prescription_templates
-    FOR DELETE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
-
-CREATE POLICY "Admins can manage all templates" ON public.prescription_templates
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for prescription_templates
-CREATE INDEX idx_prescription_templates_doctor ON public.prescription_templates(doctor_id);
-CREATE INDEX idx_prescription_templates_global ON public.prescription_templates(is_global);
-CREATE INDEX idx_prescription_templates_category ON public.prescription_templates(diagnosis_category);
-
--- ============================================================================
--- TABLE: prescription_items
--- Description: Individual medications in a prescription
--- ============================================================================
-CREATE TABLE public.prescription_items (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    prescription_id UUID NOT NULL,                   -- Parent prescription
-    medication_name VARCHAR(200) NOT NULL,           -- Medication name
-    dosage VARCHAR(50),                              -- Dosage (e.g., "500mg")
-    frequency VARCHAR(50),                           -- How often (e.g., "twice daily")
-    duration VARCHAR(50),                            -- How long (e.g., "7 days")
-    quantity INTEGER,                                -- Number of units
-    route VARCHAR(50),                               -- Administration route
-    instructions TEXT,                               -- Special instructions
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.prescription_items ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for prescription_items (follows parent prescription policies)
-CREATE POLICY "Users can view items of prescriptions they can access" ON public.prescription_items
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.prescriptions p
-            WHERE p.id = prescription_items.prescription_id
-            AND (
-                p.patient_id = public.get_patient_id_for_user(auth.uid()) OR
-                p.doctor_id = public.get_doctor_id_for_user(auth.uid()) OR
-                public.has_role(auth.uid(), 'admin') OR
-                public.has_role(auth.uid(), 'pharmacist')
-            )
-        )
-    );
-
-CREATE POLICY "Doctors can manage items of their prescriptions" ON public.prescription_items
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.prescriptions p
-            WHERE p.id = prescription_items.prescription_id
-            AND p.doctor_id = public.get_doctor_id_for_user(auth.uid())
-        )
-    );
-
-CREATE POLICY "Admins can manage all prescription items" ON public.prescription_items
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for prescription_items
-CREATE INDEX idx_prescription_items_prescription ON public.prescription_items(prescription_id);
-
--- ============================================================================
--- SECTION 15: SUPPLIERS & PURCHASE ORDERS
--- ============================================================================
-
--- ============================================================================
 -- TABLE: suppliers
--- Description: Medical supply vendors
--- ============================================================================
-CREATE TABLE public.suppliers (
+CREATE TABLE IF NOT EXISTS public.suppliers (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    name VARCHAR(200) NOT NULL,                      -- Supplier name
-    contact_person VARCHAR(100),                     -- Contact person
-    phone VARCHAR(20),                               -- Phone number
-    email VARCHAR(100),                              -- Email address
-    address TEXT,                                    -- Physical address
-    payment_terms VARCHAR(50),                       -- Payment terms
-    status VARCHAR(20) DEFAULT 'active'
-        CHECK (status IN ('active', 'inactive', 'suspended')),
+    name VARCHAR(200) NOT NULL,
+    contact_person VARCHAR(200),
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    address TEXT,
+    payment_terms VARCHAR(100),
+    lead_time_days INTEGER,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
     notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for suppliers
-CREATE POLICY "Staff can view suppliers" ON public.suppliers
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'pharmacist')
-    );
-
-CREATE POLICY "Admins can manage suppliers" ON public.suppliers
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for suppliers
-CREATE INDEX idx_suppliers_name ON public.suppliers(name);
-CREATE INDEX idx_suppliers_status ON public.suppliers(status);
-
--- ============================================================================
 -- TABLE: purchase_orders
--- Description: Orders for medical supplies
--- ============================================================================
-CREATE TABLE public.purchase_orders (
+CREATE TABLE IF NOT EXISTS public.purchase_orders (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    po_number VARCHAR(50) NOT NULL UNIQUE,           -- PO reference number
-    supplier_id UUID NOT NULL,                       -- Supplier reference
-    order_date DATE NOT NULL DEFAULT CURRENT_DATE,   -- Date ordered
-    expected_delivery DATE,                          -- Expected delivery date
-    actual_delivery DATE,                            -- Actual delivery date
-    status VARCHAR(20) NOT NULL DEFAULT 'draft'
-        CHECK (status IN ('draft', 'pending', 'approved', 'ordered', 'shipped', 'delivered', 'cancelled')),
-    total_amount NUMERIC(12,2) NOT NULL DEFAULT 0,   -- Total order value
+    po_number VARCHAR(50) NOT NULL UNIQUE,
+    supplier_id UUID NOT NULL,
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    expected_delivery DATE,
+    actual_delivery DATE,
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'approved', 'ordered', 'partially_received', 'received', 'cancelled')),
     notes TEXT,
-    created_by UUID,                                 -- Who created the order
-    approved_by UUID,                                -- Who approved the order
+    created_by UUID,
+    approved_by UUID,
     approved_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for purchase_orders
-CREATE POLICY "Staff can view purchase orders" ON public.purchase_orders
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'pharmacist')
-    );
-
-CREATE POLICY "Pharmacists can create purchase orders" ON public.purchase_orders
-    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
-
-CREATE POLICY "Pharmacists can update draft orders" ON public.purchase_orders
-    FOR UPDATE USING (
-        public.has_role(auth.uid(), 'pharmacist') AND status = 'draft'
-    );
-
-CREATE POLICY "Admins can manage all purchase orders" ON public.purchase_orders
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for purchase_orders
-CREATE INDEX idx_purchase_orders_supplier ON public.purchase_orders(supplier_id);
-CREATE INDEX idx_purchase_orders_status ON public.purchase_orders(status);
-CREATE INDEX idx_purchase_orders_date ON public.purchase_orders(order_date);
-
--- ============================================================================
 -- TABLE: purchase_order_items
--- Description: Line items in purchase orders
--- ============================================================================
-CREATE TABLE public.purchase_order_items (
+CREATE TABLE IF NOT EXISTS public.purchase_order_items (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    purchase_order_id UUID NOT NULL,                 -- Parent PO
-    inventory_item_id UUID,                          -- Link to inventory item
-    item_name VARCHAR(200) NOT NULL,                 -- Item description
-    quantity INTEGER NOT NULL,                       -- Ordered quantity
-    unit_price NUMERIC(10,2) NOT NULL,               -- Price per unit
-    total_price NUMERIC(12,2) NOT NULL,              -- Line total
-    received_quantity INTEGER DEFAULT 0,             -- Quantity received
-    status VARCHAR(20) NOT NULL DEFAULT 'pending'
-        CHECK (status IN ('pending', 'partial', 'received', 'cancelled')),
+    purchase_order_id UUID NOT NULL,
+    inventory_item_id UUID,
+    item_name VARCHAR(200) NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    total_price NUMERIC(12, 2) NOT NULL,
+    received_quantity INTEGER DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'partially_received', 'received', 'cancelled')),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Enable RLS
+-- ============================================================================
+-- STEP 5: ENABLE ROW LEVEL SECURITY ON ALL TABLES
+-- ============================================================================
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hospital_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.doctors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.department_doctors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.nurses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.staff_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.patient_registration_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.patient_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.patient_vitals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointment_waitlist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.medical_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prescriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prescription_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prescription_refill_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prescription_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lab_tests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.room_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.insurance_claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.insurance_claim_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blood_groups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blood_stock ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.donors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blood_issues ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blood_stock_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.operation_theatres ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.surgeries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.surgery_team ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_operation ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shift_handovers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shift_handover_patients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.phi_audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.diagnosis_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.procedure_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drug_interactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for purchase_order_items (follows parent PO policies)
-CREATE POLICY "Staff can view PO items" ON public.purchase_order_items
-    FOR SELECT USING (
-        public.has_role(auth.uid(), 'admin') OR
-        public.has_role(auth.uid(), 'pharmacist')
-    );
-
-CREATE POLICY "Pharmacists can manage PO items for draft orders" ON public.purchase_order_items
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.purchase_orders po
-            WHERE po.id = purchase_order_items.purchase_order_id
-            AND po.status = 'draft'
-            AND public.has_role(auth.uid(), 'pharmacist')
-        )
-    );
-
-CREATE POLICY "Admins can manage all PO items" ON public.purchase_order_items
-    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
-    WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Indexes for purchase_order_items
-CREATE INDEX idx_po_items_order ON public.purchase_order_items(purchase_order_id);
-CREATE INDEX idx_po_items_inventory ON public.purchase_order_items(inventory_item_id);
-
 -- ============================================================================
--- ADDITIONAL FOREIGN KEY CONSTRAINTS
+-- STEP 6: CREATE RLS POLICIES
 -- ============================================================================
 
--- Patient Vitals
-ALTER TABLE public.patient_vitals
-    ADD CONSTRAINT fk_patient_vitals_patient
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+-- PROFILES POLICIES
+CREATE POLICY "profiles_select_own" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "profiles_admin_select" ON public.profiles FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
 
--- Appointment Waitlist
-ALTER TABLE public.appointment_waitlist
-    ADD CONSTRAINT fk_waitlist_patient
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+-- USER_ROLES POLICIES
+CREATE POLICY "user_roles_select_own" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "user_roles_insert_own" ON public.user_roles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "user_roles_admin" ON public.user_roles FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
-ALTER TABLE public.appointment_waitlist
-    ADD CONSTRAINT fk_waitlist_doctor
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
+-- USER_SETTINGS POLICIES
+CREATE POLICY "user_settings_select_own" ON public.user_settings FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "user_settings_insert_own" ON public.user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "user_settings_update_own" ON public.user_settings FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "user_settings_delete_own" ON public.user_settings FOR DELETE USING (auth.uid() = user_id);
 
-ALTER TABLE public.appointment_waitlist
-    ADD CONSTRAINT fk_waitlist_department
-    FOREIGN KEY (department_id) REFERENCES public.departments(department_id);
+-- HOSPITAL_SETTINGS POLICIES
+CREATE POLICY "hospital_settings_admin_select" ON public.hospital_settings FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "hospital_settings_admin_insert" ON public.hospital_settings FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "hospital_settings_admin_update" ON public.hospital_settings FOR UPDATE USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- Referrals
-ALTER TABLE public.referrals
-    ADD CONSTRAINT fk_referrals_patient
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
+-- DEPARTMENTS POLICIES
+CREATE POLICY "departments_select_active" ON public.departments FOR SELECT USING (status = 'Active');
+CREATE POLICY "departments_admin" ON public.departments FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
-ALTER TABLE public.referrals
-    ADD CONSTRAINT fk_referrals_referring_doctor
-    FOREIGN KEY (referring_doctor_id) REFERENCES public.doctors(id);
+-- DOCTORS POLICIES
+CREATE POLICY "doctors_select_active" ON public.doctors FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR
+    public.has_role(auth.uid(), 'doctor') OR
+    public.has_role(auth.uid(), 'nurse') OR
+    public.has_role(auth.uid(), 'receptionist') OR
+    public.has_role(auth.uid(), 'pharmacist') OR
+    public.has_role(auth.uid(), 'lab_technician') OR
+    status = 'active'
+);
+CREATE POLICY "doctors_admin" ON public.doctors FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "doctors_update_own" ON public.doctors FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
-ALTER TABLE public.referrals
-    ADD CONSTRAINT fk_referrals_receiving_doctor
-    FOREIGN KEY (receiving_doctor_id) REFERENCES public.doctors(id);
+-- DEPARTMENT_DOCTORS POLICIES
+CREATE POLICY "department_doctors_select" ON public.department_doctors FOR SELECT USING (true);
+CREATE POLICY "department_doctors_admin" ON public.department_doctors FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
-ALTER TABLE public.referrals
-    ADD CONSTRAINT fk_referrals_department
-    FOREIGN KEY (receiving_department_id) REFERENCES public.departments(department_id);
+-- NURSES POLICIES
+CREATE POLICY "nurses_select_staff" ON public.nurses FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR
+    public.has_role(auth.uid(), 'doctor') OR
+    public.has_role(auth.uid(), 'nurse') OR
+    public.has_role(auth.uid(), 'receptionist')
+);
+CREATE POLICY "nurses_admin" ON public.nurses FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
-ALTER TABLE public.referrals
-    ADD CONSTRAINT fk_referrals_appointment
-    FOREIGN KEY (appointment_id) REFERENCES public.appointments(id);
+-- STAFF_SCHEDULES POLICIES
+CREATE POLICY "staff_schedules_select" ON public.staff_schedules FOR SELECT USING (true);
+CREATE POLICY "staff_schedules_admin" ON public.staff_schedules FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- Insurance Claims
-ALTER TABLE public.insurance_claims
-    ADD CONSTRAINT fk_claims_patient
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
+-- PATIENTS POLICIES
+CREATE POLICY "patients_select_own" ON public.patients FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "patients_update_own" ON public.patients FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "patients_admin" ON public.patients FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "patients_nurse_select" ON public.patients FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "patients_lab_select" ON public.patients FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
+CREATE POLICY "patients_doctor_select" ON public.patients FOR SELECT USING (
+    public.has_role(auth.uid(), 'doctor') AND
+    public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), id)
+);
 
-ALTER TABLE public.insurance_claims
-    ADD CONSTRAINT fk_claims_appointment
-    FOREIGN KEY (appointment_id) REFERENCES public.appointments(id);
+-- PATIENT_REGISTRATION_QUEUE POLICIES
+CREATE POLICY "patient_registration_queue_own" ON public.patient_registration_queue FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "patient_registration_queue_staff_select" ON public.patient_registration_queue FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR
+    public.has_role(auth.uid(), 'receptionist') OR
+    public.has_role(auth.uid(), 'doctor') OR
+    public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "patient_registration_queue_staff_update" ON public.patient_registration_queue FOR UPDATE USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
+);
+CREATE POLICY "patient_registration_queue_insert" ON public.patient_registration_queue FOR INSERT WITH CHECK (true);
 
--- Insurance Claim Items
-ALTER TABLE public.insurance_claim_items
-    ADD CONSTRAINT fk_claim_items_claim
-    FOREIGN KEY (claim_id) REFERENCES public.insurance_claims(id) ON DELETE CASCADE;
+-- PATIENT_MESSAGES POLICIES
+CREATE POLICY "patient_messages_patient_select" ON public.patient_messages FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "patient_messages_doctor_select" ON public.patient_messages FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "patient_messages_patient_insert" ON public.patient_messages FOR INSERT WITH CHECK (
+    patient_id = public.get_patient_id_for_user(auth.uid()) AND sender_type = 'patient'
+);
+CREATE POLICY "patient_messages_doctor_insert" ON public.patient_messages FOR INSERT WITH CHECK (
+    doctor_id = public.get_doctor_id_for_user(auth.uid()) AND sender_type = 'doctor'
+);
+CREATE POLICY "patient_messages_update" ON public.patient_messages FOR UPDATE USING (
+    patient_id = public.get_patient_id_for_user(auth.uid()) OR
+    doctor_id = public.get_doctor_id_for_user(auth.uid())
+);
+CREATE POLICY "patient_messages_admin" ON public.patient_messages FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- Prescription Templates
-ALTER TABLE public.prescription_templates
-    ADD CONSTRAINT fk_templates_doctor
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
+-- PATIENT_VITALS POLICIES
+CREATE POLICY "patient_vitals_patient_select" ON public.patient_vitals FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "patient_vitals_nurse_select" ON public.patient_vitals FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "patient_vitals_nurse_insert" ON public.patient_vitals FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "patient_vitals_nurse_update" ON public.patient_vitals FOR UPDATE USING (public.has_role(auth.uid(), 'nurse')) WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "patient_vitals_doctor_select" ON public.patient_vitals FOR SELECT USING (
+    public.has_role(auth.uid(), 'doctor') AND
+    public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), patient_id)
+);
+CREATE POLICY "patient_vitals_admin" ON public.patient_vitals FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- Prescription Items
-ALTER TABLE public.prescription_items
-    ADD CONSTRAINT fk_prescription_items_prescription
-    FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
+-- APPOINTMENTS POLICIES
+CREATE POLICY "appointments_patient_select" ON public.appointments FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "appointments_patient_insert" ON public.appointments FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "appointments_patient_update" ON public.appointments FOR UPDATE USING (patient_id = public.get_patient_id_for_user(auth.uid())) WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "appointments_doctor_select" ON public.appointments FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "appointments_doctor_update" ON public.appointments FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid())) WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "appointments_nurse_select" ON public.appointments FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "appointments_receptionist" ON public.appointments FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+CREATE POLICY "appointments_admin" ON public.appointments FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- Purchase Orders
-ALTER TABLE public.purchase_orders
-    ADD CONSTRAINT fk_po_supplier
-    FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id);
+-- APPOINTMENT_WAITLIST POLICIES
+CREATE POLICY "appointment_waitlist_patient_select" ON public.appointment_waitlist FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "appointment_waitlist_patient_insert" ON public.appointment_waitlist FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "appointment_waitlist_patient_update" ON public.appointment_waitlist FOR UPDATE USING (patient_id = public.get_patient_id_for_user(auth.uid())) WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "appointment_waitlist_patient_delete" ON public.appointment_waitlist FOR DELETE USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "appointment_waitlist_doctor_select" ON public.appointment_waitlist FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "appointment_waitlist_receptionist" ON public.appointment_waitlist FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+CREATE POLICY "appointment_waitlist_admin" ON public.appointment_waitlist FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- Purchase Order Items
-ALTER TABLE public.purchase_order_items
-    ADD CONSTRAINT fk_po_items_order
-    FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE CASCADE;
+-- MEDICAL_RECORDS POLICIES
+CREATE POLICY "medical_records_patient_select" ON public.medical_records FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "medical_records_doctor_select" ON public.medical_records FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "medical_records_doctor_insert" ON public.medical_records FOR INSERT WITH CHECK (
+    public.has_role(auth.uid(), 'doctor') AND doctor_id = public.get_doctor_id_for_user(auth.uid())
+);
+CREATE POLICY "medical_records_doctor_update" ON public.medical_records FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid())) WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "medical_records_nurse_select" ON public.medical_records FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "medical_records_admin" ON public.medical_records FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
-ALTER TABLE public.purchase_order_items
-    ADD CONSTRAINT fk_po_items_inventory
-    FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id);
+-- PRESCRIPTIONS POLICIES
+CREATE POLICY "prescriptions_patient_select" ON public.prescriptions FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "prescriptions_doctor_select" ON public.prescriptions FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "prescriptions_doctor_insert" ON public.prescriptions FOR INSERT WITH CHECK (
+    public.has_role(auth.uid(), 'doctor') AND doctor_id = public.get_doctor_id_for_user(auth.uid())
+);
+CREATE POLICY "prescriptions_doctor_update" ON public.prescriptions FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid())) WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "prescriptions_pharmacist_select" ON public.prescriptions FOR SELECT USING (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "prescriptions_pharmacist_update" ON public.prescriptions FOR UPDATE USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "prescriptions_admin" ON public.prescriptions FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- PRESCRIPTION_ITEMS POLICIES
+CREATE POLICY "prescription_items_doctor_select" ON public.prescription_items FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.prescriptions p WHERE p.id = prescription_id AND p.doctor_id = public.get_doctor_id_for_user(auth.uid()))
+);
+CREATE POLICY "prescription_items_doctor_manage" ON public.prescription_items FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.prescriptions p WHERE p.id = prescription_id AND p.doctor_id = public.get_doctor_id_for_user(auth.uid()))
+) WITH CHECK (
+    EXISTS (SELECT 1 FROM public.prescriptions p WHERE p.id = prescription_id AND p.doctor_id = public.get_doctor_id_for_user(auth.uid()))
+);
+CREATE POLICY "prescription_items_pharmacist_select" ON public.prescription_items FOR SELECT USING (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "prescription_items_admin" ON public.prescription_items FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- PRESCRIPTION_REFILL_REQUESTS POLICIES
+CREATE POLICY "prescription_refill_patient_select" ON public.prescription_refill_requests FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "prescription_refill_patient_insert" ON public.prescription_refill_requests FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "prescription_refill_staff_select" ON public.prescription_refill_requests FOR SELECT USING (
+    public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'pharmacist') OR public.has_role(auth.uid(), 'admin')
+);
+CREATE POLICY "prescription_refill_staff_update" ON public.prescription_refill_requests FOR UPDATE USING (
+    public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'pharmacist') OR public.has_role(auth.uid(), 'admin')
+);
+
+-- PRESCRIPTION_TEMPLATES POLICIES
+CREATE POLICY "prescription_templates_doctor_select" ON public.prescription_templates FOR SELECT USING (
+    is_global = true OR doctor_id = public.get_doctor_id_for_user(auth.uid())
+);
+CREATE POLICY "prescription_templates_doctor_manage" ON public.prescription_templates FOR ALL USING (
+    doctor_id = public.get_doctor_id_for_user(auth.uid()) OR public.has_role(auth.uid(), 'admin')
+) WITH CHECK (
+    doctor_id = public.get_doctor_id_for_user(auth.uid()) OR public.has_role(auth.uid(), 'admin')
+);
+
+-- LAB_TESTS POLICIES
+CREATE POLICY "lab_tests_patient_select" ON public.lab_tests FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "lab_tests_doctor_select" ON public.lab_tests FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "lab_tests_doctor_insert" ON public.lab_tests FOR INSERT WITH CHECK (
+    public.has_role(auth.uid(), 'doctor') AND doctor_id = public.get_doctor_id_for_user(auth.uid())
+);
+CREATE POLICY "lab_tests_doctor_update" ON public.lab_tests FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid())) WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "lab_tests_lab_select" ON public.lab_tests FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
+CREATE POLICY "lab_tests_lab_update" ON public.lab_tests FOR UPDATE USING (public.has_role(auth.uid(), 'lab_technician')) WITH CHECK (public.has_role(auth.uid(), 'lab_technician'));
+CREATE POLICY "lab_tests_nurse_select" ON public.lab_tests FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "lab_tests_nurse_update" ON public.lab_tests FOR UPDATE USING (public.has_role(auth.uid(), 'nurse')) WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "lab_tests_admin" ON public.lab_tests FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- REFERRALS POLICIES
+CREATE POLICY "referrals_referring_doctor" ON public.referrals FOR ALL USING (referring_doctor_id = public.get_doctor_id_for_user(auth.uid())) WITH CHECK (referring_doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "referrals_receiving_doctor_select" ON public.referrals FOR SELECT USING (receiving_doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "referrals_receiving_doctor_update" ON public.referrals FOR UPDATE USING (receiving_doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "referrals_admin" ON public.referrals FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- ROOMS POLICIES
+CREATE POLICY "rooms_staff_select" ON public.rooms FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR
+    public.has_role(auth.uid(), 'doctor') OR
+    public.has_role(auth.uid(), 'nurse') OR
+    public.has_role(auth.uid(), 'receptionist')
+);
+CREATE POLICY "rooms_admin" ON public.rooms FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- ROOM_ASSIGNMENTS POLICIES
+CREATE POLICY "room_assignments_staff_select" ON public.room_assignments FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR
+    public.has_role(auth.uid(), 'doctor') OR
+    public.has_role(auth.uid(), 'nurse') OR
+    public.has_role(auth.uid(), 'receptionist')
+);
+CREATE POLICY "room_assignments_staff_manage" ON public.room_assignments FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR public.has_role(auth.uid(), 'receptionist')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR public.has_role(auth.uid(), 'receptionist')
+);
+
+-- INVENTORY POLICIES
+CREATE POLICY "inventory_staff_select" ON public.inventory FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "inventory_pharmacist_insert" ON public.inventory FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "inventory_pharmacist_update" ON public.inventory FOR UPDATE USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "inventory_admin" ON public.inventory FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- PAYMENTS POLICIES
+CREATE POLICY "payments_patient_select" ON public.payments FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "payments_staff_select" ON public.payments FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
+);
+CREATE POLICY "payments_staff_manage" ON public.payments FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
+);
+
+-- INSURANCE_CLAIMS POLICIES
+CREATE POLICY "insurance_claims_patient_select" ON public.insurance_claims FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "insurance_claims_doctor_select" ON public.insurance_claims FOR SELECT USING (
+    public.has_role(auth.uid(), 'doctor') AND public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), patient_id)
+);
+CREATE POLICY "insurance_claims_receptionist" ON public.insurance_claims FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+CREATE POLICY "insurance_claims_admin" ON public.insurance_claims FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- INSURANCE_CLAIM_ITEMS POLICIES
+CREATE POLICY "insurance_claim_items_patient_select" ON public.insurance_claim_items FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.insurance_claims c WHERE c.id = claim_id AND c.patient_id = public.get_patient_id_for_user(auth.uid()))
+);
+CREATE POLICY "insurance_claim_items_doctor_select" ON public.insurance_claim_items FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.insurance_claims c WHERE c.id = claim_id AND 
+        public.has_role(auth.uid(), 'doctor') AND public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), c.patient_id))
+);
+CREATE POLICY "insurance_claim_items_receptionist" ON public.insurance_claim_items FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+CREATE POLICY "insurance_claim_items_admin" ON public.insurance_claim_items FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- BLOOD_GROUPS POLICIES
+CREATE POLICY "blood_groups_select" ON public.blood_groups FOR SELECT USING (true);
+CREATE POLICY "blood_groups_admin" ON public.blood_groups FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- BLOOD_STOCK POLICIES
+CREATE POLICY "blood_stock_staff_select" ON public.blood_stock FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
+    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'doctor')
+);
+CREATE POLICY "blood_stock_lab_manage" ON public.blood_stock FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+);
+
+-- DONORS POLICIES
+CREATE POLICY "donors_staff_select" ON public.donors FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
+    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'receptionist')
+);
+CREATE POLICY "donors_staff_insert" ON public.donors FOR INSERT WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'receptionist')
+);
+CREATE POLICY "donors_staff_update" ON public.donors FOR UPDATE USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+);
+CREATE POLICY "donors_admin_delete" ON public.donors FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
+
+-- BLOOD_ISSUES POLICIES
+CREATE POLICY "blood_issues_staff_select" ON public.blood_issues FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
+    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'doctor')
+);
+CREATE POLICY "blood_issues_staff_insert" ON public.blood_issues FOR INSERT WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "blood_issues_staff_update" ON public.blood_issues FOR UPDATE USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+);
+CREATE POLICY "blood_issues_admin_delete" ON public.blood_issues FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
+
+-- BLOOD_STOCK_TRANSACTIONS POLICIES
+CREATE POLICY "blood_stock_transactions_staff_select" ON public.blood_stock_transactions FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
+    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'doctor')
+);
+CREATE POLICY "blood_stock_transactions_staff_insert" ON public.blood_stock_transactions FOR INSERT WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+);
+
+-- OPERATION_THEATRES POLICIES
+CREATE POLICY "operation_theatres_staff_select" ON public.operation_theatres FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "operation_theatres_admin" ON public.operation_theatres FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- SURGERIES POLICIES
+CREATE POLICY "surgeries_staff_select" ON public.surgeries FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "surgeries_doctor_manage" ON public.surgeries FOR ALL USING (
+    doctor_id = public.get_doctor_id_for_user(auth.uid()) OR public.has_role(auth.uid(), 'admin')
+) WITH CHECK (
+    doctor_id = public.get_doctor_id_for_user(auth.uid()) OR public.has_role(auth.uid(), 'admin')
+);
+
+-- SURGERY_TEAM POLICIES
+CREATE POLICY "surgery_team_staff_select" ON public.surgery_team FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "surgery_team_manage" ON public.surgery_team FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor')
+);
+
+-- POST_OPERATION POLICIES
+CREATE POLICY "post_operation_staff_select" ON public.post_operation FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "post_operation_manage" ON public.post_operation FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
+);
+
+-- SHIFT_HANDOVERS POLICIES
+CREATE POLICY "shift_handovers_nurse_select" ON public.shift_handovers FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "shift_handovers_nurse_manage" ON public.shift_handovers FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
+);
+
+-- SHIFT_HANDOVER_PATIENTS POLICIES
+CREATE POLICY "shift_handover_patients_nurse_select" ON public.shift_handover_patients FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
+);
+CREATE POLICY "shift_handover_patients_nurse_manage" ON public.shift_handover_patients FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
+);
+
+-- NOTIFICATIONS POLICIES
+CREATE POLICY "notifications_own_select" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "notifications_own_update" ON public.notifications FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "notifications_own_delete" ON public.notifications FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "notifications_system_insert" ON public.notifications FOR INSERT WITH CHECK (true);
+CREATE POLICY "notifications_admin" ON public.notifications FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- REMINDERS POLICIES
+CREATE POLICY "reminders_own" ON public.reminders FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "reminders_admin" ON public.reminders FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- PHI_AUDIT_LOG POLICIES
+CREATE POLICY "phi_audit_log_admin_select" ON public.phi_audit_log FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "phi_audit_log_insert" ON public.phi_audit_log FOR INSERT WITH CHECK (true);
+
+-- DIAGNOSIS_CODES POLICIES
+CREATE POLICY "diagnosis_codes_select" ON public.diagnosis_codes FOR SELECT USING (true);
+CREATE POLICY "diagnosis_codes_admin" ON public.diagnosis_codes FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- PROCEDURE_CODES POLICIES
+CREATE POLICY "procedure_codes_select" ON public.procedure_codes FOR SELECT USING (true);
+CREATE POLICY "procedure_codes_admin" ON public.procedure_codes FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- DRUG_INTERACTIONS POLICIES
+CREATE POLICY "drug_interactions_select" ON public.drug_interactions FOR SELECT USING (true);
+CREATE POLICY "drug_interactions_admin" ON public.drug_interactions FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- SUPPLIERS POLICIES
+CREATE POLICY "suppliers_staff_select" ON public.suppliers FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+);
+CREATE POLICY "suppliers_manage" ON public.suppliers FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+);
+
+-- PURCHASE_ORDERS POLICIES
+CREATE POLICY "purchase_orders_staff_select" ON public.purchase_orders FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+);
+CREATE POLICY "purchase_orders_manage" ON public.purchase_orders FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+);
+
+-- PURCHASE_ORDER_ITEMS POLICIES
+CREATE POLICY "purchase_order_items_staff_select" ON public.purchase_order_items FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+);
+CREATE POLICY "purchase_order_items_manage" ON public.purchase_order_items FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
+);
 
 -- ============================================================================
--- UPDATE TRIGGERS FOR NEW TABLES
+-- STEP 7: CREATE INDEXES
 -- ============================================================================
 
-CREATE TRIGGER update_patient_vitals_updated_at
-    BEFORE UPDATE ON public.patient_vitals
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_appointment_waitlist_updated_at
-    BEFORE UPDATE ON public.appointment_waitlist
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_referrals_updated_at
-    BEFORE UPDATE ON public.referrals
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_insurance_claims_updated_at
-    BEFORE UPDATE ON public.insurance_claims
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_prescription_templates_updated_at
-    BEFORE UPDATE ON public.prescription_templates
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_prescription_items_updated_at
-    BEFORE UPDATE ON public.prescription_items
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_suppliers_updated_at
-    BEFORE UPDATE ON public.suppliers
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_purchase_orders_updated_at
-    BEFORE UPDATE ON public.purchase_orders
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
-
--- ============================================================================
--- DATABASE FUNCTIONS
--- ============================================================================
-
--- ============================================================================
--- Function: has_role
--- Description: Check if user has a specific role
--- Used in RLS policies to prevent recursive checks
--- ============================================================================
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT EXISTS (
-        SELECT 1
-        FROM public.user_roles
-        WHERE user_id = _user_id
-          AND role = _role
-    )
-$$;
-
--- ============================================================================
--- Function: get_user_role
--- Description: Get user's assigned role
--- ============================================================================
-CREATE OR REPLACE FUNCTION public.get_user_role(_user_id UUID)
-RETURNS public.app_role
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT role
-    FROM public.user_roles
-    WHERE user_id = _user_id
-    LIMIT 1
-$$;
-
--- ============================================================================
--- Function: get_patient_id_for_user
--- Description: Get patient ID for a given user ID
--- ============================================================================
-CREATE OR REPLACE FUNCTION public.get_patient_id_for_user(_user_id UUID)
-RETURNS UUID
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT id FROM public.patients WHERE user_id = _user_id LIMIT 1
-$$;
+CREATE INDEX IF NOT EXISTS idx_profiles_first_name ON public.profiles(first_name);
+CREATE INDEX IF NOT EXISTS idx_profiles_last_name ON public.profiles(last_name);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
+CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_hospital_settings_category ON public.hospital_settings(setting_category);
+CREATE INDEX IF NOT EXISTS idx_departments_status ON public.departments(status);
+CREATE INDEX IF NOT EXISTS idx_doctors_specialization ON public.doctors(specialization);
+CREATE INDEX IF NOT EXISTS idx_doctors_department_id ON public.doctors(department_id);
+CREATE INDEX IF NOT EXISTS idx_doctors_status ON public.doctors(status);
+CREATE INDEX IF NOT EXISTS idx_doctors_user_id ON public.doctors(user_id);
+CREATE INDEX IF NOT EXISTS idx_department_doctors_department ON public.department_doctors(department_id);
+CREATE INDEX IF NOT EXISTS idx_department_doctors_doctor ON public.department_doctors(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_nurses_department ON public.nurses(department);
+CREATE INDEX IF NOT EXISTS idx_nurses_status ON public.nurses(status);
+CREATE INDEX IF NOT EXISTS idx_staff_schedules_staff ON public.staff_schedules(staff_id);
+CREATE INDEX IF NOT EXISTS idx_staff_schedules_day ON public.staff_schedules(day_of_week);
+CREATE INDEX IF NOT EXISTS idx_patients_user_id ON public.patients(user_id);
+CREATE INDEX IF NOT EXISTS idx_patients_status ON public.patients(status);
+CREATE INDEX IF NOT EXISTS idx_patients_department_id ON public.patients(department_id);
+CREATE INDEX IF NOT EXISTS idx_patient_registration_queue_status ON public.patient_registration_queue(status);
+CREATE INDEX IF NOT EXISTS idx_patient_messages_patient ON public.patient_messages(patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_messages_doctor ON public.patient_messages(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_patient_vitals_patient ON public.patient_vitals(patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_vitals_recorded_at ON public.patient_vitals(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient ON public.appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON public.appointments(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON public.appointments(appointment_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_status ON public.appointments(status);
+CREATE INDEX IF NOT EXISTS idx_appointment_waitlist_patient ON public.appointment_waitlist(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointment_waitlist_status ON public.appointment_waitlist(status);
+CREATE INDEX IF NOT EXISTS idx_medical_records_patient ON public.medical_records(patient_id);
+CREATE INDEX IF NOT EXISTS idx_medical_records_doctor ON public.medical_records(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_medical_records_visit_date ON public.medical_records(visit_date);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_patient ON public.prescriptions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_doctor ON public.prescriptions(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_status ON public.prescriptions(status);
+CREATE INDEX IF NOT EXISTS idx_prescription_items_prescription ON public.prescription_items(prescription_id);
+CREATE INDEX IF NOT EXISTS idx_lab_tests_patient ON public.lab_tests(patient_id);
+CREATE INDEX IF NOT EXISTS idx_lab_tests_doctor ON public.lab_tests(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_lab_tests_status ON public.lab_tests(status);
+CREATE INDEX IF NOT EXISTS idx_referrals_patient ON public.referrals(patient_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referring_doctor ON public.referrals(referring_doctor_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_status ON public.referrals(status);
+CREATE INDEX IF NOT EXISTS idx_rooms_status ON public.rooms(status);
+CREATE INDEX IF NOT EXISTS idx_room_assignments_room ON public.room_assignments(room_id);
+CREATE INDEX IF NOT EXISTS idx_room_assignments_patient ON public.room_assignments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_category ON public.inventory(category);
+CREATE INDEX IF NOT EXISTS idx_inventory_status ON public.inventory(status);
+CREATE INDEX IF NOT EXISTS idx_payments_patient ON public.payments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments(payment_status);
+CREATE INDEX IF NOT EXISTS idx_insurance_claims_patient ON public.insurance_claims(patient_id);
+CREATE INDEX IF NOT EXISTS idx_insurance_claims_status ON public.insurance_claims(status);
+CREATE INDEX IF NOT EXISTS idx_insurance_claim_items_claim ON public.insurance_claim_items(claim_id);
+CREATE INDEX IF NOT EXISTS idx_blood_stock_group ON public.blood_stock(blood_group_id);
+CREATE INDEX IF NOT EXISTS idx_donors_blood_group ON public.donors(blood_group_id);
+CREATE INDEX IF NOT EXISTS idx_blood_issues_patient ON public.blood_issues(patient_id);
+CREATE INDEX IF NOT EXISTS idx_blood_stock_transactions_group ON public.blood_stock_transactions(blood_group_id);
+CREATE INDEX IF NOT EXISTS idx_surgeries_patient ON public.surgeries(patient_id);
+CREATE INDEX IF NOT EXISTS idx_surgeries_doctor ON public.surgeries(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_surgeries_date ON public.surgeries(surgery_date);
+CREATE INDEX IF NOT EXISTS idx_surgery_team_surgery ON public.surgery_team(surgery_id);
+CREATE INDEX IF NOT EXISTS idx_post_operation_surgery ON public.post_operation(surgery_id);
+CREATE INDEX IF NOT EXISTS idx_shift_handovers_date ON public.shift_handovers(shift_date);
+CREATE INDEX IF NOT EXISTS idx_shift_handover_patients_handover ON public.shift_handover_patients(handover_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON public.notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications(read);
+CREATE INDEX IF NOT EXISTS idx_reminders_user ON public.reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_time ON public.reminders(reminder_time);
+CREATE INDEX IF NOT EXISTS idx_phi_audit_log_performed_by ON public.phi_audit_log(performed_by);
+CREATE INDEX IF NOT EXISTS idx_phi_audit_log_table_name ON public.phi_audit_log(table_name);
+CREATE INDEX IF NOT EXISTS idx_phi_audit_log_patient_id ON public.phi_audit_log(patient_id);
+CREATE INDEX IF NOT EXISTS idx_phi_audit_log_created_at ON public.phi_audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_diagnosis_codes_code ON public.diagnosis_codes(code);
+CREATE INDEX IF NOT EXISTS idx_procedure_codes_code ON public.procedure_codes(code);
+CREATE INDEX IF NOT EXISTS idx_suppliers_status ON public.suppliers(status);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier ON public.purchase_orders(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON public.purchase_orders(status);
+CREATE INDEX IF NOT EXISTS idx_purchase_order_items_order ON public.purchase_order_items(purchase_order_id);
 
 -- ============================================================================
--- Function: get_doctor_id_for_user
--- Description: Get doctor ID for a given user ID
+-- STEP 8: CREATE TRIGGERS
 -- ============================================================================
-CREATE OR REPLACE FUNCTION public.get_doctor_id_for_user(_user_id UUID)
-RETURNS UUID
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT id FROM public.doctors WHERE user_id = _user_id LIMIT 1
-$$;
+
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON public.user_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_hospital_settings_updated_at BEFORE UPDATE ON public.hospital_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_departments_updated_at BEFORE UPDATE ON public.departments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_doctors_updated_at BEFORE UPDATE ON public.doctors FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_nurses_updated_at BEFORE UPDATE ON public.nurses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_staff_schedules_updated_at BEFORE UPDATE ON public.staff_schedules FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_patients_updated_at BEFORE UPDATE ON public.patients FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_patient_registration_queue_updated_at BEFORE UPDATE ON public.patient_registration_queue FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_patient_messages_updated_at BEFORE UPDATE ON public.patient_messages FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_patient_vitals_updated_at BEFORE UPDATE ON public.patient_vitals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON public.appointments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_appointment_waitlist_updated_at BEFORE UPDATE ON public.appointment_waitlist FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_medical_records_updated_at BEFORE UPDATE ON public.medical_records FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_prescriptions_updated_at BEFORE UPDATE ON public.prescriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_prescription_items_updated_at BEFORE UPDATE ON public.prescription_items FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_prescription_refill_requests_updated_at BEFORE UPDATE ON public.prescription_refill_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_prescription_templates_updated_at BEFORE UPDATE ON public.prescription_templates FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_lab_tests_updated_at BEFORE UPDATE ON public.lab_tests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_referrals_updated_at BEFORE UPDATE ON public.referrals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_rooms_updated_at BEFORE UPDATE ON public.rooms FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_room_assignments_updated_at BEFORE UPDATE ON public.room_assignments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_inventory_updated_at BEFORE UPDATE ON public.inventory FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_insurance_claims_updated_at BEFORE UPDATE ON public.insurance_claims FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_blood_stock_updated_at BEFORE UPDATE ON public.blood_stock FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_donors_updated_at BEFORE UPDATE ON public.donors FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_operation_theatres_updated_at BEFORE UPDATE ON public.operation_theatres FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_surgeries_updated_at BEFORE UPDATE ON public.surgeries FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_post_operation_updated_at BEFORE UPDATE ON public.post_operation FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_shift_handovers_updated_at BEFORE UPDATE ON public.shift_handovers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_reminders_updated_at BEFORE UPDATE ON public.reminders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON public.suppliers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_purchase_orders_updated_at BEFORE UPDATE ON public.purchase_orders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ============================================================================
--- Function: doctor_has_patient_relationship
--- Description: Check if a doctor has any relationship with a patient
+-- STEP 9: ADD FOREIGN KEY CONSTRAINTS
 -- ============================================================================
-CREATE OR REPLACE FUNCTION public.doctor_has_patient_relationship(_doctor_id UUID, _patient_id UUID)
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.appointments WHERE doctor_id = _doctor_id AND patient_id = _patient_id
-        UNION
-        SELECT 1 FROM public.medical_records WHERE doctor_id = _doctor_id AND patient_id = _patient_id
-        UNION
-        SELECT 1 FROM public.prescriptions WHERE doctor_id = _doctor_id AND patient_id = _patient_id
-        UNION
-        SELECT 1 FROM public.lab_tests WHERE doctor_id = _doctor_id AND patient_id = _patient_id
-    )
-$$;
+
+-- Department foreign keys
+ALTER TABLE public.departments ADD CONSTRAINT fk_departments_head FOREIGN KEY (department_head) REFERENCES public.doctors(id) ON DELETE SET NULL;
+ALTER TABLE public.doctors ADD CONSTRAINT fk_doctors_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+ALTER TABLE public.department_doctors ADD CONSTRAINT fk_department_doctors_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE CASCADE;
+ALTER TABLE public.department_doctors ADD CONSTRAINT fk_department_doctors_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+
+-- Patient foreign keys
+ALTER TABLE public.patients ADD CONSTRAINT fk_patients_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+ALTER TABLE public.patient_registration_queue ADD CONSTRAINT fk_patient_registration_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.patient_messages ADD CONSTRAINT fk_patient_messages_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.patient_messages ADD CONSTRAINT fk_patient_messages_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+ALTER TABLE public.patient_vitals ADD CONSTRAINT fk_patient_vitals_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+
+-- Appointment foreign keys
+ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
+ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+
+-- Medical records foreign keys
+ALTER TABLE public.medical_records ADD CONSTRAINT fk_medical_records_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.medical_records ADD CONSTRAINT fk_medical_records_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+
+-- Prescription foreign keys
+ALTER TABLE public.prescriptions ADD CONSTRAINT fk_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.prescriptions ADD CONSTRAINT fk_prescriptions_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+ALTER TABLE public.prescription_items ADD CONSTRAINT fk_prescription_items_prescription FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
+ALTER TABLE public.prescription_refill_requests ADD CONSTRAINT fk_refill_requests_prescription FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
+ALTER TABLE public.prescription_refill_requests ADD CONSTRAINT fk_refill_requests_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.prescription_templates ADD CONSTRAINT fk_prescription_templates_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
+
+-- Lab tests foreign keys
+ALTER TABLE public.lab_tests ADD CONSTRAINT fk_lab_tests_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.lab_tests ADD CONSTRAINT fk_lab_tests_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+
+-- Referrals foreign keys
+ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_referring_doctor FOREIGN KEY (referring_doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_receiving_doctor FOREIGN KEY (receiving_doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
+ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_receiving_department FOREIGN KEY (receiving_department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_appointment FOREIGN KEY (appointment_id) REFERENCES public.appointments(id) ON DELETE SET NULL;
+
+-- Room foreign keys
+ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_room FOREIGN KEY (room_id) REFERENCES public.rooms(id) ON DELETE CASCADE;
+ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE SET NULL;
+
+-- Inventory foreign keys
+ALTER TABLE public.inventory ADD CONSTRAINT fk_inventory_supplier FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE SET NULL;
+
+-- Payment foreign keys
+ALTER TABLE public.payments ADD CONSTRAINT fk_payments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+
+-- Insurance claims foreign keys
+ALTER TABLE public.insurance_claims ADD CONSTRAINT fk_insurance_claims_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.insurance_claims ADD CONSTRAINT fk_insurance_claims_appointment FOREIGN KEY (appointment_id) REFERENCES public.appointments(id) ON DELETE SET NULL;
+ALTER TABLE public.insurance_claim_items ADD CONSTRAINT fk_insurance_claim_items_claim FOREIGN KEY (claim_id) REFERENCES public.insurance_claims(id) ON DELETE CASCADE;
+
+-- Blood bank foreign keys
+ALTER TABLE public.blood_stock ADD CONSTRAINT fk_blood_stock_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+ALTER TABLE public.donors ADD CONSTRAINT fk_donors_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+ALTER TABLE public.blood_issues ADD CONSTRAINT fk_blood_issues_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.blood_issues ADD CONSTRAINT fk_blood_issues_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+ALTER TABLE public.blood_stock_transactions ADD CONSTRAINT fk_blood_transactions_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+
+-- Surgery foreign keys
+ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_ot FOREIGN KEY (ot_id) REFERENCES public.operation_theatres(id) ON DELETE CASCADE;
+ALTER TABLE public.surgery_team ADD CONSTRAINT fk_surgery_team_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
+ALTER TABLE public.post_operation ADD CONSTRAINT fk_post_operation_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
+
+-- Shift handover foreign keys
+ALTER TABLE public.shift_handover_patients ADD CONSTRAINT fk_shift_handover_patients_handover FOREIGN KEY (handover_id) REFERENCES public.shift_handovers(id) ON DELETE CASCADE;
+ALTER TABLE public.shift_handover_patients ADD CONSTRAINT fk_shift_handover_patients_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+
+-- Purchase order foreign keys
+ALTER TABLE public.purchase_orders ADD CONSTRAINT fk_purchase_orders_supplier FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE CASCADE;
+ALTER TABLE public.purchase_order_items ADD CONSTRAINT fk_purchase_order_items_order FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE CASCADE;
+ALTER TABLE public.purchase_order_items ADD CONSTRAINT fk_purchase_order_items_inventory FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id) ON DELETE SET NULL;
 
 -- ============================================================================
--- Function: get_doctor_departments
--- Description: Get all departments a doctor belongs to
+-- STEP 10: SEED DATA
 -- ============================================================================
-CREATE OR REPLACE FUNCTION public.get_doctor_departments(_doctor_id UUID)
-RETURNS SETOF UUID
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT department_id FROM public.department_doctors WHERE doctor_id = _doctor_id
-$$;
+
+-- Insert blood groups
+INSERT INTO public.blood_groups (group_name) VALUES
+    ('A+'), ('A-'), ('B+'), ('B-'), ('AB+'), ('AB-'), ('O+'), ('O-')
+ON CONFLICT (group_name) DO NOTHING;
 
 -- ============================================================================
--- Function: update_updated_at_column
--- Description: Auto-update updated_at timestamp on row update
+-- STEP 11: USER REGISTRATION HANDLER (for Supabase Auth)
 -- ============================================================================
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SET search_path = public
-AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$;
 
--- ============================================================================
--- Function: update_notification_updated_at
--- Description: Update notification timestamp
--- ============================================================================
-CREATE OR REPLACE FUNCTION public.update_notification_updated_at()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$;
-
--- ============================================================================
--- Function: update_settings_updated_at
--- Description: Update settings timestamp
--- ============================================================================
-CREATE OR REPLACE FUNCTION public.update_settings_updated_at()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$;
-
--- ============================================================================
--- Function: handle_new_user
--- Description: Create profile, assign role, and handle role-specific records on signup
--- ============================================================================
+-- Function to handle new user registration
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -2475,35 +1649,29 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-    new_patient_id uuid;
-    staff_user record;
-    user_role text;
+    _role public.app_role;
+    _first_name TEXT;
+    _last_name TEXT;
 BEGIN
-    -- Get the role from metadata
-    user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'patient');
+    -- Extract role from metadata (default to patient)
+    _role := COALESCE(
+        (NEW.raw_user_meta_data->>'role')::public.app_role,
+        'patient'::public.app_role
+    );
     
-    -- Insert into profiles table
-    INSERT INTO public.profiles (id, first_name, last_name, phone, department, specialization, license_number)
-    VALUES (
-        NEW.id,
-        COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-        COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-        COALESCE(NEW.raw_user_meta_data->>'phone', NULL),
-        COALESCE(NEW.raw_user_meta_data->>'department', NULL),
-        COALESCE(NEW.raw_user_meta_data->>'specialization', NULL),
-        COALESCE(NEW.raw_user_meta_data->>'license_number', NULL)
-    );
+    _first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', '');
+    _last_name := COALESCE(NEW.raw_user_meta_data->>'last_name', '');
 
-    -- Insert into user_roles table
+    -- Create profile
+    INSERT INTO public.profiles (id, first_name, last_name)
+    VALUES (NEW.id, _first_name, _last_name);
+
+    -- Create user role
     INSERT INTO public.user_roles (user_id, role)
-    VALUES (
-        NEW.id,
-        user_role::app_role
-    );
+    VALUES (NEW.id, _role);
 
-    -- Handle different roles
-    IF user_role = 'patient' THEN
-        -- Create patient record
+    -- If patient role, create patient record
+    IF _role = 'patient' THEN
         INSERT INTO public.patients (
             first_name,
             last_name,
@@ -2511,58 +1679,23 @@ BEGIN
             phone,
             date_of_birth,
             gender,
-            status,
-            user_id
+            user_id,
+            status
         )
         VALUES (
-            COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-            COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+            _first_name,
+            _last_name,
             NEW.email,
             COALESCE(NEW.raw_user_meta_data->>'phone', NULL),
-            COALESCE((NEW.raw_user_meta_data->>'date_of_birth')::date, CURRENT_DATE),
+            COALESCE((NEW.raw_user_meta_data->>'date_of_birth')::DATE, '1990-01-01'),
             COALESCE(NEW.raw_user_meta_data->>'gender', 'Other'),
-            'pending_verification',
-            NEW.id
-        )
-        RETURNING id INTO new_patient_id;
+            NEW.id,
+            'active'
+        );
+    END IF;
 
-        -- Create registration queue entry
-        INSERT INTO public.patient_registration_queue (patient_id, user_id, status)
-        VALUES (new_patient_id, NEW.id, 'pending');
-
-        -- Create notifications for admins and receptionists
-        FOR staff_user IN 
-            SELECT ur.user_id 
-            FROM public.user_roles ur 
-            WHERE ur.role IN ('admin', 'receptionist')
-        LOOP
-            INSERT INTO public.notifications (
-                user_id,
-                title,
-                message,
-                type,
-                priority,
-                action_url,
-                metadata
-            )
-            VALUES (
-                staff_user.user_id,
-                'New Patient Registration',
-                'New patient ' || COALESCE(NEW.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(NEW.raw_user_meta_data->>'last_name', '') || ' has registered and requires verification.',
-                'patient_registration',
-                'high',
-                '/patients',
-                jsonb_build_object(
-                    'patient_id', new_patient_id,
-                    'patient_name', COALESCE(NEW.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-                    'patient_email', NEW.email,
-                    'registration_time', now()
-                )
-            );
-        END LOOP;
-        
-    ELSIF user_role = 'doctor' THEN
-        -- Create doctor record with user_id link
+    -- If doctor role, create doctor record
+    IF _role = 'doctor' THEN
         INSERT INTO public.doctors (
             first_name,
             last_name,
@@ -2571,41 +1704,18 @@ BEGIN
             specialization,
             license_number,
             department,
-            status,
-            user_id
+            user_id,
+            status
         )
         VALUES (
-            COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-            COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+            _first_name,
+            _last_name,
             NEW.email,
             COALESCE(NEW.raw_user_meta_data->>'phone', NULL),
             COALESCE(NEW.raw_user_meta_data->>'specialization', 'General'),
             COALESCE(NEW.raw_user_meta_data->>'license_number', 'PENDING'),
             COALESCE(NEW.raw_user_meta_data->>'department', NULL),
-            'active',
-            NEW.id
-        );
-        
-    ELSIF user_role = 'nurse' THEN
-        -- Create nurse record
-        INSERT INTO public.nurses (
-            first_name,
-            last_name,
-            email,
-            phone,
-            specialization,
-            license_number,
-            department,
-            status
-        )
-        VALUES (
-            COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-            COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-            NEW.email,
-            COALESCE(NEW.raw_user_meta_data->>'phone', NULL),
-            COALESCE(NEW.raw_user_meta_data->>'specialization', NULL),
-            COALESCE(NEW.raw_user_meta_data->>'license_number', 'PENDING'),
-            COALESCE(NEW.raw_user_meta_data->>'department', NULL),
+            NEW.id,
             'active'
         );
     END IF;
@@ -2614,374 +1724,74 @@ BEGIN
 END;
 $$;
 
--- ============================================================================
--- TRIGGERS
--- ============================================================================
-
--- Auto-update updated_at triggers for all tables with updated_at column
-CREATE TRIGGER update_profiles_updated_at 
-    BEFORE UPDATE ON public.profiles 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_patients_updated_at 
-    BEFORE UPDATE ON public.patients 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_patient_registration_queue_updated_at 
-    BEFORE UPDATE ON public.patient_registration_queue 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_patient_messages_updated_at 
-    BEFORE UPDATE ON public.patient_messages 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_doctors_updated_at 
-    BEFORE UPDATE ON public.doctors 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_nurses_updated_at 
-    BEFORE UPDATE ON public.nurses 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_staff_schedules_updated_at 
-    BEFORE UPDATE ON public.staff_schedules 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_departments_updated_at 
-    BEFORE UPDATE ON public.departments 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_appointments_updated_at 
-    BEFORE UPDATE ON public.appointments 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_medical_records_updated_at 
-    BEFORE UPDATE ON public.medical_records 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_prescriptions_updated_at 
-    BEFORE UPDATE ON public.prescriptions 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_prescription_refill_requests_updated_at 
-    BEFORE UPDATE ON public.prescription_refill_requests 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_lab_tests_updated_at 
-    BEFORE UPDATE ON public.lab_tests 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_rooms_updated_at 
-    BEFORE UPDATE ON public.rooms 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_room_assignments_updated_at 
-    BEFORE UPDATE ON public.room_assignments 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_inventory_updated_at 
-    BEFORE UPDATE ON public.inventory 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_payments_updated_at 
-    BEFORE UPDATE ON public.payments 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_blood_stock_updated_at 
-    BEFORE UPDATE ON public.blood_stock 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_donors_updated_at 
-    BEFORE UPDATE ON public.donors 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_operation_theatres_updated_at 
-    BEFORE UPDATE ON public.operation_theatres 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_surgeries_updated_at 
-    BEFORE UPDATE ON public.surgeries 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_post_operation_updated_at 
-    BEFORE UPDATE ON public.post_operation 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_notifications_updated_at 
-    BEFORE UPDATE ON public.notifications 
-    FOR EACH ROW EXECUTE FUNCTION public.update_notification_updated_at();
-
-CREATE TRIGGER update_reminders_updated_at 
-    BEFORE UPDATE ON public.reminders 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_user_settings_updated_at 
-    BEFORE UPDATE ON public.user_settings 
-    FOR EACH ROW EXECUTE FUNCTION public.update_settings_updated_at();
-
-CREATE TRIGGER update_hospital_settings_updated_at 
-    BEFORE UPDATE ON public.hospital_settings 
-    FOR EACH ROW EXECUTE FUNCTION public.update_settings_updated_at();
-
--- Handle new user registration trigger
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW
-    EXECUTE FUNCTION public.handle_new_user();
+-- Trigger for new user registration (only create if auth.users exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'users') THEN
+        DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+        CREATE TRIGGER on_auth_user_created
+            AFTER INSERT ON auth.users
+            FOR EACH ROW
+            EXECUTE FUNCTION public.handle_new_user();
+    END IF;
+END $$;
 
 -- ============================================================================
--- FOREIGN KEY CONSTRAINTS
--- ============================================================================
-
--- Patient Registration Queue
-ALTER TABLE public.patient_registration_queue 
-    ADD CONSTRAINT fk_patient_registration_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-
-ALTER TABLE public.patient_registration_queue 
-    ADD CONSTRAINT fk_patient_registration_user 
-    FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
--- Patient Messages
-ALTER TABLE public.patient_messages 
-    ADD CONSTRAINT fk_patient_messages_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-
-ALTER TABLE public.patient_messages 
-    ADD CONSTRAINT fk_patient_messages_doctor 
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-
--- Department Doctors
-ALTER TABLE public.department_doctors 
-    ADD CONSTRAINT fk_department_doctors_department 
-    FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE CASCADE;
-
-ALTER TABLE public.department_doctors 
-    ADD CONSTRAINT fk_department_doctors_doctor 
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-
--- Appointments
-ALTER TABLE public.appointments 
-    ADD CONSTRAINT fk_appointments_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
-ALTER TABLE public.appointments 
-    ADD CONSTRAINT fk_appointments_doctor 
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
-
-ALTER TABLE public.appointments 
-    ADD CONSTRAINT fk_appointments_department 
-    FOREIGN KEY (department_id) REFERENCES public.departments(department_id);
-
--- Medical Records
-ALTER TABLE public.medical_records 
-    ADD CONSTRAINT fk_medical_records_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
-ALTER TABLE public.medical_records 
-    ADD CONSTRAINT fk_medical_records_doctor 
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
-
--- Prescriptions
-ALTER TABLE public.prescriptions 
-    ADD CONSTRAINT fk_prescriptions_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
-ALTER TABLE public.prescriptions 
-    ADD CONSTRAINT fk_prescriptions_doctor 
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
-
--- Prescription Refill Requests
-ALTER TABLE public.prescription_refill_requests 
-    ADD CONSTRAINT fk_refill_requests_prescription 
-    FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
-
-ALTER TABLE public.prescription_refill_requests 
-    ADD CONSTRAINT fk_refill_requests_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
--- Lab Tests
-ALTER TABLE public.lab_tests 
-    ADD CONSTRAINT fk_lab_tests_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
-ALTER TABLE public.lab_tests 
-    ADD CONSTRAINT fk_lab_tests_doctor 
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
-
--- Room Assignments
-ALTER TABLE public.room_assignments 
-    ADD CONSTRAINT fk_room_assignments_room 
-    FOREIGN KEY (room_id) REFERENCES public.rooms(id);
-
-ALTER TABLE public.room_assignments 
-    ADD CONSTRAINT fk_room_assignments_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
-ALTER TABLE public.room_assignments 
-    ADD CONSTRAINT fk_room_assignments_surgery 
-    FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id);
-
--- Payments
-ALTER TABLE public.payments 
-    ADD CONSTRAINT fk_payments_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
--- Departments
-ALTER TABLE public.departments 
-    ADD CONSTRAINT fk_departments_head 
-    FOREIGN KEY (department_head) REFERENCES public.doctors(id);
-
--- Patients
-ALTER TABLE public.patients 
-    ADD CONSTRAINT fk_patients_department 
-    FOREIGN KEY (department_id) REFERENCES public.departments(department_id);
-
--- Doctors
-ALTER TABLE public.doctors 
-    ADD CONSTRAINT fk_doctors_department 
-    FOREIGN KEY (department_id) REFERENCES public.departments(department_id);
-
--- Blood Bank
-ALTER TABLE public.blood_stock 
-    ADD CONSTRAINT fk_blood_stock_group 
-    FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id);
-
-ALTER TABLE public.donors 
-    ADD CONSTRAINT fk_donors_blood_group 
-    FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id);
-
-ALTER TABLE public.blood_issues 
-    ADD CONSTRAINT fk_blood_issues_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
-ALTER TABLE public.blood_issues 
-    ADD CONSTRAINT fk_blood_issues_blood_group 
-    FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id);
-
-ALTER TABLE public.blood_stock_transactions 
-    ADD CONSTRAINT fk_blood_transactions_blood_group 
-    FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id);
-
--- Operation Department
-ALTER TABLE public.surgeries 
-    ADD CONSTRAINT fk_surgeries_patient 
-    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
-
-ALTER TABLE public.surgeries 
-    ADD CONSTRAINT fk_surgeries_doctor 
-    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
-
-ALTER TABLE public.surgeries 
-    ADD CONSTRAINT fk_surgeries_theatre 
-    FOREIGN KEY (theatre_id) REFERENCES public.operation_theatres(id);
-
-ALTER TABLE public.surgery_team 
-    ADD CONSTRAINT fk_surgery_team_surgery 
-    FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
-
-ALTER TABLE public.post_operation 
-    ADD CONSTRAINT fk_post_operation_surgery 
-    FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
-
--- ============================================================================
--- SEED DATA: Blood Groups
--- ============================================================================
-INSERT INTO public.blood_groups (group_name) VALUES
-    ('A+'), ('A-'), ('B+'), ('B-'), ('AB+'), ('AB-'), ('O+'), ('O-')
-ON CONFLICT (group_name) DO NOTHING;
-
--- ============================================================================
--- DATABASE SCHEMA SUMMARY
+-- DATABASE SCHEMA SUMMARY v2.3
 -- ============================================================================
 /*
 ================================================================================
-                    HOSPITAL MANAGEMENT SYSTEM DATABASE v2.2
+              HOSPITAL MANAGEMENT SYSTEM DATABASE v2.3 (January 2026)
 ================================================================================
 
-TABLES OVERVIEW (45+ Tables):
-============================
+TABLES (45+ Tables):
+====================
+- User Management: profiles, user_roles, user_settings, hospital_settings
+- Department & Staff: departments, doctors, department_doctors, nurses, staff_schedules
+- Patient Management: patients, patient_registration_queue, patient_messages, patient_vitals
+- Clinical: appointments, appointment_waitlist, medical_records, prescriptions, 
+           prescription_items, prescription_refill_requests, prescription_templates, 
+           lab_tests, referrals
+- Facility: rooms, room_assignments, inventory
+- Financial: payments, insurance_claims, insurance_claim_items
+- Blood Bank: blood_groups, blood_stock, donors, blood_issues, blood_stock_transactions
+- Operations: operation_theatres, surgeries, surgery_team, post_operation
+- Shift Handover: shift_handovers, shift_handover_patients
+- Notifications: notifications, reminders
+- Audit: phi_audit_log
+- Clinical Codes: diagnosis_codes, procedure_codes, drug_interactions
+- Supply Chain: suppliers, purchase_orders, purchase_order_items
 
-┌─────────────────────────────┬────────────────────────────────────────────────────┐
-│ Section                     │ Tables                                             │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 1. User Management          │ profiles, user_roles, user_settings,               │
-│                             │ hospital_settings                                  │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 2. Department & Staff       │ departments, doctors, department_doctors,          │
-│                             │ nurses, staff_schedules                            │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 3. Patient Management       │ patients, patient_registration_queue,              │
-│                             │ patient_messages, patient_vitals                   │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 4. Clinical                 │ appointments, appointment_waitlist, medical_records│
-│                             │ prescriptions, prescription_items, prescription_   │
-│                             │ refill_requests, prescription_templates, lab_tests,│
-│                             │ referrals                                          │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 5. Facility Management      │ rooms, room_assignments, inventory                 │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 6. Financial                │ payments, insurance_claims, insurance_claim_items  │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 7. Blood Bank               │ blood_groups, blood_stock, donors,                 │
-│                             │ blood_issues, blood_stock_transactions             │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 8. Operation Department     │ operation_theatres, surgeries, surgery_team,       │
-│                             │ post_operation                                     │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 9. Notifications            │ notifications, reminders                           │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 10. Audit & Compliance      │ phi_audit_log                                      │
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 11. Clinical Codes          │ diagnosis_codes, procedure_codes, drug_interactions│
-├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 12. Supply Chain            │ suppliers, purchase_orders, purchase_order_items   │
-└─────────────────────────────┴────────────────────────────────────────────────────┘
+USER ROLES (7):
+===============
+admin, doctor, nurse, pharmacist, receptionist, patient, lab_technician
 
-USER ROLES (7 Roles):
-=====================
-┌─────────────────┬────────────────────────────────────────────────────────────────┐
-│ Role            │ Permissions                                                     │
-├─────────────────┼────────────────────────────────────────────────────────────────┤
-│ admin           │ Full system access, manage users, settings, staff, all data    │
-│ doctor          │ Patient care, prescriptions, medical records, surgeries        │
-│ nurse           │ Patient care, vitals, medication, blood bank, surgery assist   │
-│ pharmacist      │ Prescription dispensing, inventory management                  │
-│ receptionist    │ Appointments, patient registration, billing, scheduling        │
-│ lab_technician  │ Lab tests, blood bank operations, sample processing            │
-│ patient         │ View own records, appointments, prescriptions, messages        │
-└─────────────────┴────────────────────────────────────────────────────────────────┘
-
-DATABASE FUNCTIONS:
-===================
-• has_role(_user_id, _role)                    - Check if user has specific role
-• get_user_role(_user_id)                      - Get user's assigned role
-• get_patient_id_for_user(_user_id)            - Get patient ID for user
-• get_doctor_id_for_user(_user_id)             - Get doctor ID for user
-• doctor_has_patient_relationship(dr, pt)       - Check doctor-patient relationship
-• get_doctor_departments(_doctor_id)           - Get doctor's departments
-• update_updated_at_column()                   - Auto-update timestamps
-• update_notification_updated_at()             - Notification timestamp update
-• update_settings_updated_at()                 - Settings timestamp update
-• handle_new_user()                            - Create profile/role on signup
-
-SECURITY FEATURES:
-==================
-✓ Row Level Security (RLS) enabled on all tables
-✓ Role-based access control via user_roles table
-✓ Security definer functions for role checks (prevents recursion)
-✓ Separate policies for each CRUD operation per role
-✓ Automatic profile and role creation on user signup
-✓ Admin-only access for sensitive settings
-✓ HIPAA-compliant PHI audit logging
-✓ Soft delete support for critical tables
-
-TRIGGERS:
+FEATURES:
 =========
-• Auto-update updated_at on all tables with timestamp
-• on_auth_user_created for automatic profile creation
+✓ Row Level Security (RLS) on all tables
+✓ Role-based access control
+✓ HIPAA-compliant PHI audit logging
+✓ Automatic profile/role creation on signup
+✓ Soft delete support for critical tables
+✓ Comprehensive foreign key constraints
+✓ Performance indexes on all key columns
+
+EXECUTION ORDER:
+================
+This schema executes in the correct order:
+1. Extensions
+2. Custom types (app_role enum)
+3. Helper functions (has_role, get_patient_id_for_user, etc.)
+4. All tables (without RLS)
+5. Enable RLS on all tables
+6. Create RLS policies (now safe since functions exist)
+7. Create indexes
+8. Create triggers
+9. Add foreign key constraints
+10. Seed data
+11. User registration handler
 
 ================================================================================
-                               END OF SCHEMA v2.2
+                              END OF SCHEMA v2.3
 ================================================================================
 */
