@@ -1552,6 +1552,767 @@ CREATE INDEX idx_phi_audit_action ON public.phi_audit_log(action);
 CREATE INDEX idx_phi_audit_created_at ON public.phi_audit_log(created_at DESC);
 
 -- ============================================================================
+-- SECTION 11: ADDITIONAL CLINICAL TABLES
+-- ============================================================================
+
+-- ============================================================================
+-- TABLE: patient_vitals
+-- Description: Stores patient vital signs measurements
+-- ============================================================================
+CREATE TABLE public.patient_vitals (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,                        -- Reference to patient
+    recorded_by UUID NOT NULL,                       -- Staff who recorded vitals
+    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    blood_pressure_systolic INTEGER,                 -- Systolic BP (mmHg)
+    blood_pressure_diastolic INTEGER,                -- Diastolic BP (mmHg)
+    heart_rate INTEGER,                              -- Heart rate (bpm)
+    temperature NUMERIC(4,1),                        -- Temperature (°F or °C)
+    spo2 INTEGER,                                    -- Oxygen saturation (%)
+    respiratory_rate INTEGER,                        -- Breaths per minute
+    weight NUMERIC(5,2),                             -- Weight (kg)
+    height NUMERIC(5,2),                             -- Height (cm)
+    bmi NUMERIC(4,1),                                -- Body Mass Index
+    pain_level INTEGER CHECK (pain_level >= 0 AND pain_level <= 10),
+    blood_glucose NUMERIC(5,1),                      -- Blood glucose (mg/dL)
+    is_abnormal BOOLEAN DEFAULT false,               -- Flag for abnormal readings
+    abnormal_flags TEXT[],                           -- List of abnormal readings
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.patient_vitals ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for patient_vitals
+CREATE POLICY "Admins can manage all vitals" ON public.patient_vitals
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Patients can view own vitals" ON public.patient_vitals
+    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+CREATE POLICY "Nurses can view all vitals" ON public.patient_vitals
+    FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+
+CREATE POLICY "Nurses can insert vitals" ON public.patient_vitals
+    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+
+CREATE POLICY "Nurses can update vitals" ON public.patient_vitals
+    FOR UPDATE USING (public.has_role(auth.uid(), 'nurse'))
+    WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+
+CREATE POLICY "Doctors can view vitals for their patients" ON public.patient_vitals
+    FOR SELECT USING (
+        public.has_role(auth.uid(), 'doctor') AND 
+        public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), patient_id)
+    );
+
+-- Indexes for patient_vitals
+CREATE INDEX idx_patient_vitals_patient_id ON public.patient_vitals(patient_id);
+CREATE INDEX idx_patient_vitals_recorded_at ON public.patient_vitals(recorded_at DESC);
+CREATE INDEX idx_patient_vitals_is_abnormal ON public.patient_vitals(is_abnormal);
+
+-- ============================================================================
+-- TABLE: appointment_waitlist
+-- Description: Manages appointment waiting list
+-- ============================================================================
+CREATE TABLE public.appointment_waitlist (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,                        -- Reference to patient
+    doctor_id UUID,                                  -- Preferred doctor (optional)
+    department_id UUID,                              -- Preferred department
+    preferred_date_start DATE NOT NULL,              -- Earliest acceptable date
+    preferred_date_end DATE,                         -- Latest acceptable date
+    preferred_time_slots JSONB DEFAULT '[]'::jsonb,  -- Preferred time slots
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal'
+        CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    status VARCHAR(20) NOT NULL DEFAULT 'waiting'
+        CHECK (status IN ('waiting', 'notified', 'scheduled', 'cancelled', 'expired')),
+    reason TEXT,                                     -- Reason for appointment
+    notes TEXT,
+    notified_at TIMESTAMP WITH TIME ZONE,            -- When patient was notified
+    responded_at TIMESTAMP WITH TIME ZONE,           -- When patient responded
+    response_deadline TIMESTAMP WITH TIME ZONE,      -- Deadline to respond
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.appointment_waitlist ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for appointment_waitlist
+CREATE POLICY "Admins can manage all waitlist entries" ON public.appointment_waitlist
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Receptionists can manage all waitlist entries" ON public.appointment_waitlist
+    FOR ALL USING (public.has_role(auth.uid(), 'receptionist'))
+    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+
+CREATE POLICY "Patients can view own waitlist entries" ON public.appointment_waitlist
+    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+CREATE POLICY "Patients can create own waitlist entries" ON public.appointment_waitlist
+    FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+CREATE POLICY "Patients can update own waitlist entries" ON public.appointment_waitlist
+    FOR UPDATE USING (patient_id = public.get_patient_id_for_user(auth.uid()))
+    WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+CREATE POLICY "Patients can cancel own waitlist entries" ON public.appointment_waitlist
+    FOR DELETE USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+CREATE POLICY "Doctors can view waitlist for their appointments" ON public.appointment_waitlist
+    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+
+-- Indexes for appointment_waitlist
+CREATE INDEX idx_appointment_waitlist_patient ON public.appointment_waitlist(patient_id);
+CREATE INDEX idx_appointment_waitlist_doctor ON public.appointment_waitlist(doctor_id);
+CREATE INDEX idx_appointment_waitlist_status ON public.appointment_waitlist(status);
+CREATE INDEX idx_appointment_waitlist_priority ON public.appointment_waitlist(priority);
+
+-- ============================================================================
+-- TABLE: referrals
+-- Description: Manages patient referrals between doctors/departments
+-- ============================================================================
+CREATE TABLE public.referrals (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,                        -- Patient being referred
+    referring_doctor_id UUID NOT NULL,               -- Doctor making referral
+    receiving_doctor_id UUID,                        -- Doctor receiving referral
+    receiving_department_id UUID,                    -- Department receiving referral
+    reason TEXT NOT NULL,                            -- Reason for referral
+    diagnosis TEXT,                                  -- Current diagnosis
+    clinical_notes TEXT,                             -- Clinical notes
+    urgency VARCHAR(20) NOT NULL DEFAULT 'routine'
+        CHECK (urgency IN ('routine', 'urgent', 'emergency')),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled')),
+    response_notes TEXT,                             -- Notes from receiving doctor
+    responded_at TIMESTAMP WITH TIME ZONE,           -- When referral was responded to
+    completed_at TIMESTAMP WITH TIME ZONE,           -- When referral was completed
+    appointment_id UUID,                             -- Resulting appointment if any
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for referrals
+CREATE POLICY "Admins can manage all referrals" ON public.referrals
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Doctors can view referrals they made or received" ON public.referrals
+    FOR SELECT USING (
+        referring_doctor_id = public.get_doctor_id_for_user(auth.uid()) OR
+        receiving_doctor_id = public.get_doctor_id_for_user(auth.uid())
+    );
+
+CREATE POLICY "Doctors can create referrals" ON public.referrals
+    FOR INSERT WITH CHECK (
+        public.has_role(auth.uid(), 'doctor') AND
+        referring_doctor_id = public.get_doctor_id_for_user(auth.uid())
+    );
+
+CREATE POLICY "Doctors can update referrals they're involved in" ON public.referrals
+    FOR UPDATE USING (
+        referring_doctor_id = public.get_doctor_id_for_user(auth.uid()) OR
+        receiving_doctor_id = public.get_doctor_id_for_user(auth.uid())
+    );
+
+CREATE POLICY "Patients can view their own referrals" ON public.referrals
+    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+-- Indexes for referrals
+CREATE INDEX idx_referrals_patient ON public.referrals(patient_id);
+CREATE INDEX idx_referrals_referring_doctor ON public.referrals(referring_doctor_id);
+CREATE INDEX idx_referrals_receiving_doctor ON public.referrals(receiving_doctor_id);
+CREATE INDEX idx_referrals_status ON public.referrals(status);
+CREATE INDEX idx_referrals_urgency ON public.referrals(urgency);
+
+-- ============================================================================
+-- SECTION 12: INSURANCE & BILLING TABLES
+-- ============================================================================
+
+-- ============================================================================
+-- TABLE: insurance_claims
+-- Description: Manages insurance claim submissions
+-- ============================================================================
+CREATE TABLE public.insurance_claims (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,                        -- Patient for the claim
+    appointment_id UUID,                             -- Related appointment
+    insurance_provider VARCHAR(100) NOT NULL,        -- Insurance company
+    policy_number VARCHAR(50) NOT NULL,              -- Policy number
+    claim_number VARCHAR(50),                        -- Claim reference number
+    service_date DATE NOT NULL,                      -- Date of service
+    submission_date DATE DEFAULT CURRENT_DATE,       -- When claim was submitted
+    total_amount NUMERIC(10,2) NOT NULL,             -- Total amount claimed
+    approved_amount NUMERIC(10,2),                   -- Amount approved
+    patient_responsibility NUMERIC(10,2),            -- Patient's portion
+    status VARCHAR(20) DEFAULT 'draft'
+        CHECK (status IN ('draft', 'submitted', 'pending', 'approved', 'denied', 'appealed', 'paid')),
+    diagnosis_codes TEXT[] DEFAULT '{}',             -- ICD-10 codes
+    procedure_codes TEXT[] DEFAULT '{}',             -- CPT codes
+    notes TEXT,
+    denial_code VARCHAR(20),                         -- Denial reason code
+    denial_reason TEXT,                              -- Denial explanation
+    appeal_deadline DATE,                            -- Deadline for appeal
+    appeal_submitted BOOLEAN DEFAULT false,
+    appeal_notes TEXT,
+    submitted_by UUID,                               -- Who submitted the claim
+    reviewed_by UUID,                                -- Who reviewed the claim
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.insurance_claims ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for insurance_claims
+CREATE POLICY "Admins can manage all claims" ON public.insurance_claims
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Receptionists can manage claims" ON public.insurance_claims
+    FOR ALL USING (public.has_role(auth.uid(), 'receptionist'))
+    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+
+CREATE POLICY "Patients can view own claims" ON public.insurance_claims
+    FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+CREATE POLICY "Doctors can view claims for their patients" ON public.insurance_claims
+    FOR SELECT USING (
+        public.has_role(auth.uid(), 'doctor') AND
+        public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), patient_id)
+    );
+
+-- Indexes for insurance_claims
+CREATE INDEX idx_insurance_claims_patient ON public.insurance_claims(patient_id);
+CREATE INDEX idx_insurance_claims_status ON public.insurance_claims(status);
+CREATE INDEX idx_insurance_claims_service_date ON public.insurance_claims(service_date);
+CREATE INDEX idx_insurance_claims_submission_date ON public.insurance_claims(submission_date);
+
+-- ============================================================================
+-- TABLE: insurance_claim_items
+-- Description: Line items for insurance claims
+-- ============================================================================
+CREATE TABLE public.insurance_claim_items (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    claim_id UUID NOT NULL,                          -- Parent claim
+    procedure_code VARCHAR(20) NOT NULL,             -- CPT code
+    procedure_description TEXT,                      -- Description of procedure
+    diagnosis_code VARCHAR(20),                      -- Related ICD-10 code
+    service_date DATE NOT NULL,                      -- Date of this service
+    unit_price NUMERIC(10,2) NOT NULL,               -- Price per unit
+    quantity INTEGER DEFAULT 1,                      -- Number of units
+    total_price NUMERIC(10,2) NOT NULL,              -- Total for this item
+    status VARCHAR(20) DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'denied', 'partial')),
+    denial_reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.insurance_claim_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for insurance_claim_items
+CREATE POLICY "Admins can manage all claim items" ON public.insurance_claim_items
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Receptionists can manage claim items" ON public.insurance_claim_items
+    FOR ALL USING (public.has_role(auth.uid(), 'receptionist'))
+    WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+
+CREATE POLICY "Patients can view own claim items" ON public.insurance_claim_items
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.insurance_claims c
+            WHERE c.id = insurance_claim_items.claim_id
+            AND c.patient_id = public.get_patient_id_for_user(auth.uid())
+        )
+    );
+
+CREATE POLICY "Doctors can view claim items for their patients" ON public.insurance_claim_items
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.insurance_claims c
+            WHERE c.id = insurance_claim_items.claim_id
+            AND public.has_role(auth.uid(), 'doctor')
+            AND public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), c.patient_id)
+        )
+    );
+
+-- Indexes for insurance_claim_items
+CREATE INDEX idx_insurance_claim_items_claim ON public.insurance_claim_items(claim_id);
+CREATE INDEX idx_insurance_claim_items_procedure ON public.insurance_claim_items(procedure_code);
+
+-- ============================================================================
+-- SECTION 13: CLINICAL CODES TABLES
+-- ============================================================================
+
+-- ============================================================================
+-- TABLE: diagnosis_codes (ICD-10)
+-- Description: Standard diagnosis codes
+-- ============================================================================
+CREATE TABLE public.diagnosis_codes (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,                -- ICD-10 code
+    description TEXT NOT NULL,                       -- Code description
+    category VARCHAR(100),                           -- Category
+    subcategory VARCHAR(100),                        -- Subcategory
+    is_billable BOOLEAN DEFAULT true,                -- Can be billed
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.diagnosis_codes ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for diagnosis_codes
+CREATE POLICY "Anyone can view diagnosis codes" ON public.diagnosis_codes
+    FOR SELECT USING (true);
+
+CREATE POLICY "Admins can manage diagnosis codes" ON public.diagnosis_codes
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for diagnosis_codes
+CREATE INDEX idx_diagnosis_codes_code ON public.diagnosis_codes(code);
+CREATE INDEX idx_diagnosis_codes_category ON public.diagnosis_codes(category);
+
+-- ============================================================================
+-- TABLE: procedure_codes (CPT)
+-- Description: Standard procedure codes
+-- ============================================================================
+CREATE TABLE public.procedure_codes (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,                -- CPT code
+    description TEXT NOT NULL,                       -- Code description
+    category VARCHAR(100),                           -- Category
+    base_price NUMERIC(10,2),                        -- Standard price
+    modifier_allowed BOOLEAN DEFAULT true,           -- Can use modifiers
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.procedure_codes ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for procedure_codes
+CREATE POLICY "Anyone can view procedure codes" ON public.procedure_codes
+    FOR SELECT USING (true);
+
+CREATE POLICY "Admins can manage procedure codes" ON public.procedure_codes
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for procedure_codes
+CREATE INDEX idx_procedure_codes_code ON public.procedure_codes(code);
+CREATE INDEX idx_procedure_codes_category ON public.procedure_codes(category);
+
+-- ============================================================================
+-- TABLE: drug_interactions
+-- Description: Known drug-drug interactions database
+-- ============================================================================
+CREATE TABLE public.drug_interactions (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    drug_a VARCHAR(100) NOT NULL,                    -- First drug
+    drug_b VARCHAR(100) NOT NULL,                    -- Second drug
+    severity VARCHAR(20) NOT NULL
+        CHECK (severity IN ('mild', 'moderate', 'severe', 'contraindicated')),
+    description TEXT NOT NULL,                       -- Interaction description
+    mechanism TEXT,                                  -- How they interact
+    management TEXT,                                 -- How to manage
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.drug_interactions ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for drug_interactions
+CREATE POLICY "Anyone can view drug interactions" ON public.drug_interactions
+    FOR SELECT USING (true);
+
+CREATE POLICY "Admins can manage drug interactions" ON public.drug_interactions
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for drug_interactions
+CREATE INDEX idx_drug_interactions_drug_a ON public.drug_interactions(drug_a);
+CREATE INDEX idx_drug_interactions_drug_b ON public.drug_interactions(drug_b);
+CREATE INDEX idx_drug_interactions_severity ON public.drug_interactions(severity);
+
+-- ============================================================================
+-- SECTION 14: PRESCRIPTION TEMPLATES
+-- ============================================================================
+
+-- ============================================================================
+-- TABLE: prescription_templates
+-- Description: Reusable prescription templates for common conditions
+-- ============================================================================
+CREATE TABLE public.prescription_templates (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    doctor_id UUID,                                  -- Doctor who created template
+    template_name VARCHAR(100) NOT NULL,             -- Template name
+    description TEXT,                                -- Template description
+    diagnosis_category VARCHAR(100),                 -- Related diagnosis category
+    medications JSONB NOT NULL DEFAULT '[]',         -- Array of medications
+    is_global BOOLEAN DEFAULT false,                 -- Available to all doctors
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.prescription_templates ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for prescription_templates
+CREATE POLICY "Anyone can view global templates" ON public.prescription_templates
+    FOR SELECT USING (is_global = true);
+
+CREATE POLICY "Doctors can view own templates" ON public.prescription_templates
+    FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+
+CREATE POLICY "Doctors can create templates" ON public.prescription_templates
+    FOR INSERT WITH CHECK (
+        public.has_role(auth.uid(), 'doctor') AND
+        doctor_id = public.get_doctor_id_for_user(auth.uid())
+    );
+
+CREATE POLICY "Doctors can update own templates" ON public.prescription_templates
+    FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()))
+    WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+
+CREATE POLICY "Doctors can delete own templates" ON public.prescription_templates
+    FOR DELETE USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+
+CREATE POLICY "Admins can manage all templates" ON public.prescription_templates
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for prescription_templates
+CREATE INDEX idx_prescription_templates_doctor ON public.prescription_templates(doctor_id);
+CREATE INDEX idx_prescription_templates_global ON public.prescription_templates(is_global);
+CREATE INDEX idx_prescription_templates_category ON public.prescription_templates(diagnosis_category);
+
+-- ============================================================================
+-- TABLE: prescription_items
+-- Description: Individual medications in a prescription
+-- ============================================================================
+CREATE TABLE public.prescription_items (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    prescription_id UUID NOT NULL,                   -- Parent prescription
+    medication_name VARCHAR(200) NOT NULL,           -- Medication name
+    dosage VARCHAR(50),                              -- Dosage (e.g., "500mg")
+    frequency VARCHAR(50),                           -- How often (e.g., "twice daily")
+    duration VARCHAR(50),                            -- How long (e.g., "7 days")
+    quantity INTEGER,                                -- Number of units
+    route VARCHAR(50),                               -- Administration route
+    instructions TEXT,                               -- Special instructions
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.prescription_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for prescription_items (follows parent prescription policies)
+CREATE POLICY "Users can view items of prescriptions they can access" ON public.prescription_items
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.prescriptions p
+            WHERE p.id = prescription_items.prescription_id
+            AND (
+                p.patient_id = public.get_patient_id_for_user(auth.uid()) OR
+                p.doctor_id = public.get_doctor_id_for_user(auth.uid()) OR
+                public.has_role(auth.uid(), 'admin') OR
+                public.has_role(auth.uid(), 'pharmacist')
+            )
+        )
+    );
+
+CREATE POLICY "Doctors can manage items of their prescriptions" ON public.prescription_items
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.prescriptions p
+            WHERE p.id = prescription_items.prescription_id
+            AND p.doctor_id = public.get_doctor_id_for_user(auth.uid())
+        )
+    );
+
+CREATE POLICY "Admins can manage all prescription items" ON public.prescription_items
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for prescription_items
+CREATE INDEX idx_prescription_items_prescription ON public.prescription_items(prescription_id);
+
+-- ============================================================================
+-- SECTION 15: SUPPLIERS & PURCHASE ORDERS
+-- ============================================================================
+
+-- ============================================================================
+-- TABLE: suppliers
+-- Description: Medical supply vendors
+-- ============================================================================
+CREATE TABLE public.suppliers (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,                      -- Supplier name
+    contact_person VARCHAR(100),                     -- Contact person
+    phone VARCHAR(20),                               -- Phone number
+    email VARCHAR(100),                              -- Email address
+    address TEXT,                                    -- Physical address
+    payment_terms VARCHAR(50),                       -- Payment terms
+    status VARCHAR(20) DEFAULT 'active'
+        CHECK (status IN ('active', 'inactive', 'suspended')),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for suppliers
+CREATE POLICY "Staff can view suppliers" ON public.suppliers
+    FOR SELECT USING (
+        public.has_role(auth.uid(), 'admin') OR
+        public.has_role(auth.uid(), 'pharmacist')
+    );
+
+CREATE POLICY "Admins can manage suppliers" ON public.suppliers
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for suppliers
+CREATE INDEX idx_suppliers_name ON public.suppliers(name);
+CREATE INDEX idx_suppliers_status ON public.suppliers(status);
+
+-- ============================================================================
+-- TABLE: purchase_orders
+-- Description: Orders for medical supplies
+-- ============================================================================
+CREATE TABLE public.purchase_orders (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    po_number VARCHAR(50) NOT NULL UNIQUE,           -- PO reference number
+    supplier_id UUID NOT NULL,                       -- Supplier reference
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE,   -- Date ordered
+    expected_delivery DATE,                          -- Expected delivery date
+    actual_delivery DATE,                            -- Actual delivery date
+    status VARCHAR(20) NOT NULL DEFAULT 'draft'
+        CHECK (status IN ('draft', 'pending', 'approved', 'ordered', 'shipped', 'delivered', 'cancelled')),
+    total_amount NUMERIC(12,2) NOT NULL DEFAULT 0,   -- Total order value
+    notes TEXT,
+    created_by UUID,                                 -- Who created the order
+    approved_by UUID,                                -- Who approved the order
+    approved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for purchase_orders
+CREATE POLICY "Staff can view purchase orders" ON public.purchase_orders
+    FOR SELECT USING (
+        public.has_role(auth.uid(), 'admin') OR
+        public.has_role(auth.uid(), 'pharmacist')
+    );
+
+CREATE POLICY "Pharmacists can create purchase orders" ON public.purchase_orders
+    FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+
+CREATE POLICY "Pharmacists can update draft orders" ON public.purchase_orders
+    FOR UPDATE USING (
+        public.has_role(auth.uid(), 'pharmacist') AND status = 'draft'
+    );
+
+CREATE POLICY "Admins can manage all purchase orders" ON public.purchase_orders
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for purchase_orders
+CREATE INDEX idx_purchase_orders_supplier ON public.purchase_orders(supplier_id);
+CREATE INDEX idx_purchase_orders_status ON public.purchase_orders(status);
+CREATE INDEX idx_purchase_orders_date ON public.purchase_orders(order_date);
+
+-- ============================================================================
+-- TABLE: purchase_order_items
+-- Description: Line items in purchase orders
+-- ============================================================================
+CREATE TABLE public.purchase_order_items (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    purchase_order_id UUID NOT NULL,                 -- Parent PO
+    inventory_item_id UUID,                          -- Link to inventory item
+    item_name VARCHAR(200) NOT NULL,                 -- Item description
+    quantity INTEGER NOT NULL,                       -- Ordered quantity
+    unit_price NUMERIC(10,2) NOT NULL,               -- Price per unit
+    total_price NUMERIC(12,2) NOT NULL,              -- Line total
+    received_quantity INTEGER DEFAULT 0,             -- Quantity received
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'partial', 'received', 'cancelled')),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for purchase_order_items (follows parent PO policies)
+CREATE POLICY "Staff can view PO items" ON public.purchase_order_items
+    FOR SELECT USING (
+        public.has_role(auth.uid(), 'admin') OR
+        public.has_role(auth.uid(), 'pharmacist')
+    );
+
+CREATE POLICY "Pharmacists can manage PO items for draft orders" ON public.purchase_order_items
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.purchase_orders po
+            WHERE po.id = purchase_order_items.purchase_order_id
+            AND po.status = 'draft'
+            AND public.has_role(auth.uid(), 'pharmacist')
+        )
+    );
+
+CREATE POLICY "Admins can manage all PO items" ON public.purchase_order_items
+    FOR ALL USING (public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Indexes for purchase_order_items
+CREATE INDEX idx_po_items_order ON public.purchase_order_items(purchase_order_id);
+CREATE INDEX idx_po_items_inventory ON public.purchase_order_items(inventory_item_id);
+
+-- ============================================================================
+-- ADDITIONAL FOREIGN KEY CONSTRAINTS
+-- ============================================================================
+
+-- Patient Vitals
+ALTER TABLE public.patient_vitals
+    ADD CONSTRAINT fk_patient_vitals_patient
+    FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+
+-- Appointment Waitlist
+ALTER TABLE public.appointment_waitlist
+    ADD CONSTRAINT fk_waitlist_patient
+    FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+
+ALTER TABLE public.appointment_waitlist
+    ADD CONSTRAINT fk_waitlist_doctor
+    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
+
+ALTER TABLE public.appointment_waitlist
+    ADD CONSTRAINT fk_waitlist_department
+    FOREIGN KEY (department_id) REFERENCES public.departments(department_id);
+
+-- Referrals
+ALTER TABLE public.referrals
+    ADD CONSTRAINT fk_referrals_patient
+    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
+
+ALTER TABLE public.referrals
+    ADD CONSTRAINT fk_referrals_referring_doctor
+    FOREIGN KEY (referring_doctor_id) REFERENCES public.doctors(id);
+
+ALTER TABLE public.referrals
+    ADD CONSTRAINT fk_referrals_receiving_doctor
+    FOREIGN KEY (receiving_doctor_id) REFERENCES public.doctors(id);
+
+ALTER TABLE public.referrals
+    ADD CONSTRAINT fk_referrals_department
+    FOREIGN KEY (receiving_department_id) REFERENCES public.departments(department_id);
+
+ALTER TABLE public.referrals
+    ADD CONSTRAINT fk_referrals_appointment
+    FOREIGN KEY (appointment_id) REFERENCES public.appointments(id);
+
+-- Insurance Claims
+ALTER TABLE public.insurance_claims
+    ADD CONSTRAINT fk_claims_patient
+    FOREIGN KEY (patient_id) REFERENCES public.patients(id);
+
+ALTER TABLE public.insurance_claims
+    ADD CONSTRAINT fk_claims_appointment
+    FOREIGN KEY (appointment_id) REFERENCES public.appointments(id);
+
+-- Insurance Claim Items
+ALTER TABLE public.insurance_claim_items
+    ADD CONSTRAINT fk_claim_items_claim
+    FOREIGN KEY (claim_id) REFERENCES public.insurance_claims(id) ON DELETE CASCADE;
+
+-- Prescription Templates
+ALTER TABLE public.prescription_templates
+    ADD CONSTRAINT fk_templates_doctor
+    FOREIGN KEY (doctor_id) REFERENCES public.doctors(id);
+
+-- Prescription Items
+ALTER TABLE public.prescription_items
+    ADD CONSTRAINT fk_prescription_items_prescription
+    FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
+
+-- Purchase Orders
+ALTER TABLE public.purchase_orders
+    ADD CONSTRAINT fk_po_supplier
+    FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id);
+
+-- Purchase Order Items
+ALTER TABLE public.purchase_order_items
+    ADD CONSTRAINT fk_po_items_order
+    FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE CASCADE;
+
+ALTER TABLE public.purchase_order_items
+    ADD CONSTRAINT fk_po_items_inventory
+    FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id);
+
+-- ============================================================================
+-- UPDATE TRIGGERS FOR NEW TABLES
+-- ============================================================================
+
+CREATE TRIGGER update_patient_vitals_updated_at
+    BEFORE UPDATE ON public.patient_vitals
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_appointment_waitlist_updated_at
+    BEFORE UPDATE ON public.appointment_waitlist
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_referrals_updated_at
+    BEFORE UPDATE ON public.referrals
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_insurance_claims_updated_at
+    BEFORE UPDATE ON public.insurance_claims
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_prescription_templates_updated_at
+    BEFORE UPDATE ON public.prescription_templates
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_prescription_items_updated_at
+    BEFORE UPDATE ON public.prescription_items
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_suppliers_updated_at
+    BEFORE UPDATE ON public.suppliers
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_purchase_orders_updated_at
+    BEFORE UPDATE ON public.purchase_orders
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+-- ============================================================================
 -- DATABASE FUNCTIONS
 -- ============================================================================
 
@@ -2135,10 +2896,10 @@ ON CONFLICT (group_name) DO NOTHING;
 -- ============================================================================
 /*
 ================================================================================
-                    HOSPITAL MANAGEMENT SYSTEM DATABASE v2.1
+                    HOSPITAL MANAGEMENT SYSTEM DATABASE v2.2
 ================================================================================
 
-TABLES OVERVIEW (30 Tables):
+TABLES OVERVIEW (45+ Tables):
 ============================
 
 ┌─────────────────────────────┬────────────────────────────────────────────────────┐
@@ -2151,14 +2912,16 @@ TABLES OVERVIEW (30 Tables):
 │                             │ nurses, staff_schedules                            │
 ├─────────────────────────────┼────────────────────────────────────────────────────┤
 │ 3. Patient Management       │ patients, patient_registration_queue,              │
-│                             │ patient_messages                                   │
+│                             │ patient_messages, patient_vitals                   │
 ├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 4. Clinical                 │ appointments, medical_records, prescriptions,      │
-│                             │ prescription_refill_requests, lab_tests            │
+│ 4. Clinical                 │ appointments, appointment_waitlist, medical_records│
+│                             │ prescriptions, prescription_items, prescription_   │
+│                             │ refill_requests, prescription_templates, lab_tests,│
+│                             │ referrals                                          │
 ├─────────────────────────────┼────────────────────────────────────────────────────┤
 │ 5. Facility Management      │ rooms, room_assignments, inventory                 │
 ├─────────────────────────────┼────────────────────────────────────────────────────┤
-│ 6. Financial                │ payments                                           │
+│ 6. Financial                │ payments, insurance_claims, insurance_claim_items  │
 ├─────────────────────────────┼────────────────────────────────────────────────────┤
 │ 7. Blood Bank               │ blood_groups, blood_stock, donors,                 │
 │                             │ blood_issues, blood_stock_transactions             │
@@ -2169,9 +2932,13 @@ TABLES OVERVIEW (30 Tables):
 │ 9. Notifications            │ notifications, reminders                           │
 ├─────────────────────────────┼────────────────────────────────────────────────────┤
 │ 10. Audit & Compliance      │ phi_audit_log                                      │
+├─────────────────────────────┼────────────────────────────────────────────────────┤
+│ 11. Clinical Codes          │ diagnosis_codes, procedure_codes, drug_interactions│
+├─────────────────────────────┼────────────────────────────────────────────────────┤
+│ 12. Supply Chain            │ suppliers, purchase_orders, purchase_order_items   │
 └─────────────────────────────┴────────────────────────────────────────────────────┘
 
-USER ROLES (6 Roles):
+USER ROLES (7 Roles):
 =====================
 ┌─────────────────┬────────────────────────────────────────────────────────────────┐
 │ Role            │ Permissions                                                     │
@@ -2181,11 +2948,12 @@ USER ROLES (6 Roles):
 │ nurse           │ Patient care, vitals, medication, blood bank, surgery assist   │
 │ pharmacist      │ Prescription dispensing, inventory management                  │
 │ receptionist    │ Appointments, patient registration, billing, scheduling        │
+│ lab_technician  │ Lab tests, blood bank operations, sample processing            │
 │ patient         │ View own records, appointments, prescriptions, messages        │
 └─────────────────┴────────────────────────────────────────────────────────────────┘
 
-DATABASE FUNCTIONS (9 Functions):
-=================================
+DATABASE FUNCTIONS:
+===================
 • has_role(_user_id, _role)                    - Check if user has specific role
 • get_user_role(_user_id)                      - Get user's assigned role
 • get_patient_id_for_user(_user_id)            - Get patient ID for user
@@ -2199,7 +2967,7 @@ DATABASE FUNCTIONS (9 Functions):
 
 SECURITY FEATURES:
 ==================
-✓ Row Level Security (RLS) enabled on all 30 tables
+✓ Row Level Security (RLS) enabled on all tables
 ✓ Role-based access control via user_roles table
 ✓ Security definer functions for role checks (prevents recursion)
 ✓ Separate policies for each CRUD operation per role
@@ -2208,12 +2976,12 @@ SECURITY FEATURES:
 ✓ HIPAA-compliant PHI audit logging
 ✓ Soft delete support for critical tables
 
-TRIGGERS (26 Triggers):
-=======================
+TRIGGERS:
+=========
 • Auto-update updated_at on all tables with timestamp
 • on_auth_user_created for automatic profile creation
 
 ================================================================================
-                               END OF SCHEMA v2.1
+                               END OF SCHEMA v2.2
 ================================================================================
 */
