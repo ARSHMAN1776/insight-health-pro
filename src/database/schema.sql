@@ -990,7 +990,25 @@ ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- STEP 6: CREATE RLS POLICIES
+-- STEP 6: DROP EXISTING POLICIES (for idempotent re-runs)
+-- ============================================================================
+
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    -- Drop all existing policies on our tables for clean re-creation
+    FOR r IN (
+        SELECT schemaname, tablename, policyname 
+        FROM pg_policies 
+        WHERE schemaname = 'public'
+    ) LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', r.policyname, r.schemaname, r.tablename);
+    END LOOP;
+END $$;
+
+-- ============================================================================
+-- STEP 7: CREATE RLS POLICIES
 -- ============================================================================
 
 -- PROFILES POLICIES
@@ -1418,7 +1436,7 @@ CREATE POLICY "purchase_order_items_manage" ON public.purchase_order_items FOR A
 );
 
 -- ============================================================================
--- STEP 7: CREATE INDEXES
+-- STEP 8: CREATE INDEXES
 -- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_profiles_first_name ON public.profiles(first_name);
@@ -1502,134 +1520,311 @@ CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON public.purchase_orders(
 CREATE INDEX IF NOT EXISTS idx_purchase_order_items_order ON public.purchase_order_items(purchase_order_id);
 
 -- ============================================================================
--- STEP 8: CREATE TRIGGERS
+-- STEP 9: CREATE TRIGGERS (with DROP IF EXISTS for idempotency)
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_user_settings_updated_at ON public.user_settings;
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON public.user_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_hospital_settings_updated_at ON public.hospital_settings;
 CREATE TRIGGER update_hospital_settings_updated_at BEFORE UPDATE ON public.hospital_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_departments_updated_at ON public.departments;
 CREATE TRIGGER update_departments_updated_at BEFORE UPDATE ON public.departments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_doctors_updated_at ON public.doctors;
 CREATE TRIGGER update_doctors_updated_at BEFORE UPDATE ON public.doctors FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_nurses_updated_at ON public.nurses;
 CREATE TRIGGER update_nurses_updated_at BEFORE UPDATE ON public.nurses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_staff_schedules_updated_at ON public.staff_schedules;
 CREATE TRIGGER update_staff_schedules_updated_at BEFORE UPDATE ON public.staff_schedules FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_patients_updated_at ON public.patients;
 CREATE TRIGGER update_patients_updated_at BEFORE UPDATE ON public.patients FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_patient_registration_queue_updated_at ON public.patient_registration_queue;
 CREATE TRIGGER update_patient_registration_queue_updated_at BEFORE UPDATE ON public.patient_registration_queue FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_patient_messages_updated_at ON public.patient_messages;
 CREATE TRIGGER update_patient_messages_updated_at BEFORE UPDATE ON public.patient_messages FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_patient_vitals_updated_at ON public.patient_vitals;
 CREATE TRIGGER update_patient_vitals_updated_at BEFORE UPDATE ON public.patient_vitals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_appointments_updated_at ON public.appointments;
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON public.appointments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_appointment_waitlist_updated_at ON public.appointment_waitlist;
 CREATE TRIGGER update_appointment_waitlist_updated_at BEFORE UPDATE ON public.appointment_waitlist FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_medical_records_updated_at ON public.medical_records;
 CREATE TRIGGER update_medical_records_updated_at BEFORE UPDATE ON public.medical_records FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_prescriptions_updated_at ON public.prescriptions;
 CREATE TRIGGER update_prescriptions_updated_at BEFORE UPDATE ON public.prescriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_prescription_items_updated_at ON public.prescription_items;
 CREATE TRIGGER update_prescription_items_updated_at BEFORE UPDATE ON public.prescription_items FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_prescription_refill_requests_updated_at ON public.prescription_refill_requests;
 CREATE TRIGGER update_prescription_refill_requests_updated_at BEFORE UPDATE ON public.prescription_refill_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_prescription_templates_updated_at ON public.prescription_templates;
 CREATE TRIGGER update_prescription_templates_updated_at BEFORE UPDATE ON public.prescription_templates FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_lab_tests_updated_at ON public.lab_tests;
 CREATE TRIGGER update_lab_tests_updated_at BEFORE UPDATE ON public.lab_tests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_referrals_updated_at ON public.referrals;
 CREATE TRIGGER update_referrals_updated_at BEFORE UPDATE ON public.referrals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_rooms_updated_at ON public.rooms;
 CREATE TRIGGER update_rooms_updated_at BEFORE UPDATE ON public.rooms FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_room_assignments_updated_at ON public.room_assignments;
 CREATE TRIGGER update_room_assignments_updated_at BEFORE UPDATE ON public.room_assignments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_inventory_updated_at ON public.inventory;
 CREATE TRIGGER update_inventory_updated_at BEFORE UPDATE ON public.inventory FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_payments_updated_at ON public.payments;
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_insurance_claims_updated_at ON public.insurance_claims;
 CREATE TRIGGER update_insurance_claims_updated_at BEFORE UPDATE ON public.insurance_claims FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_blood_stock_updated_at ON public.blood_stock;
 CREATE TRIGGER update_blood_stock_updated_at BEFORE UPDATE ON public.blood_stock FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_donors_updated_at ON public.donors;
 CREATE TRIGGER update_donors_updated_at BEFORE UPDATE ON public.donors FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_operation_theatres_updated_at ON public.operation_theatres;
 CREATE TRIGGER update_operation_theatres_updated_at BEFORE UPDATE ON public.operation_theatres FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_surgeries_updated_at ON public.surgeries;
 CREATE TRIGGER update_surgeries_updated_at BEFORE UPDATE ON public.surgeries FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_post_operation_updated_at ON public.post_operation;
 CREATE TRIGGER update_post_operation_updated_at BEFORE UPDATE ON public.post_operation FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_shift_handovers_updated_at ON public.shift_handovers;
 CREATE TRIGGER update_shift_handovers_updated_at BEFORE UPDATE ON public.shift_handovers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_notifications_updated_at ON public.notifications;
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_reminders_updated_at ON public.reminders;
 CREATE TRIGGER update_reminders_updated_at BEFORE UPDATE ON public.reminders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_suppliers_updated_at ON public.suppliers;
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON public.suppliers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_purchase_orders_updated_at ON public.purchase_orders;
 CREATE TRIGGER update_purchase_orders_updated_at BEFORE UPDATE ON public.purchase_orders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ============================================================================
--- STEP 9: ADD FOREIGN KEY CONSTRAINTS
+-- STEP 10: ADD FOREIGN KEY CONSTRAINTS (idempotent with DO blocks)
 -- ============================================================================
 
--- Department foreign keys
-ALTER TABLE public.departments ADD CONSTRAINT fk_departments_head FOREIGN KEY (department_head) REFERENCES public.doctors(id) ON DELETE SET NULL;
-ALTER TABLE public.doctors ADD CONSTRAINT fk_doctors_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
-ALTER TABLE public.department_doctors ADD CONSTRAINT fk_department_doctors_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE CASCADE;
-ALTER TABLE public.department_doctors ADD CONSTRAINT fk_department_doctors_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-
--- Patient foreign keys
-ALTER TABLE public.patients ADD CONSTRAINT fk_patients_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
-ALTER TABLE public.patient_registration_queue ADD CONSTRAINT fk_patient_registration_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.patient_messages ADD CONSTRAINT fk_patient_messages_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.patient_messages ADD CONSTRAINT fk_patient_messages_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-ALTER TABLE public.patient_vitals ADD CONSTRAINT fk_patient_vitals_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-
--- Appointment foreign keys
-ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
-ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
-ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
-
--- Medical records foreign keys
-ALTER TABLE public.medical_records ADD CONSTRAINT fk_medical_records_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.medical_records ADD CONSTRAINT fk_medical_records_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-
--- Prescription foreign keys
-ALTER TABLE public.prescriptions ADD CONSTRAINT fk_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.prescriptions ADD CONSTRAINT fk_prescriptions_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-ALTER TABLE public.prescription_items ADD CONSTRAINT fk_prescription_items_prescription FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
-ALTER TABLE public.prescription_refill_requests ADD CONSTRAINT fk_refill_requests_prescription FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
-ALTER TABLE public.prescription_refill_requests ADD CONSTRAINT fk_refill_requests_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.prescription_templates ADD CONSTRAINT fk_prescription_templates_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
-
--- Lab tests foreign keys
-ALTER TABLE public.lab_tests ADD CONSTRAINT fk_lab_tests_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.lab_tests ADD CONSTRAINT fk_lab_tests_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-
--- Referrals foreign keys
-ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_referring_doctor FOREIGN KEY (referring_doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_receiving_doctor FOREIGN KEY (receiving_doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
-ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_receiving_department FOREIGN KEY (receiving_department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
-ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_appointment FOREIGN KEY (appointment_id) REFERENCES public.appointments(id) ON DELETE SET NULL;
-
--- Room foreign keys
-ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_room FOREIGN KEY (room_id) REFERENCES public.rooms(id) ON DELETE CASCADE;
-ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE SET NULL;
-
--- Inventory foreign keys
-ALTER TABLE public.inventory ADD CONSTRAINT fk_inventory_supplier FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE SET NULL;
-
--- Payment foreign keys
-ALTER TABLE public.payments ADD CONSTRAINT fk_payments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-
--- Insurance claims foreign keys
-ALTER TABLE public.insurance_claims ADD CONSTRAINT fk_insurance_claims_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.insurance_claims ADD CONSTRAINT fk_insurance_claims_appointment FOREIGN KEY (appointment_id) REFERENCES public.appointments(id) ON DELETE SET NULL;
-ALTER TABLE public.insurance_claim_items ADD CONSTRAINT fk_insurance_claim_items_claim FOREIGN KEY (claim_id) REFERENCES public.insurance_claims(id) ON DELETE CASCADE;
-
--- Blood bank foreign keys
-ALTER TABLE public.blood_stock ADD CONSTRAINT fk_blood_stock_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
-ALTER TABLE public.donors ADD CONSTRAINT fk_donors_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
-ALTER TABLE public.blood_issues ADD CONSTRAINT fk_blood_issues_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.blood_issues ADD CONSTRAINT fk_blood_issues_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
-ALTER TABLE public.blood_stock_transactions ADD CONSTRAINT fk_blood_transactions_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
-
--- Surgery foreign keys
-ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
-ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_ot FOREIGN KEY (ot_id) REFERENCES public.operation_theatres(id) ON DELETE CASCADE;
-ALTER TABLE public.surgery_team ADD CONSTRAINT fk_surgery_team_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
-ALTER TABLE public.post_operation ADD CONSTRAINT fk_post_operation_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
-
--- Shift handover foreign keys
-ALTER TABLE public.shift_handover_patients ADD CONSTRAINT fk_shift_handover_patients_handover FOREIGN KEY (handover_id) REFERENCES public.shift_handovers(id) ON DELETE CASCADE;
-ALTER TABLE public.shift_handover_patients ADD CONSTRAINT fk_shift_handover_patients_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
-
--- Purchase order foreign keys
-ALTER TABLE public.purchase_orders ADD CONSTRAINT fk_purchase_orders_supplier FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE CASCADE;
-ALTER TABLE public.purchase_order_items ADD CONSTRAINT fk_purchase_order_items_order FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE CASCADE;
-ALTER TABLE public.purchase_order_items ADD CONSTRAINT fk_purchase_order_items_inventory FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id) ON DELETE SET NULL;
+DO $$ BEGIN
+    -- Department foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_departments_head') THEN
+        ALTER TABLE public.departments ADD CONSTRAINT fk_departments_head FOREIGN KEY (department_head) REFERENCES public.doctors(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_doctors_department') THEN
+        ALTER TABLE public.doctors ADD CONSTRAINT fk_doctors_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_department_doctors_department') THEN
+        ALTER TABLE public.department_doctors ADD CONSTRAINT fk_department_doctors_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_department_doctors_doctor') THEN
+        ALTER TABLE public.department_doctors ADD CONSTRAINT fk_department_doctors_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Patient foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_patients_department') THEN
+        ALTER TABLE public.patients ADD CONSTRAINT fk_patients_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_patient_registration_patient') THEN
+        ALTER TABLE public.patient_registration_queue ADD CONSTRAINT fk_patient_registration_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_patient_messages_patient') THEN
+        ALTER TABLE public.patient_messages ADD CONSTRAINT fk_patient_messages_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_patient_messages_doctor') THEN
+        ALTER TABLE public.patient_messages ADD CONSTRAINT fk_patient_messages_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_patient_vitals_patient') THEN
+        ALTER TABLE public.patient_vitals ADD CONSTRAINT fk_patient_vitals_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Appointment foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_appointments_patient') THEN
+        ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_appointments_doctor') THEN
+        ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_appointments_department') THEN
+        ALTER TABLE public.appointments ADD CONSTRAINT fk_appointments_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_appointment_waitlist_patient') THEN
+        ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_appointment_waitlist_doctor') THEN
+        ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_appointment_waitlist_department') THEN
+        ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+    END IF;
+    
+    -- Medical records foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_medical_records_patient') THEN
+        ALTER TABLE public.medical_records ADD CONSTRAINT fk_medical_records_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_medical_records_doctor') THEN
+        ALTER TABLE public.medical_records ADD CONSTRAINT fk_medical_records_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Prescription foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_prescriptions_patient') THEN
+        ALTER TABLE public.prescriptions ADD CONSTRAINT fk_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_prescriptions_doctor') THEN
+        ALTER TABLE public.prescriptions ADD CONSTRAINT fk_prescriptions_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_prescription_items_prescription') THEN
+        ALTER TABLE public.prescription_items ADD CONSTRAINT fk_prescription_items_prescription FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_refill_requests_prescription') THEN
+        ALTER TABLE public.prescription_refill_requests ADD CONSTRAINT fk_refill_requests_prescription FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_refill_requests_patient') THEN
+        ALTER TABLE public.prescription_refill_requests ADD CONSTRAINT fk_refill_requests_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_prescription_templates_doctor') THEN
+        ALTER TABLE public.prescription_templates ADD CONSTRAINT fk_prescription_templates_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
+    END IF;
+    
+    -- Lab tests foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_lab_tests_patient') THEN
+        ALTER TABLE public.lab_tests ADD CONSTRAINT fk_lab_tests_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_lab_tests_doctor') THEN
+        ALTER TABLE public.lab_tests ADD CONSTRAINT fk_lab_tests_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Referrals foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_referrals_patient') THEN
+        ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_referrals_referring_doctor') THEN
+        ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_referring_doctor FOREIGN KEY (referring_doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_referrals_receiving_doctor') THEN
+        ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_receiving_doctor FOREIGN KEY (receiving_doctor_id) REFERENCES public.doctors(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_referrals_receiving_department') THEN
+        ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_receiving_department FOREIGN KEY (receiving_department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_referrals_appointment') THEN
+        ALTER TABLE public.referrals ADD CONSTRAINT fk_referrals_appointment FOREIGN KEY (appointment_id) REFERENCES public.appointments(id) ON DELETE SET NULL;
+    END IF;
+    
+    -- Room foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_room_assignments_room') THEN
+        ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_room FOREIGN KEY (room_id) REFERENCES public.rooms(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_room_assignments_patient') THEN
+        ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_room_assignments_surgery') THEN
+        ALTER TABLE public.room_assignments ADD CONSTRAINT fk_room_assignments_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE SET NULL;
+    END IF;
+    
+    -- Inventory foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_inventory_supplier') THEN
+        ALTER TABLE public.inventory ADD CONSTRAINT fk_inventory_supplier FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE SET NULL;
+    END IF;
+    
+    -- Payment foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_payments_patient') THEN
+        ALTER TABLE public.payments ADD CONSTRAINT fk_payments_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Insurance claims foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_insurance_claims_patient') THEN
+        ALTER TABLE public.insurance_claims ADD CONSTRAINT fk_insurance_claims_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_insurance_claims_appointment') THEN
+        ALTER TABLE public.insurance_claims ADD CONSTRAINT fk_insurance_claims_appointment FOREIGN KEY (appointment_id) REFERENCES public.appointments(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_insurance_claim_items_claim') THEN
+        ALTER TABLE public.insurance_claim_items ADD CONSTRAINT fk_insurance_claim_items_claim FOREIGN KEY (claim_id) REFERENCES public.insurance_claims(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Blood bank foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blood_stock_group') THEN
+        ALTER TABLE public.blood_stock ADD CONSTRAINT fk_blood_stock_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_donors_blood_group') THEN
+        ALTER TABLE public.donors ADD CONSTRAINT fk_donors_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blood_issues_patient') THEN
+        ALTER TABLE public.blood_issues ADD CONSTRAINT fk_blood_issues_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blood_issues_blood_group') THEN
+        ALTER TABLE public.blood_issues ADD CONSTRAINT fk_blood_issues_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blood_transactions_blood_group') THEN
+        ALTER TABLE public.blood_stock_transactions ADD CONSTRAINT fk_blood_transactions_blood_group FOREIGN KEY (blood_group_id) REFERENCES public.blood_groups(group_id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Surgery foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_surgeries_patient') THEN
+        ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_surgeries_doctor') THEN
+        ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_surgeries_ot') THEN
+        ALTER TABLE public.surgeries ADD CONSTRAINT fk_surgeries_ot FOREIGN KEY (ot_id) REFERENCES public.operation_theatres(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_surgery_team_surgery') THEN
+        ALTER TABLE public.surgery_team ADD CONSTRAINT fk_surgery_team_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_post_operation_surgery') THEN
+        ALTER TABLE public.post_operation ADD CONSTRAINT fk_post_operation_surgery FOREIGN KEY (surgery_id) REFERENCES public.surgeries(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Shift handover foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_shift_handover_patients_handover') THEN
+        ALTER TABLE public.shift_handover_patients ADD CONSTRAINT fk_shift_handover_patients_handover FOREIGN KEY (handover_id) REFERENCES public.shift_handovers(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_shift_handover_patients_patient') THEN
+        ALTER TABLE public.shift_handover_patients ADD CONSTRAINT fk_shift_handover_patients_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Purchase order foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_purchase_orders_supplier') THEN
+        ALTER TABLE public.purchase_orders ADD CONSTRAINT fk_purchase_orders_supplier FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_purchase_order_items_order') THEN
+        ALTER TABLE public.purchase_order_items ADD CONSTRAINT fk_purchase_order_items_order FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_purchase_order_items_inventory') THEN
+        ALTER TABLE public.purchase_order_items ADD CONSTRAINT fk_purchase_order_items_inventory FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- ============================================================================
--- STEP 10: SEED DATA
+-- STEP 11: SEED DATA
 -- ============================================================================
 
 -- Insert blood groups
@@ -1638,7 +1833,7 @@ INSERT INTO public.blood_groups (group_name) VALUES
 ON CONFLICT (group_name) DO NOTHING;
 
 -- ============================================================================
--- STEP 11: USER REGISTRATION HANDLER (for Supabase Auth)
+-- STEP 12: USER REGISTRATION HANDLER (for Supabase Auth)
 -- ============================================================================
 
 -- Function to handle new user registration
@@ -1737,11 +1932,11 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- DATABASE SCHEMA SUMMARY v2.3
+-- DATABASE SCHEMA SUMMARY v2.4
 -- ============================================================================
 /*
 ================================================================================
-              HOSPITAL MANAGEMENT SYSTEM DATABASE v2.3 (January 2026)
+              HOSPITAL MANAGEMENT SYSTEM DATABASE v2.4 (January 2026)
 ================================================================================
 
 TABLES (45+ Tables):
@@ -1775,23 +1970,34 @@ FEATURES:
 ✓ Soft delete support for critical tables
 ✓ Comprehensive foreign key constraints
 ✓ Performance indexes on all key columns
+✓ FULLY IDEMPOTENT - Safe to run multiple times
 
-EXECUTION ORDER:
-================
-This schema executes in the correct order:
-1. Extensions
-2. Custom types (app_role enum)
-3. Helper functions (has_role, get_patient_id_for_user, etc.)
-4. All tables (without RLS)
-5. Enable RLS on all tables
-6. Create RLS policies (now safe since functions exist)
-7. Create indexes
-8. Create triggers
-9. Add foreign key constraints
-10. Seed data
-11. User registration handler
+EXECUTION ORDER (12 Steps):
+===========================
+1.  Extensions (uuid-ossp)
+2.  Custom types (app_role enum with conflict handling)
+3.  Helper functions (has_role, get_patient_id_for_user, etc.)
+4.  All tables (CREATE IF NOT EXISTS)
+5.  Enable RLS on all tables
+6.  Drop existing policies (for clean re-runs)
+7.  Create RLS policies
+8.  Create indexes (IF NOT EXISTS)
+9.  Create triggers (DROP IF EXISTS + CREATE)
+10. Add foreign key constraints (with existence checks)
+11. Seed data (ON CONFLICT DO NOTHING)
+12. User registration handler (for Supabase Auth)
+
+IDEMPOTENCY FEATURES:
+=====================
+- Enum types: DO block with EXCEPTION handling
+- Tables: CREATE TABLE IF NOT EXISTS
+- Indexes: CREATE INDEX IF NOT EXISTS
+- Triggers: DROP TRIGGER IF EXISTS before CREATE
+- Policies: Dynamic DROP of all existing policies before re-creation
+- Foreign Keys: IF NOT EXISTS checks in DO block
+- Seed Data: ON CONFLICT DO NOTHING
 
 ================================================================================
-                              END OF SCHEMA v2.3
+                              END OF SCHEMA v2.4
 ================================================================================
 */
