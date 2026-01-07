@@ -676,7 +676,7 @@ class DataManager {
     return (data || []) as LabTest[];
   }
 
-  async updateLabTest(id: string, updates: Partial<LabTest>): Promise<LabTest | null> {
+  async updateLabTest(id: string, updates: Partial<LabTest>): Promise<LabTest> {
     const { data, error } = await supabase
       .from('lab_tests')
       .update(updates)
@@ -684,7 +684,17 @@ class DataManager {
       .select()
       .single();
 
-    if (error) return null;
+    if (error) {
+      console.error('Lab test update error:', error);
+      // Provide specific error messages for common issues
+      if (error.code === '42501' || error.message?.includes('policy')) {
+        throw new Error('Permission denied: Your role may not have access to update lab tests. Please contact an administrator.');
+      }
+      if (error.code === 'PGRST116') {
+        throw new Error('Lab test not found or you do not have permission to update it.');
+      }
+      throw new Error(error.message || 'Failed to update lab test');
+    }
     return data as LabTest;
   }
 

@@ -123,19 +123,19 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
               <p>No prescriptions found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {prescriptions.map((prescription) => (
-                <div key={prescription.id} className="bg-accent/50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-semibold text-foreground text-lg">{prescription.medication_name}</h4>
-                      <p className="text-sm text-muted-foreground">{prescription.dosage}</p>
+                <div key={prescription.id} className="bg-accent/50 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-foreground text-sm sm:text-base md:text-lg truncate">{prescription.medication_name}</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{prescription.dosage}</p>
                     </div>
-                    <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                    <Badge variant="outline" className="bg-success/10 text-success border-success/20 self-start text-xs flex-shrink-0">
                       {prescription.status}
                     </Badge>
                   </div>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Frequency:</span>
                       <span className="font-medium">{prescription.frequency}</span>
@@ -151,7 +151,7 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
                   </div>
                   {prescription.instructions && (
                     <div className="pt-2 border-t border-border/50">
-                      <p className="text-xs text-muted-foreground">{prescription.instructions}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{prescription.instructions}</p>
                     </div>
                   )}
                 </div>

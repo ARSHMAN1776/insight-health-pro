@@ -37,28 +37,28 @@ const PersonalInfoSection: React.FC<PersonalInfoProps> = ({ user, patientInfo })
     <div className="space-y-6">
       {/* Header Card */}
       <Card className="card-gradient overflow-hidden">
-        <div className="bg-gradient-to-r from-primary to-primary-hover p-8 text-primary-foreground">
-          <div className="flex items-center space-x-6">
-            <Avatar className="w-24 h-24 border-4 border-primary-foreground/20">
-              <AvatarFallback className="text-3xl bg-primary-foreground/10 text-primary-foreground">
+        <div className="bg-gradient-to-r from-primary to-primary-hover p-4 sm:p-6 md:p-8 text-primary-foreground">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+            <Avatar className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 border-4 border-primary-foreground/20 flex-shrink-0">
+              <AvatarFallback className="text-xl sm:text-2xl md:text-3xl bg-primary-foreground/10 text-primary-foreground">
                 {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold mb-1">{user?.firstName} {user?.lastName}</h2>
-              <p className="text-primary-foreground/80 text-lg">Patient ID: {patientInfo.patientId.slice(0, 8).toUpperCase()}</p>
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1 truncate">{user?.firstName} {user?.lastName}</h2>
+              <p className="text-primary-foreground/80 text-sm sm:text-base md:text-lg truncate">Patient ID: {patientInfo.patientId.slice(0, 8).toUpperCase()}</p>
             </div>
-            <div className="flex flex-col items-end gap-3">
-              <Badge variant="outline" className="bg-primary-foreground/20 border-primary-foreground/40 text-primary-foreground text-sm px-4 py-2">
+            <div className="flex flex-col items-center sm:items-end gap-2 sm:gap-3 flex-shrink-0">
+              <Badge variant="outline" className="bg-primary-foreground/20 border-primary-foreground/40 text-primary-foreground text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2">
                 Active Patient
               </Badge>
               <Button 
                 variant="secondary" 
                 size="sm" 
                 onClick={() => setShowIDCard(true)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-xs sm:text-sm w-full sm:w-auto"
               >
-                <CreditCard className="w-4 h-4" />
+                <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 View ID Card
               </Button>
             </div>
@@ -66,18 +66,18 @@ const PersonalInfoSection: React.FC<PersonalInfoProps> = ({ user, patientInfo })
         </div>
         
         {/* Quick QR Code Section */}
-        <CardContent className="p-4 bg-muted/30 border-t">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <QrCode className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Quick ID QR Code</p>
-                <p className="text-xs text-muted-foreground">Scan for patient identification</p>
+        <CardContent className="p-3 sm:p-4 bg-muted/30 border-t">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium truncate">Quick ID QR Code</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Scan for patient identification</p>
               </div>
             </div>
             <QRCodeDisplay
               data={qrData}
-              size={64}
+              size={48}
               showDownload={false}
               className="flex-shrink-0"
             />

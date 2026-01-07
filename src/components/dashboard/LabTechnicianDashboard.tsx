@@ -137,7 +137,13 @@ const LabTechnicianDashboard: React.FC = () => {
         .update(updateData)
         .eq('id', testId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Status update error:', error);
+        if (error.code === '42501' || error.message?.includes('policy')) {
+          throw new Error('Permission denied. Please ensure your lab technician role is properly configured.');
+        }
+        throw error;
+      }
 
       toast({
         title: 'Status Updated',
@@ -145,10 +151,11 @@ const LabTechnicianDashboard: React.FC = () => {
       });
 
       loadLabTests();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Lab test status update failed:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update test status',
+        title: 'Update Failed',
+        description: error?.message || 'Failed to update test status. Please contact administrator if this persists.',
         variant: 'destructive'
       });
     } finally {
@@ -169,6 +176,15 @@ const LabTechnicianDashboard: React.FC = () => {
   const submitResults = async () => {
     if (!selectedTest) return;
     
+    if (!resultForm.results.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter the test results before submitting.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     try {
       setUpdating(selectedTest.id);
       
@@ -176,14 +192,20 @@ const LabTechnicianDashboard: React.FC = () => {
         .from('lab_tests')
         .update({
           status: 'completed',
-          results: resultForm.results,
-          normal_range: resultForm.normalRange,
-          notes: resultForm.notes,
+          results: resultForm.results.trim(),
+          normal_range: resultForm.normalRange.trim() || null,
+          notes: resultForm.notes.trim() || null,
           lab_technician: `${user?.firstName} ${user?.lastName}`
         })
         .eq('id', selectedTest.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Results submission error:', error);
+        if (error.code === '42501' || error.message?.includes('policy')) {
+          throw new Error('Permission denied. Your lab technician role may not have permission to update results. Please contact an administrator.');
+        }
+        throw error;
+      }
 
       toast({
         title: 'Results Submitted',
@@ -192,10 +214,11 @@ const LabTechnicianDashboard: React.FC = () => {
 
       setResultDialogOpen(false);
       loadLabTests();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Lab results submission failed:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to submit results',
+        title: 'Submission Failed',
+        description: error?.message || 'Failed to submit results. Please try again or contact support.',
         variant: 'destructive'
       });
     } finally {

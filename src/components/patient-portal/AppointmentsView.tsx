@@ -191,81 +191,81 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
               {upcomingAppointments.map((appointment, index) => (
                 <div key={appointment.id}>
                   {index > 0 && <Separator className="my-4" />}
-                  <div className="bg-gradient-to-r from-primary/5 to-transparent rounded-lg p-5 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div className="bg-primary/10 rounded-lg p-3">
-                            <Calendar className="w-6 h-6 text-primary" />
+                  <div className="bg-gradient-to-r from-primary/5 to-transparent rounded-lg p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                          <div className="bg-primary/10 rounded-lg p-2 sm:p-3 flex-shrink-0">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-lg text-foreground">{appointment.type}</h4>
-                            <p className="text-sm text-muted-foreground">Appointment #{appointment.id.slice(0, 8)}</p>
+                          <div className="min-w-0">
+                            <h4 className="font-semibold text-sm sm:text-base md:text-lg text-foreground truncate">{appointment.type}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground">#{appointment.id.slice(0, 8)}</p>
                           </div>
                         </div>
                       </div>
                       {getStatusBadge(appointment.status)}
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center space-x-3">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Date</p>
-                          <p className="font-medium">{appointment.appointment_date}</p>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">Date</p>
+                          <p className="font-medium text-xs sm:text-sm md:text-base truncate">{appointment.appointment_date}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Time</p>
-                          <p className="font-medium">{appointment.appointment_time}</p>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">Time</p>
+                          <p className="font-medium text-xs sm:text-sm md:text-base">{appointment.appointment_time}</p>
                         </div>
                       </div>
                     </div>
 
                     {appointment.symptoms && (
-                      <div className="bg-accent/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Symptoms</p>
-                        <p className="text-sm text-foreground">{appointment.symptoms}</p>
+                      <div className="bg-accent/50 rounded-lg p-2 sm:p-3">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Symptoms</p>
+                        <p className="text-xs sm:text-sm text-foreground">{appointment.symptoms}</p>
                       </div>
                     )}
 
                     {appointment.notes && (
-                      <div className="bg-accent/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Notes</p>
-                        <p className="text-sm text-foreground">{appointment.notes}</p>
+                      <div className="bg-accent/50 rounded-lg p-2 sm:p-3">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Notes</p>
+                        <p className="text-xs sm:text-sm text-foreground">{appointment.notes}</p>
                       </div>
                     )}
 
                     {/* Cancel/Reschedule Buttons */}
                     {canModifyAppointment(appointment) && (
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleRescheduleClick(appointment)}
-                          className="flex-1"
+                          className="flex-1 h-9 sm:h-10 text-xs sm:text-sm"
                         >
-                          <RefreshCw className="h-4 w-4 mr-1" />
+                          <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
                           Reschedule
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleCancelClick(appointment)}
-                          className="flex-1 text-destructive border-destructive hover:bg-destructive/10"
+                          className="flex-1 h-9 sm:h-10 text-xs sm:text-sm text-destructive border-destructive hover:bg-destructive/10"
                         >
-                          <X className="h-4 w-4 mr-1" />
+                          <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
                           Cancel
                         </Button>
                       </div>
                     )}
                     {!canModifyAppointment(appointment) && getModificationBlockedReason(appointment) && (
-                      <Alert variant="default" className="mt-3 bg-warning/10 border-warning/30">
-                        <Info className="h-4 w-4 text-warning" />
-                        <AlertTitle className="text-warning">Cannot Modify Appointment</AlertTitle>
-                        <AlertDescription className="text-warning/80 text-sm">
+                      <Alert variant="default" className="mt-2 sm:mt-3 bg-warning/10 border-warning/30">
+                        <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-warning" />
+                        <AlertTitle className="text-warning text-xs sm:text-sm">Cannot Modify Appointment</AlertTitle>
+                        <AlertDescription className="text-warning/80 text-[10px] sm:text-xs md:text-sm">
                           {getModificationBlockedReason(appointment)}
                         </AlertDescription>
                       </Alert>
