@@ -313,20 +313,20 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
             <p className="text-sm mt-2">Book an appointment first to start messaging your doctor</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[400px]">
-            {/* Conversations List */}
-            <div className="lg:col-span-1 border rounded-lg flex flex-col">
-              <div className="p-3 border-b space-y-2">
+          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-3 h-[350px] sm:h-[400px]">
+            {/* Conversations List - Hidden on mobile when doctor selected */}
+            <div className={`lg:col-span-1 border rounded-lg flex flex-col ${selectedDoctor ? 'hidden lg:flex' : 'flex'}`}>
+              <div className="p-2 sm:p-3 border-b space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">Conversations</span>
+                  <span className="font-medium text-xs sm:text-sm">Conversations</span>
                   {availableForNewChat.length > 0 && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowNewChat(!showNewChat)}
-                      className="h-8 w-8 p-0"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   )}
                 </div>
@@ -336,12 +336,12 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-7 h-8 text-sm"
+                    className="pl-7 h-7 sm:h-8 text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-2">
+              <div className="flex-1 overflow-y-auto p-1.5 sm:p-2">
                 {showNewChat && (
                   <div className="mb-2 p-2 bg-muted/50 rounded-lg">
                     <p className="text-xs font-medium mb-2">Start new conversation:</p>
@@ -349,7 +349,7 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                       const doctor = allDoctors.find(d => d.id === value);
                       if (doctor) startNewConversation(doctor);
                     }}>
-                      <SelectTrigger className="h-8 text-sm">
+                      <SelectTrigger className="h-8 text-xs sm:text-sm">
                         <SelectValue placeholder="Select a doctor" />
                       </SelectTrigger>
                       <SelectContent>
@@ -364,13 +364,13 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                 )}
 
                 {filteredConversations.length === 0 && !showNewChat ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
+                  <div className="text-center py-4 text-muted-foreground text-xs sm:text-sm">
                     <p>No conversations yet</p>
                     <Button
                       variant="link"
                       size="sm"
                       onClick={() => setShowNewChat(true)}
-                      className="mt-1"
+                      className="mt-1 text-xs sm:text-sm"
                     >
                       Start a new chat
                     </Button>
@@ -381,23 +381,23 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                       <button
                         key={convo.id}
                         onClick={() => setSelectedDoctor(convo)}
-                        className={`w-full p-2 rounded-lg text-left transition-all ${
+                        className={`w-full p-2 rounded-lg text-left transition-all min-h-[44px] ${
                           selectedDoctor?.id === convo.id
                             ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-muted'
+                            : 'hover:bg-muted active:bg-muted/80'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm truncate">
+                          <span className="font-medium text-xs sm:text-sm truncate">
                             Dr. {convo.first_name} {convo.last_name}
                           </span>
                           {convo.unread_count > 0 && (
-                            <Badge variant="destructive" className="text-xs h-5 min-w-5 flex items-center justify-center">
+                            <Badge variant="destructive" className="text-[10px] sm:text-xs h-4 sm:h-5 min-w-4 sm:min-w-5 flex items-center justify-center">
                               {convo.unread_count}
                             </Badge>
                           )}
                         </div>
-                        <p className={`text-xs truncate ${
+                        <p className={`text-[10px] sm:text-xs truncate ${
                           selectedDoctor?.id === convo.id
                             ? 'text-primary-foreground/70'
                             : 'text-muted-foreground'
@@ -405,7 +405,7 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                           {convo.specialization}
                         </p>
                         {convo.last_message && (
-                          <p className={`text-xs truncate mt-1 ${
+                          <p className={`text-[10px] sm:text-xs truncate mt-0.5 sm:mt-1 ${
                             selectedDoctor?.id === convo.id
                               ? 'text-primary-foreground/60'
                               : 'text-muted-foreground/80'
@@ -420,49 +420,59 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
               </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="lg:col-span-2 border rounded-lg flex flex-col">
+            {/* Messages Area - Full width on mobile when doctor selected */}
+            <div className={`lg:col-span-2 border rounded-lg flex flex-col ${selectedDoctor ? 'flex' : 'hidden lg:flex'}`}>
               {!selectedDoctor ? (
                 <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Select a conversation or start a new one</p>
+                    <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-xs sm:text-sm">Select a conversation or start a new one</p>
                   </div>
                 </div>
               ) : (
                 <>
-                  {/* Header */}
-                  <div className="p-3 border-b flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-primary" />
+                  {/* Header with back button on mobile */}
+                  <div className="p-2 sm:p-3 border-b flex items-center gap-2 sm:gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedDoctor(null)}
+                      className="lg:hidden h-8 w-8 p-0 flex-shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </Button>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-xs sm:text-sm truncate">
                         Dr. {selectedDoctor.first_name} {selectedDoctor.last_name}
                       </p>
-                      <p className="text-xs text-muted-foreground">{selectedDoctor.specialization}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{selectedDoctor.specialization}</p>
                     </div>
                   </div>
 
                   {/* Messages Container */}
-                  <div className="flex-1 overflow-y-auto p-3 bg-muted/20">
+                  <div className="flex-1 overflow-y-auto p-2 sm:p-3 bg-muted/20">
                     {loading ? (
                       <div className="flex items-center justify-center h-full">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-primary"></div>
                       </div>
                     ) : messages.length === 0 ? (
                       <div className="flex items-center justify-center h-full text-muted-foreground">
-                        <p className="text-sm">No messages yet. Start the conversation!</p>
+                        <p className="text-xs sm:text-sm text-center px-4">No messages yet. Start the conversation!</p>
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2">
                         {messages.map(msg => (
                           <div
                             key={msg.id}
                             className={`flex ${msg.sender_type === 'patient' ? 'justify-end' : 'justify-start'} group`}
                           >
                             <div
-                              className={`max-w-[80%] rounded-lg p-2.5 relative ${
+                              className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2 sm:p-2.5 relative ${
                                 msg.sender_type === 'patient'
                                   ? 'bg-primary text-primary-foreground'
                                   : 'bg-background border'
@@ -471,19 +481,19 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                               {msg.sender_type === 'patient' && (
                                 <button
                                   onClick={() => deleteMessage(msg.id)}
-                                  className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+                                  className="absolute -left-7 sm:-left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded hidden sm:block"
                                   title="Delete message"
                                 >
                                   <Trash2 className="w-4 h-4 text-destructive" />
                                 </button>
                               )}
-                              <p className="text-sm">{msg.message}</p>
+                              <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{msg.message}</p>
                               <div className={`flex items-center justify-end gap-1 mt-1 ${
                                 msg.sender_type === 'patient' 
                                   ? 'text-primary-foreground/70' 
                                   : 'text-muted-foreground'
                               }`}>
-                                <span className="text-xs">
+                                <span className="text-[10px] sm:text-xs">
                                   {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 {renderReadStatus(msg)}
@@ -497,13 +507,13 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                   </div>
 
                   {/* Message Input */}
-                  <div className="p-3 border-t">
+                  <div className="p-2 sm:p-3 border-t">
                     <div className="flex gap-2">
                       <Textarea
                         placeholder={`Message Dr. ${selectedDoctor.last_name}...`}
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        className="flex-1 min-h-[60px] max-h-[100px] resize-none text-sm"
+                        className="flex-1 min-h-[50px] sm:min-h-[60px] max-h-[100px] resize-none text-xs sm:text-sm"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -514,13 +524,13 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                       <Button 
                         onClick={sendMessage} 
                         disabled={!newMessage.trim() || sending}
-                        className="self-end"
+                        className="self-end h-9 w-9 sm:h-10 sm:w-10 p-0"
                         size="sm"
                       >
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
                       Enter to send, Shift+Enter for new line
                     </p>
                   </div>

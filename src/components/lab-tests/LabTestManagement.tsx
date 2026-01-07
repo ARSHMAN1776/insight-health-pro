@@ -154,13 +154,11 @@ const LabTestManagement: React.FC = () => {
     try {
       if (selectedLabTest) {
         const updated = await dataManager.updateLabTest(selectedLabTest.id, formData);
-        if (updated) {
-          setLabTests(prev => prev.map(test => test.id === selectedLabTest.id ? updated : test));
-          toast({
-            title: 'Success',
-            description: 'Lab test updated successfully',
-          });
-        }
+        setLabTests(prev => prev.map(test => test.id === selectedLabTest.id ? updated : test));
+        toast({
+          title: 'Success',
+          description: 'Lab test updated successfully',
+        });
       } else {
         const newTest = await dataManager.createLabTest(formData);
         setLabTests(prev => [...prev, newTest]);
@@ -172,10 +170,12 @@ const LabTestManagement: React.FC = () => {
       
       resetForm();
       setIsDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Lab test operation error:', error);
+      const errorMessage = error?.message || `Failed to ${selectedLabTest ? 'update' : 'create'} lab test`;
       toast({
         title: 'Error',
-        description: `Failed to ${selectedLabTest ? 'update' : 'create'} lab test`,
+        description: errorMessage,
         variant: 'destructive',
       });
     }

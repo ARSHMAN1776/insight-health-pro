@@ -314,27 +314,27 @@ const PatientDashboard: React.FC = () => {
         </Alert>
       )}
       {/* Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-hover to-medical-blue-dark p-10 text-primary-foreground shadow-elegant">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-foreground/10 rounded-full -mr-32 -mt-32 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary-foreground/10 rounded-full -ml-48 -mb-48 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-primary via-primary-hover to-medical-blue-dark p-5 sm:p-7 md:p-10 text-primary-foreground shadow-elegant">
+        <div className="absolute top-0 right-0 w-32 sm:w-48 md:w-64 h-32 sm:h-48 md:h-64 bg-primary-foreground/10 rounded-full -mr-16 sm:-mr-24 md:-mr-32 -mt-16 sm:-mt-24 md:-mt-32 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 sm:w-72 md:w-96 h-48 sm:h-72 md:h-96 bg-primary-foreground/10 rounded-full -ml-24 sm:-ml-36 md:-ml-48 -mb-24 sm:-mb-36 md:-mb-48 blur-3xl" />
         
-        <div className="relative flex items-center justify-between">
-          <div className="flex-1">
-            <h1 className="text-4xl md:text-5xl font-bold mb-3">
+        <div className="relative flex flex-col sm:flex-row items-center sm:items-start sm:justify-between gap-4">
+          <div className="flex-1 text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
               Welcome back, {patientData?.first_name || user?.firstName || 'Patient'}!
             </h1>
-            <p className="text-primary-foreground/90 text-lg md:text-xl mb-6">
+            <p className="text-primary-foreground/90 text-sm sm:text-base md:text-lg lg:text-xl mb-3 sm:mb-4 md:mb-6">
               Your health journey at a glance
             </p>
-            <div className="flex items-center space-x-2 text-sm text-primary-foreground/80">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm text-primary-foreground/80">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-success rounded-full animate-pulse" />
               <span>All systems operational</span>
             </div>
           </div>
           
-          <div className="hidden lg:flex items-center justify-center">
-            <div className="w-32 h-32 bg-primary-foreground/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl">
-              <svg className="w-16 h-16 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="hidden md:flex items-center justify-center">
+            <div className="w-24 h-24 lg:w-32 lg:h-32 bg-primary-foreground/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl">
+              <svg className="w-12 h-12 lg:w-16 lg:h-16 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
@@ -343,46 +343,46 @@ const PatientDashboard: React.FC = () => {
       </div>
 
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="card-gradient border-l-4 border-l-primary hover:shadow-xl transition-all duration-300 hover:scale-105">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center">
-                <LayoutDashboard className="w-7 h-7 text-primary" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+        <Card className="card-gradient border-l-4 border-l-primary hover:shadow-xl transition-all duration-300 hover:scale-[1.02] sm:hover:scale-105">
+          <CardContent className="p-4 sm:p-5 md:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-primary/10 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                <LayoutDashboard className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary" />
               </div>
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">Active</Badge>
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] sm:text-xs">Active</Badge>
             </div>
-            <p className="text-sm text-muted-foreground mb-1">Upcoming Appointments</p>
-            <p className="text-4xl font-bold text-primary mb-1">{upcomingAppointments.length}</p>
-            <p className="text-xs text-muted-foreground">Next visit scheduled</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Upcoming Appointments</p>
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-1">{upcomingAppointments.length}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Next visit scheduled</p>
           </CardContent>
         </Card>
 
-        <Card className="card-gradient border-l-4 border-l-medical-purple hover:shadow-xl transition-all duration-300 hover:scale-105">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-14 h-14 bg-medical-purple/10 rounded-2xl flex items-center justify-center">
-                <FileText className="w-7 h-7 text-medical-purple" />
+        <Card className="card-gradient border-l-4 border-l-medical-purple hover:shadow-xl transition-all duration-300 hover:scale-[1.02] sm:hover:scale-105">
+          <CardContent className="p-4 sm:p-5 md:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-medical-purple/10 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-medical-purple" />
               </div>
-              <Badge variant="outline" className="bg-medical-purple/10 text-medical-purple border-medical-purple/20">Records</Badge>
+              <Badge variant="outline" className="bg-medical-purple/10 text-medical-purple border-medical-purple/20 text-[10px] sm:text-xs">Records</Badge>
             </div>
-            <p className="text-sm text-muted-foreground mb-1">Medical Records</p>
-            <p className="text-4xl font-bold text-medical-purple mb-1">{medicalRecords.length}</p>
-            <p className="text-xs text-muted-foreground">Total health records</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Medical Records</p>
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-medical-purple mb-1">{medicalRecords.length}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Total health records</p>
           </CardContent>
         </Card>
 
-        <Card className="card-gradient border-l-4 border-l-medical-green hover:shadow-xl transition-all duration-300 hover:scale-105">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-14 h-14 bg-medical-green/10 rounded-2xl flex items-center justify-center">
-                <Pill className="w-7 h-7 text-medical-green" />
+        <Card className="card-gradient border-l-4 border-l-medical-green hover:shadow-xl transition-all duration-300 hover:scale-[1.02] sm:hover:scale-105 sm:col-span-2 lg:col-span-1">
+          <CardContent className="p-4 sm:p-5 md:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-medical-green/10 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                <Pill className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-medical-green" />
               </div>
-              <Badge variant="outline" className="bg-success/10 text-success border-success/20">Active</Badge>
+              <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[10px] sm:text-xs">Active</Badge>
             </div>
-            <p className="text-sm text-muted-foreground mb-1">Prescriptions</p>
-            <p className="text-4xl font-bold text-medical-green mb-1">{prescriptions.length}</p>
-            <p className="text-xs text-muted-foreground">Current medications</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Prescriptions</p>
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-medical-green mb-1">{prescriptions.length}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Current medications</p>
           </CardContent>
         </Card>
       </div>
