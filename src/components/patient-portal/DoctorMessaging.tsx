@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { MessageCircle, Send, User, Check, CheckCheck, Plus, Search, Trash2 } from 'lucide-react';
+import { MessageCircle, Send, User, Check, CheckCheck, Plus, Search, ArrowLeft } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,7 +54,6 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
     if (patientData?.id) {
       fetchDoctorsAndConversations();
 
-      // Set up real-time subscription for messages
       const channel = supabase
         .channel('patient-messages')
         .on(
@@ -65,19 +64,14 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
             table: 'patient_messages',
             filter: `patient_id=eq.${patientData.id}`
           },
-          (payload) => {
-            console.log('Message update received:', payload);
+          () => {
             fetchDoctorsAndConversations();
-            if (selectedDoctor) {
-              fetchMessages();
-            }
+            if (selectedDoctor) fetchMessages();
           }
         )
         .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      return () => { supabase.removeChannel(channel); };
     }
   }, [patientData?.id]);
 
@@ -94,7 +88,6 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
 
   const fetchDoctorsAndConversations = async () => {
     try {
-      // Get doctors that the patient has had appointments with
       const { data: appointments } = await supabase
         .from('appointments')
         .select('doctor_id')
@@ -110,17 +103,14 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
 
         setAllDoctors(doctorsData || []);
 
-        // Get all messages for this patient
         const { data: messagesData } = await supabase
           .from('patient_messages')
           .select('doctor_id, message, created_at, read, sender_type')
           .eq('patient_id', patientData?.id)
           .order('created_at', { ascending: false });
 
-        // Get unique doctor IDs from messages (existing conversations)
         const messagedDoctorIds = [...new Set(messagesData?.map(m => m.doctor_id) || [])];
 
-        // Build conversations list from doctors who have messages
         const convos: DoctorConversation[] = (doctorsData || [])
           .filter(doc => messagedDoctorIds.includes(doc.id))
           .map(doctor => {
@@ -136,7 +126,6 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
             };
           });
 
-        // Sort by last message time
         convos.sort((a, b) => {
           if (!a.last_message_time) return 1;
           if (!b.last_message_time) return -1;
@@ -182,13 +171,8 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
       .eq('sender_type', 'doctor')
       .eq('read', false);
 
-    // Update local state
     setConversations(prev =>
-      prev.map(c =>
-        c.id === selectedDoctor.id
-          ? { ...c, unread_count: 0 }
-          : c
-      )
+      prev.map(c => c.id === selectedDoctor.id ? { ...c, unread_count: 0 } : c)
     );
   };
 
@@ -212,42 +196,14 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
       fetchMessages();
       fetchDoctorsAndConversations();
       setShowNewChat(false);
-      toast({
-        title: 'Message Sent',
-        description: 'Your message has been sent to the doctor.',
-      });
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to send message. Please try again.',
+        description: 'Failed to send message.',
         variant: 'destructive',
       });
     } finally {
       setSending(false);
-    }
-  };
-
-  const deleteMessage = async (messageId: string) => {
-    try {
-      const { error } = await supabase
-        .from('patient_messages')
-        .delete()
-        .eq('id', messageId);
-
-      if (error) throw error;
-
-      setMessages(prev => prev.filter(m => m.id !== messageId));
-      fetchDoctorsAndConversations();
-      toast({
-        title: 'Message Deleted',
-        description: 'The message has been deleted.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete message.',
-        variant: 'destructive',
-      });
     }
   };
 
@@ -256,17 +212,11 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
     if (existingConvo) {
       setSelectedDoctor(existingConvo);
     } else {
-      setSelectedDoctor({
-        ...doctor,
-        unread_count: 0,
-        last_message: undefined,
-        last_message_time: undefined,
-      });
+      setSelectedDoctor({ ...doctor, unread_count: 0 });
     }
     setShowNewChat(false);
   };
 
-  // Doctors available for new conversations (not already in conversations)
   const availableForNewChat = allDoctors.filter(
     doc => !conversations.some(c => c.id === doc.id)
   );
@@ -277,56 +227,57 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
 
-  // Render read status ticks
-  const renderReadStatus = (msg: Message) => {
-    if (msg.sender_type !== 'patient') return null;
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
-    return (
-      <span className="ml-1 inline-flex">
-        {msg.read ? (
-          <CheckCheck className="w-4 h-4 text-blue-400" />
-        ) : (
-          <Check className="w-4 h-4 text-primary-foreground/50" />
-        )}
-      </span>
-    );
+    if (diffDays === 0) {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
-    <Card className="card-gradient">
-      <CardHeader className="pb-3">
+    <Card>
+      <CardHeader className="p-3 sm:p-4 pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <MessageCircle className="w-5 h-5 text-primary" />
-            <span>Message Your Doctor</span>
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            Messages
           </CardTitle>
           {totalUnread > 0 && (
-            <Badge variant="destructive">{totalUnread} unread</Badge>
+            <Badge variant="destructive" className="text-xs">{totalUnread}</Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      
+      <CardContent className="p-0">
         {allDoctors.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No doctors to message yet</p>
-            <p className="text-sm mt-2">Book an appointment first to start messaging your doctor</p>
+          <div className="text-center py-8 px-4 text-muted-foreground">
+            <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No doctors to message</p>
+            <p className="text-xs mt-1">Book an appointment first</p>
           </div>
         ) : (
-          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-3 h-[350px] sm:h-[400px]">
-            {/* Conversations List - Hidden on mobile when doctor selected */}
-            <div className={`lg:col-span-1 border rounded-lg flex flex-col ${selectedDoctor ? 'hidden lg:flex' : 'flex'}`}>
-              <div className="p-2 sm:p-3 border-b space-y-2">
+          <div className="h-[400px] flex">
+            {/* Conversations List */}
+            <div className={`${selectedDoctor ? 'hidden sm:flex' : 'flex'} flex-col w-full sm:w-1/3 sm:min-w-[200px] border-r`}>
+              <div className="p-2 border-b space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-xs sm:text-sm">Conversations</span>
+                  <span className="text-xs font-medium text-muted-foreground">Chats</span>
                   {availableForNewChat.length > 0 && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowNewChat(!showNewChat)}
-                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                      className="h-6 w-6 p-0"
                     >
-                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <Plus className="w-3.5 h-3.5" />
                     </Button>
                   )}
                 </div>
@@ -336,25 +287,25 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-7 h-7 sm:h-8 text-xs sm:text-sm"
+                    className="pl-7 h-7 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-1.5 sm:p-2">
+              <div className="flex-1 overflow-y-auto">
                 {showNewChat && (
-                  <div className="mb-2 p-2 bg-muted/50 rounded-lg">
-                    <p className="text-xs font-medium mb-2">Start new conversation:</p>
+                  <div className="p-2 border-b bg-muted/50">
+                    <p className="text-[10px] font-medium mb-1.5 text-muted-foreground">New chat</p>
                     <Select onValueChange={(value) => {
                       const doctor = allDoctors.find(d => d.id === value);
                       if (doctor) startNewConversation(doctor);
                     }}>
-                      <SelectTrigger className="h-8 text-xs sm:text-sm">
-                        <SelectValue placeholder="Select a doctor" />
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select doctor" />
                       </SelectTrigger>
                       <SelectContent>
                         {availableForNewChat.map(doctor => (
-                          <SelectItem key={doctor.id} value={doctor.id}>
+                          <SelectItem key={doctor.id} value={doctor.id} className="text-xs">
                             Dr. {doctor.first_name} {doctor.last_name}
                           </SelectItem>
                         ))}
@@ -364,55 +315,49 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
                 )}
 
                 {filteredConversations.length === 0 && !showNewChat ? (
-                  <div className="text-center py-4 text-muted-foreground text-xs sm:text-sm">
-                    <p>No conversations yet</p>
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="text-xs">No conversations</p>
                     <Button
                       variant="link"
                       size="sm"
                       onClick={() => setShowNewChat(true)}
-                      className="mt-1 text-xs sm:text-sm"
+                      className="text-xs h-auto p-0 mt-1"
                     >
-                      Start a new chat
+                      Start a chat
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div>
                     {filteredConversations.map(convo => (
                       <button
                         key={convo.id}
                         onClick={() => setSelectedDoctor(convo)}
-                        className={`w-full p-2 rounded-lg text-left transition-all min-h-[44px] ${
+                        className={`w-full p-2.5 text-left transition-colors border-b last:border-b-0 ${
                           selectedDoctor?.id === convo.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-muted active:bg-muted/80'
+                            ? 'bg-primary/10'
+                            : 'hover:bg-muted/50 active:bg-muted'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-xs sm:text-sm truncate">
-                            Dr. {convo.first_name} {convo.last_name}
-                          </span>
-                          {convo.unread_count > 0 && (
-                            <Badge variant="destructive" className="text-[10px] sm:text-xs h-4 sm:h-5 min-w-4 sm:min-w-5 flex items-center justify-center">
-                              {convo.unread_count}
-                            </Badge>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium truncate">
+                                Dr. {convo.first_name} {convo.last_name}
+                              </span>
+                              {convo.unread_count > 0 && (
+                                <Badge variant="destructive" className="text-[10px] h-4 min-w-4 flex items-center justify-center ml-1">
+                                  {convo.unread_count}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {convo.last_message || convo.specialization}
+                            </p>
+                          </div>
                         </div>
-                        <p className={`text-[10px] sm:text-xs truncate ${
-                          selectedDoctor?.id === convo.id
-                            ? 'text-primary-foreground/70'
-                            : 'text-muted-foreground'
-                        }`}>
-                          {convo.specialization}
-                        </p>
-                        {convo.last_message && (
-                          <p className={`text-[10px] sm:text-xs truncate mt-0.5 sm:mt-1 ${
-                            selectedDoctor?.id === convo.id
-                              ? 'text-primary-foreground/60'
-                              : 'text-muted-foreground/80'
-                          }`}>
-                            {convo.last_message}
-                          </p>
-                        )}
                       </button>
                     ))}
                   </div>
@@ -420,119 +365,106 @@ const DoctorMessaging: React.FC<DoctorMessagingProps> = ({ patientData }) => {
               </div>
             </div>
 
-            {/* Messages Area - Full width on mobile when doctor selected */}
-            <div className={`lg:col-span-2 border rounded-lg flex flex-col ${selectedDoctor ? 'flex' : 'hidden lg:flex'}`}>
+            {/* Messages Area */}
+            <div className={`${selectedDoctor ? 'flex' : 'hidden sm:flex'} flex-col flex-1`}>
               {!selectedDoctor ? (
                 <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
-                    <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-xs sm:text-sm">Select a conversation or start a new one</p>
+                    <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                    <p className="text-xs">Select a conversation</p>
                   </div>
                 </div>
               ) : (
                 <>
-                  {/* Header with back button on mobile */}
-                  <div className="p-2 sm:p-3 border-b flex items-center gap-2 sm:gap-3">
+                  {/* Chat Header */}
+                  <div className="p-2.5 border-b flex items-center gap-2 bg-muted/30">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedDoctor(null)}
-                      className="lg:hidden h-8 w-8 p-0 flex-shrink-0"
+                      className="sm:hidden h-8 w-8 p-0"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
+                      <ArrowLeft className="w-4 h-4" />
                     </Button>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-xs sm:text-sm truncate">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
                         Dr. {selectedDoctor.first_name} {selectedDoctor.last_name}
                       </p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{selectedDoctor.specialization}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{selectedDoctor.specialization}</p>
                     </div>
                   </div>
 
-                  {/* Messages Container */}
-                  <div className="flex-1 overflow-y-auto p-2 sm:p-3 bg-muted/20">
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-muted/20">
                     {loading ? (
                       <div className="flex items-center justify-center h-full">
-                        <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-primary"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"></div>
                       </div>
                     ) : messages.length === 0 ? (
                       <div className="flex items-center justify-center h-full text-muted-foreground">
-                        <p className="text-xs sm:text-sm text-center px-4">No messages yet. Start the conversation!</p>
+                        <p className="text-xs">Start the conversation!</p>
                       </div>
                     ) : (
-                      <div className="space-y-1.5 sm:space-y-2">
-                        {messages.map(msg => (
+                      messages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`flex ${msg.sender_type === 'patient' ? 'justify-end' : 'justify-start'}`}
+                        >
                           <div
-                            key={msg.id}
-                            className={`flex ${msg.sender_type === 'patient' ? 'justify-end' : 'justify-start'} group`}
+                            className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                              msg.sender_type === 'patient'
+                                ? 'bg-primary text-primary-foreground rounded-br-md'
+                                : 'bg-card border rounded-bl-md'
+                            }`}
                           >
-                            <div
-                              className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2 sm:p-2.5 relative ${
-                                msg.sender_type === 'patient'
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-background border'
-                              }`}
-                            >
+                            <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                            <div className={`flex items-center justify-end gap-1 mt-1 ${
+                              msg.sender_type === 'patient' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              <span className="text-[10px]">{formatTime(msg.created_at)}</span>
                               {msg.sender_type === 'patient' && (
-                                <button
-                                  onClick={() => deleteMessage(msg.id)}
-                                  className="absolute -left-7 sm:-left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded hidden sm:block"
-                                  title="Delete message"
-                                >
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </button>
+                                msg.read ? (
+                                  <CheckCheck className="w-3 h-3 text-blue-300" />
+                                ) : (
+                                  <Check className="w-3 h-3" />
+                                )
                               )}
-                              <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{msg.message}</p>
-                              <div className={`flex items-center justify-end gap-1 mt-1 ${
-                                msg.sender_type === 'patient' 
-                                  ? 'text-primary-foreground/70' 
-                                  : 'text-muted-foreground'
-                              }`}>
-                                <span className="text-[10px] sm:text-xs">
-                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                {renderReadStatus(msg)}
-                              </div>
                             </div>
                           </div>
-                        ))}
-                        <div ref={messagesEndRef} />
-                      </div>
+                        </div>
+                      ))
                     )}
+                    <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Message Input */}
-                  <div className="p-2 sm:p-3 border-t">
+                  {/* Input */}
+                  <div className="p-2.5 border-t bg-background">
                     <div className="flex gap-2">
                       <Textarea
-                        placeholder={`Message Dr. ${selectedDoctor.last_name}...`}
+                        placeholder="Type a message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        className="flex-1 min-h-[50px] sm:min-h-[60px] max-h-[100px] resize-none text-xs sm:text-sm"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
                             sendMessage();
                           }
                         }}
+                        className="min-h-[40px] max-h-[100px] text-sm resize-none flex-1"
+                        rows={1}
                       />
-                      <Button 
-                        onClick={sendMessage} 
+                      <Button
+                        onClick={sendMessage}
                         disabled={!newMessage.trim() || sending}
-                        className="self-end h-9 w-9 sm:h-10 sm:w-10 p-0"
                         size="sm"
+                        className="h-10 w-10 p-0"
                       >
-                        <Send className="h-4 w-4" />
+                        <Send className="w-4 h-4" />
                       </Button>
                     </div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                      Enter to send, Shift+Enter for new line
-                    </p>
                   </div>
                 </>
               )}
