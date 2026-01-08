@@ -279,23 +279,23 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
 
                         {/* Action Buttons */}
                         {canModify ? (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col xs:flex-row gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleRescheduleClick(appointment)}
-                              className="flex-1 h-9 text-xs font-semibold bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-all"
+                              className="flex-1 h-11 xs:h-10 text-sm font-semibold bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-all rounded-xl"
                             >
-                              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                              <RefreshCw className="w-4 h-4 mr-2" />
                               Reschedule
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleCancelClick(appointment)}
-                              className="flex-1 h-9 text-xs font-semibold text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5 hover:border-destructive/50 transition-all"
+                              className="flex-1 h-11 xs:h-10 text-sm font-semibold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30 hover:bg-red-100 dark:hover:bg-red-500/20 hover:border-red-300 transition-all rounded-xl"
                             >
-                              <X className="w-3.5 h-3.5 mr-1.5" />
+                              <X className="w-4 h-4 mr-2" />
                               Cancel
                             </Button>
                           </div>
@@ -328,23 +328,53 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
           <div className="space-y-2">
             {pastAppointments.slice(0, 5).map((appointment) => {
               const status = getStatusConfig(appointment.status);
+              const isCancelled = appointment.status === 'cancelled';
+              const dateInfo = formatDateFull(appointment.appointment_date);
+              
               return (
-                <Card key={appointment.id} className="bg-muted/30 border-muted">
-                  <CardContent className="p-3 flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg ${status.light} flex items-center justify-center border ${status.border}`}>
-                      <span className={`text-sm font-bold ${status.text}`}>
-                        {new Date(appointment.appointment_date).getDate()}
-                      </span>
+                <Card 
+                  key={appointment.id} 
+                  className={`overflow-hidden ${isCancelled ? 'border-l-4 border-l-red-400' : 'border-l-4 border-l-gray-300'}`}
+                >
+                  <CardContent className="p-0">
+                    <div className="flex items-stretch">
+                      {/* Date Badge */}
+                      <div className={`w-16 flex-shrink-0 ${status.light} flex flex-col items-center justify-center py-3 border-r ${status.border}`}>
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          {dateInfo.month}
+                        </span>
+                        <span className={`text-xl font-bold ${status.text}`}>
+                          {dateInfo.day}
+                        </span>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 p-3 flex items-center gap-3 min-w-0">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-medium truncate">
+                              {appointment.type || 'Consultation'}
+                            </p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {formatTime(appointment.appointment_time)}
+                          </p>
+                        </div>
+                        
+                        {/* Status Badge */}
+                        <Badge 
+                          variant={isCancelled ? 'destructive' : 'secondary'}
+                          className={`text-[10px] px-2 py-0.5 flex-shrink-0 ${
+                            isCancelled 
+                              ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 border-0' 
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-300 border-0'
+                          }`}
+                        >
+                          {isCancelled && <X className="w-3 h-3 mr-1" />}
+                          {isCancelled ? 'Cancelled' : 'Completed'}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{appointment.type || 'Consultation'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(appointment.appointment_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        {' • '}
-                        {formatTime(appointment.appointment_time)}
-                      </p>
-                    </div>
-                    <div className={`w-2 h-2 rounded-full ${status.bg}`} />
                   </CardContent>
                 </Card>
               );
@@ -373,21 +403,21 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
               className="min-h-[100px] resize-none rounded-xl"
             />
           </div>
-          <DialogFooter className="flex-col gap-2 sm:flex-row pt-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setCancelDialogOpen(false)}
-              className="w-full sm:w-auto h-11 rounded-xl font-semibold"
-            >
-              Keep Appointment
-            </Button>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row pt-2">
             <Button 
               variant="destructive" 
               onClick={handleCancelConfirm}
               disabled={processing}
-              className="w-full sm:w-auto h-11 rounded-xl font-semibold"
+              className="w-full sm:w-auto h-12 rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white"
             >
-              {processing ? 'Cancelling...' : 'Cancel Appointment'}
+              {processing ? 'Cancelling...' : 'Yes, Cancel Appointment'}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setCancelDialogOpen(false)}
+              className="w-full sm:w-auto h-12 rounded-xl font-semibold border-2 hover:bg-primary/5"
+            >
+              Keep Appointment
             </Button>
           </DialogFooter>
         </DialogContent>

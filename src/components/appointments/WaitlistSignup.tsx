@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { 
-  Calendar, Clock, User, Building2, AlertCircle, CheckCircle, ListPlus
+  Calendar, Clock, User, Building2, AlertCircle, CheckCircle, ListPlus, X
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -219,51 +219,54 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
               {patientWaitlistEntries.map((entry) => (
                 <div 
                   key={entry.id} 
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                  className="p-4 rounded-xl border bg-card space-y-3"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      {entry.department && (
-                        <Badge variant="outline">
-                          <Building2 className="h-3 w-3 mr-1" />
-                          {entry.department.department_name}
-                        </Badge>
-                      )}
-                      {entry.doctor && (
-                        <Badge variant="secondary">
-                          Dr. {entry.doctor.first_name} {entry.doctor.last_name}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {format(new Date(entry.preferred_date_start), 'MMM d, yyyy')}
-                      {entry.preferred_date_end && (
-                        <> - {format(new Date(entry.preferred_date_end), 'MMM d')}</>
-                      )}
-                    </div>
-                    {entry.status === 'notified' && (
-                      <Alert className="mt-2 py-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <AlertDescription className="text-sm">
-                          A slot is available! Check your notifications.
-                        </AlertDescription>
-                      </Alert>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {entry.department && (
+                      <Badge variant="outline" className="text-xs px-2 py-1">
+                        <Building2 className="h-3 w-3 mr-1" />
+                        {entry.department.department_name}
+                      </Badge>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={entry.status === 'notified' ? 'default' : 'outline'}>
+                    {entry.doctor && (
+                      <Badge variant="secondary" className="text-xs px-2 py-1">
+                        Dr. {entry.doctor.first_name} {entry.doctor.last_name}
+                      </Badge>
+                    )}
+                    <Badge 
+                      variant={entry.status === 'notified' ? 'default' : 'outline'}
+                      className="text-xs px-2 py-1 ml-auto"
+                    >
                       {entry.status === 'waiting' ? 'Waiting' : 'Slot Available!'}
                     </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => cancelEntry(entry.id)}
-                    >
-                      Cancel
-                    </Button>
                   </div>
+                  
+                  <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {format(new Date(entry.preferred_date_start), 'MMM d, yyyy')}
+                    {entry.preferred_date_end && (
+                      <> - {format(new Date(entry.preferred_date_end), 'MMM d')}</>
+                    )}
+                  </div>
+                  
+                  {entry.status === 'notified' && (
+                    <Alert className="py-2 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20">
+                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      <AlertDescription className="text-sm text-emerald-700 dark:text-emerald-300">
+                        A slot is available! Check your notifications.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-10 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5 hover:border-destructive/50 font-medium"
+                    onClick={() => cancelEntry(entry.id)}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel Request
+                  </Button>
                 </div>
               ))}
             </div>
@@ -272,19 +275,19 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
       )}
 
       {/* Join Waitlist Card */}
-      <Card className="border-2 border-dashed border-muted-foreground/20 hover:border-primary/30 transition-colors">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center">
-                <ListPlus className="w-7 h-7 text-muted-foreground" />
+      <Card className="overflow-hidden border bg-gradient-to-br from-amber-500/5 via-background to-orange-500/5 hover:shadow-lg transition-all duration-300">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20 flex-shrink-0">
+                <ListPlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
-                <h3 className="text-xl font-semibold text-foreground">Join Appointment Waitlist</h3>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-base sm:text-lg text-foreground">Join Waitlist</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                   {isVerified 
-                    ? "Can't find a slot? Join the waitlist and we'll notify you when one opens."
-                    : 'Your account must be verified to join the waitlist.'
+                    ? "Can't find a slot? We'll notify you when one opens."
+                    : 'Account verification required'
                   }
                 </p>
               </div>
@@ -293,11 +296,10 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  variant="outline"
-                  size="lg"
+                  className="w-full sm:w-auto h-11 sm:h-10 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/20"
                   disabled={!isVerified}
                 >
-                  <ListPlus className="w-5 h-5 mr-2" />
+                  <ListPlus className="w-4 h-4 mr-2" />
                   Join Waitlist
                 </Button>
               </DialogTrigger>
