@@ -293,20 +293,24 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
   return (
     <>
       {/* Trigger Card - Premium Design */}
-      <Card className="overflow-hidden border-2 border-dashed border-primary/30 hover:border-primary/50 bg-gradient-to-br from-primary/5 via-background to-primary/5 transition-all duration-300 hover:shadow-lg cursor-pointer group">
+      <Card className="overflow-hidden border bg-gradient-to-br from-primary/5 via-background to-primary/10 hover:shadow-xl transition-all duration-300 cursor-pointer group">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <CardContent className="p-4 sm:p-5 flex items-center gap-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
-                <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
+          <DialogTrigger asChild disabled={!isVerified}>
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25 group-hover:scale-105 group-hover:shadow-primary/40 transition-all flex-shrink-0">
+                  <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base sm:text-lg">Book Appointment</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {isVerified ? 'Schedule a visit with your doctor' : 'Account verification required'}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
+                  <ChevronRight className="w-5 h-5 text-primary group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base sm:text-lg">Book Appointment</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  {isVerified ? 'Schedule a visit with your doctor' : 'Account verification required'}
-                </p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
             </CardContent>
           </DialogTrigger>
 
