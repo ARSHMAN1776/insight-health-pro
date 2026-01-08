@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, Loader2, Globe, Zap, Plus } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, Building2, AlertCircle, Loader2, Globe, Zap, Plus, CheckCircle, ChevronRight } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -292,112 +292,121 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
 
   return (
     <>
-      {/* Trigger Card */}
-      <Card className="border-2 border-dashed border-primary/30 hover:border-primary/50 transition-all hover:shadow-md cursor-pointer group">
+      {/* Trigger Card - Premium Design */}
+      <Card className="overflow-hidden border-2 border-dashed border-primary/30 hover:border-primary/50 bg-gradient-to-br from-primary/5 via-background to-primary/5 transition-all duration-300 hover:shadow-lg cursor-pointer group">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Plus className="w-5 h-5 text-primary" />
+            <CardContent className="p-4 sm:p-5 flex items-center gap-4">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
+                <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm sm:text-base">Book Appointment</h3>
-                <p className="text-xs text-muted-foreground truncate">
-                  {isVerified ? 'Schedule a visit' : 'Account verification required'}
+                <h3 className="font-bold text-base sm:text-lg">Book Appointment</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  {isVerified ? 'Schedule a visit with your doctor' : 'Account verification required'}
                 </p>
               </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
             </CardContent>
           </DialogTrigger>
 
-          <DialogContent className="max-w-lg mx-4 max-h-[90vh] overflow-y-auto p-0">
-            <DialogHeader className="p-4 pb-2 border-b sticky top-0 bg-background z-10">
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="w-5 h-5 text-primary" />
-                Book Appointment
-              </DialogTitle>
-              <DialogDescription className="text-xs flex items-center gap-1.5">
-                <Globe className="w-3 h-3" />
-                Times shown in {getTimezoneDisplay()}
-              </DialogDescription>
+          <DialogContent className="max-w-lg mx-4 max-h-[90vh] overflow-y-auto rounded-2xl p-0">
+            <DialogHeader className="p-5 pb-3 border-b sticky top-0 bg-background z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold">Book Appointment</DialogTitle>
+                  <DialogDescription className="text-xs flex items-center gap-1.5 mt-0.5">
+                    <Globe className="w-3 h-3" />
+                    Times in {getTimezoneDisplay()}
+                  </DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 space-y-4">
-                {/* Department & Doctor */}
-                <div className="grid grid-cols-1 gap-3">
-                  <FormField
-                    control={form.control}
-                    name="departmentId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5" />
-                          Department
-                        </FormLabel>
-                        <Select 
-                          onValueChange={handleDepartmentChange} 
-                          value={field.value}
-                          disabled={loading}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-10">
-                              <SelectValue placeholder="Select department" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {departments.map((dept) => (
-                              <SelectItem key={dept.department_id} value={dept.department_id}>
-                                {dept.department_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
+              <form onSubmit={form.handleSubmit(onSubmit)} className="p-5 space-y-5">
+                {/* Department */}
+                <FormField
+                  control={form.control}
+                  name="departmentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                        Department
+                      </FormLabel>
+                      <Select 
+                        onValueChange={handleDepartmentChange} 
+                        value={field.value}
+                        disabled={loading}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-12 rounded-xl text-sm">
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.department_id} value={dept.department_id}>
+                              {dept.department_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="doctorId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1.5">
-                          <Stethoscope className="w-3.5 h-3.5" />
-                          Doctor
-                        </FormLabel>
-                        <Select 
-                          onValueChange={handleDoctorChange} 
-                          value={field.value}
-                          disabled={loading || !form.getValues('departmentId')}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-10">
-                              <SelectValue placeholder="Select doctor" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {filteredDoctors.map((doctor) => (
-                              <SelectItem key={doctor.id} value={doctor.id}>
+                {/* Doctor */}
+                <FormField
+                  control={form.control}
+                  name="doctorId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold flex items-center gap-2">
+                        <Stethoscope className="w-4 h-4 text-muted-foreground" />
+                        Doctor
+                      </FormLabel>
+                      <Select 
+                        onValueChange={handleDoctorChange} 
+                        value={field.value}
+                        disabled={loading || !form.getValues('departmentId')}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-12 rounded-xl text-sm">
+                            <SelectValue placeholder="Select doctor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredDoctors.map((doctor) => (
+                            <SelectItem key={doctor.id} value={doctor.id}>
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-muted-foreground" />
                                 Dr. {doctor.first_name} {doctor.last_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Emergency Toggle */}
-                <div className="bg-destructive/5 rounded-lg p-3 border border-destructive/20">
+                <div className="bg-red-50 dark:bg-red-500/10 rounded-xl p-4 border border-red-200 dark:border-red-500/20">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-destructive" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-red-500/20 flex items-center justify-center">
+                        <Zap className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      </div>
                       <div>
-                        <p className="text-sm font-medium">Emergency Same-Day</p>
-                        <p className="text-[10px] text-muted-foreground">Request urgent care</p>
+                        <p className="text-sm font-semibold text-red-700 dark:text-red-300">Same-Day Emergency</p>
+                        <p className="text-[11px] text-red-600/80 dark:text-red-400/80">For urgent medical needs</p>
                       </div>
                     </div>
                     <Switch 
@@ -422,11 +431,11 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                       control={form.control}
                       name="emergencyReason"
                       render={({ field }) => (
-                        <FormItem className="mt-2">
+                        <FormItem className="mt-3">
                           <FormControl>
                             <Textarea 
-                              placeholder="Why is this an emergency?"
-                              className="min-h-[60px] text-sm resize-none border-destructive/30"
+                              placeholder="Briefly describe why this is urgent..."
+                              className="min-h-[70px] text-sm resize-none rounded-lg border-red-300 dark:border-red-500/30 focus-visible:ring-red-500"
                               {...field} 
                             />
                           </FormControl>
@@ -437,15 +446,15 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                   )}
                 </div>
 
-                {/* Date & Time */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Date & Time Row */}
+                <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
+                        <FormLabel className="text-sm font-semibold flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
                           Date
                         </FormLabel>
                         <FormControl>
@@ -455,7 +464,7 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                             max={getMaxDate()}
                             value={field.value}
                             onChange={(e) => handleDateChange(e.target.value)}
-                            className="h-10 text-sm"
+                            className="h-12 rounded-xl text-sm"
                           />
                         </FormControl>
                         <FormMessage className="text-xs" />
@@ -468,69 +477,57 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                     name="time"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
+                        <FormLabel className="text-sm font-semibold flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
                           Time
-                          {!loadingSlots && availableSlotsCount > 0 && (
-                            <Badge variant="secondary" className="text-[10px] ml-1">
-                              {availableSlotsCount}
+                          {availableSlotsCount > 0 && (
+                            <Badge variant="secondary" className="text-[10px] ml-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                              {availableSlotsCount} slots
                             </Badge>
                           )}
                         </FormLabel>
-                        
-                        {noScheduleMessage ? (
-                          <Alert className="py-2">
-                            <AlertCircle className="h-3 w-3" />
-                            <AlertDescription className="text-xs">
-                              {noScheduleMessage}
-                            </AlertDescription>
-                          </Alert>
-                        ) : !form.getValues('doctorId') || !form.getValues('date') ? (
-                          <Select disabled>
-                            <FormControl>
-                              <SelectTrigger className="h-10">
-                                <SelectValue placeholder="Select date first" />
-                              </SelectTrigger>
-                            </FormControl>
-                          </Select>
-                        ) : loadingSlots ? (
-                          <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted/50">
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            <span className="text-xs text-muted-foreground">Loading...</span>
-                          </div>
-                        ) : (
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="h-10">
-                                <SelectValue placeholder="Select time" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {availableSlots.filter(s => s.available).map((slot) => (
-                                <SelectItem key={slot.time} value={slot.time}>
-                                  {slot.time}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                          disabled={loadingSlots || availableSlots.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-12 rounded-xl text-sm">
+                              <SelectValue placeholder={loadingSlots ? "Loading..." : "Select time"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {availableSlots.filter(s => s.available).map((slot) => (
+                              <SelectItem key={slot.time} value={slot.time}>
+                                {slot.time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
                 </div>
 
-                {/* Type */}
+                {noScheduleMessage && (
+                  <Alert variant="destructive" className="rounded-xl">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">{noScheduleMessage}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Appointment Type */}
                 {!isEmergencyMode && (
                   <FormField
                     control={form.control}
                     name="type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">Appointment Type</FormLabel>
+                        <FormLabel className="text-sm font-semibold">Appointment Type</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className="h-10">
+                            <SelectTrigger className="h-12 rounded-xl text-sm">
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                           </FormControl>
@@ -554,53 +551,37 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
                   name="symptoms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">
-                        Symptoms / Reason <span className="text-destructive">*</span>
-                      </FormLabel>
+                      <FormLabel className="text-sm font-semibold">Symptoms / Reason for Visit</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Describe your symptoms..."
-                          className="min-h-[80px] text-sm resize-none"
-                          maxLength={500}
+                          placeholder="Describe your symptoms or reason for visit..."
+                          className="min-h-[100px] resize-none rounded-xl text-sm"
                           {...field} 
                         />
                       </FormControl>
-                      <div className="flex justify-between">
-                        <FormMessage className="text-xs" />
-                        <span className="text-[10px] text-muted-foreground">
-                          {field.value?.length || 0}/500
-                        </span>
-                      </div>
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
 
-                {/* Submit */}
-                <div className="flex gap-2 pt-2 sticky bottom-0 bg-background pb-1">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                    disabled={submitting}
-                    className="flex-1 h-10"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={submitting}
-                    className="flex-1 h-10"
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Booking...
-                      </>
-                    ) : (
-                      'Book Appointment'
-                    )}
-                  </Button>
-                </div>
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={submitting || !form.getValues('time')}
+                  className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/30"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Booking...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Confirm Booking
+                    </>
+                  )}
+                </Button>
               </form>
             </Form>
           </DialogContent>
@@ -609,19 +590,22 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
 
       {/* Success Dialog */}
       <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <DialogContent className="sm:max-w-sm mx-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+        <DialogContent className="max-w-sm mx-4 rounded-2xl text-center">
+          <div className="py-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Appointment Booked!</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Your appointment has been scheduled successfully. You'll receive a confirmation shortly.
+            </p>
+            <Button 
+              onClick={() => setSuccessDialogOpen(false)}
+              className="w-full h-11 rounded-xl font-semibold"
+            >
+              Done
+            </Button>
           </div>
-          <DialogTitle className="text-lg">Appointment Requested!</DialogTitle>
-          <DialogDescription className="text-sm">
-            Your appointment request has been submitted. You'll receive a confirmation soon.
-          </DialogDescription>
-          <Button onClick={() => setSuccessDialogOpen(false)} className="w-full mt-4">
-            Done
-          </Button>
         </DialogContent>
       </Dialog>
     </>
