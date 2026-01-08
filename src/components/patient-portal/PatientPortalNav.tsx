@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, FileText, Calendar, LogOut, MessageCircle, Receipt } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, LogOut, MessageCircle, Receipt, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface PatientPortalNavProps {
@@ -10,30 +10,33 @@ interface PatientPortalNavProps {
 
 const PatientPortalNav: React.FC<PatientPortalNavProps> = ({ activeTab, onTabChange, onLogout }) => {
   const navItems = [
-    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'records', label: 'Records', icon: FileText },
-    { id: 'appointments', label: 'Appointments', icon: Calendar },
-    { id: 'messages', label: 'Messages', icon: MessageCircle },
-    { id: 'insurance', label: 'Insurance', icon: Receipt },
+    { id: 'dashboard', label: 'Home', shortLabel: 'Home', icon: LayoutDashboard },
+    { id: 'appointments', label: 'Appointments', shortLabel: 'Appts', icon: Calendar },
+    { id: 'records', label: 'Records', shortLabel: 'Records', icon: FileText },
+    { id: 'messages', label: 'Messages', shortLabel: 'Chat', icon: MessageCircle },
+    { id: 'insurance', label: 'Insurance', shortLabel: 'Claims', icon: Receipt },
   ] as const;
 
   return (
-    <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6">
+    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Top Bar */}
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-              <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <span className="font-semibold text-sm sm:text-base">Patient Portal</span>
+            <div className="hidden sm:block">
+              <h1 className="font-bold text-lg leading-tight">Patient Portal</h1>
+              <p className="text-[10px] text-muted-foreground -mt-0.5">Healthcare HMS</p>
+            </div>
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+          <div className="hidden md:flex items-center gap-1 bg-muted/60 rounded-xl p-1.5 shadow-inner">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -41,34 +44,34 @@ const PatientPortalNav: React.FC<PatientPortalNavProps> = ({ activeTab, onTabCha
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive 
-                      ? 'bg-background text-primary shadow-sm' 
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-background text-primary shadow-md' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : ''}`} />
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Logout */}
+          {/* Logout Button */}
           <Button 
             variant="ghost" 
             size="sm"
             onClick={onLogout} 
-            className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-destructive"
+            className="h-9 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline ml-1.5 text-sm">Logout</span>
+            <span className="hidden sm:inline ml-2 text-sm font-medium">Logout</span>
           </Button>
         </div>
 
-        {/* Mobile Nav */}
-        <div className="md:hidden pb-2 -mx-1 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-1 px-1 min-w-max">
+        {/* Mobile Bottom Nav Style */}
+        <div className="md:hidden pb-3 -mx-1">
+          <div className="flex gap-1 justify-between bg-muted/40 rounded-2xl p-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -76,14 +79,14 @@ const PatientPortalNav: React.FC<PatientPortalNavProps> = ({ activeTab, onTabCha
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                  className={`flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? 'bg-primary text-primary-foreground shadow-sm' 
-                      : 'bg-muted/50 text-muted-foreground active:bg-muted'
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
+                      : 'text-muted-foreground active:bg-muted'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">{item.shortLabel}</span>
                 </button>
               );
             })}

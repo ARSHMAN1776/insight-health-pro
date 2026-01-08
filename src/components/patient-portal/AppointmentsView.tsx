@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Calendar, Clock, X, RefreshCw, AlertCircle, ChevronRight, Plus } from 'lucide-react';
+import { Card, CardContent } from '../ui/card';
+import { Calendar, Clock, X, RefreshCw, AlertCircle, MapPin, User, ChevronRight } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Textarea } from '../ui/textarea';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Appointment, Patient, dataManager } from '../../lib/dataManager';
+import { Appointment, Patient } from '../../lib/dataManager';
 import PatientAppointmentBooking from './PatientAppointmentBooking';
 import WaitlistSignup from '../appointments/WaitlistSignup';
 import { useToast } from '@/hooks/use-toast';
@@ -32,20 +31,50 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   const [cancelReason, setCancelReason] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  const getStatusStyle = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
-        return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+        return { 
+          bg: 'bg-emerald-500', 
+          text: 'text-emerald-500',
+          light: 'bg-emerald-50 dark:bg-emerald-500/10',
+          border: 'border-emerald-200 dark:border-emerald-500/20'
+        };
       case 'pending':
-        return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+        return { 
+          bg: 'bg-amber-500', 
+          text: 'text-amber-500',
+          light: 'bg-amber-50 dark:bg-amber-500/10',
+          border: 'border-amber-200 dark:border-amber-500/20'
+        };
       case 'scheduled':
-        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+        return { 
+          bg: 'bg-blue-500', 
+          text: 'text-blue-500',
+          light: 'bg-blue-50 dark:bg-blue-500/10',
+          border: 'border-blue-200 dark:border-blue-500/20'
+        };
       case 'cancelled':
-        return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+        return { 
+          bg: 'bg-red-500', 
+          text: 'text-red-500',
+          light: 'bg-red-50 dark:bg-red-500/10',
+          border: 'border-red-200 dark:border-red-500/20'
+        };
       case 'completed':
-        return 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20';
+        return { 
+          bg: 'bg-gray-400', 
+          text: 'text-gray-500',
+          light: 'bg-gray-50 dark:bg-gray-500/10',
+          border: 'border-gray-200 dark:border-gray-500/20'
+        };
       default:
-        return 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20';
+        return { 
+          bg: 'bg-gray-400', 
+          text: 'text-gray-500',
+          light: 'bg-gray-50 dark:bg-gray-500/10',
+          border: 'border-gray-200 dark:border-gray-500/20'
+        };
     }
   };
 
@@ -112,30 +141,39 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
 
   const getModificationBlockedReason = (appointment: Appointment): string | null => {
     if (appointment.status === 'cancelled') return null;
-    if (appointment.status === 'completed') return 'This appointment has already been completed.';
+    if (appointment.status === 'completed') return 'Completed';
     
     const appointmentDate = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
     const hoursUntil = (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
     
-    if (hoursUntil <= 0) return 'This appointment has already passed.';
-    if (hoursUntil <= 24) return 'Cannot modify appointments within 24 hours. Please call the hospital.';
-    if (!['scheduled', 'confirmed', 'pending'].includes(appointment.status)) {
-      return `Cannot modify appointments with status "${appointment.status}".`;
-    }
+    if (hoursUntil <= 0) return 'Past';
+    if (hoursUntil <= 24) return 'Within 24h - call to modify';
     
     return null;
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDateFull = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return {
+      day: date.getDate(),
+      month: date.toLocaleDateString('en-US', { month: 'short' }),
+      weekday: date.toLocaleDateString('en-US', { weekday: 'short' }),
+    };
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center space-y-3">
-          <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
           <p className="text-sm text-muted-foreground">Loading appointments...</p>
         </div>
       </div>
@@ -143,9 +181,9 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="space-y-6 pb-6">
+      {/* Quick Actions - Premium Cards */}
+      <div className="grid grid-cols-1 gap-4">
         <PatientAppointmentBooking 
           patientData={patientData || null} 
           onAppointmentBooked={onAppointmentBooked}
@@ -156,154 +194,190 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
         />
       </div>
 
-      {/* Upcoming Appointments */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary" />
-          Upcoming
+      {/* Upcoming Section */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            Upcoming
+          </h2>
           {upcomingAppointments.length > 0 && (
-            <Badge variant="secondary" className="text-xs">{upcomingAppointments.length}</Badge>
+            <Badge className="bg-primary/10 text-primary border-0 font-semibold">
+              {upcomingAppointments.length}
+            </Badge>
           )}
-        </h2>
+        </div>
 
         {upcomingAppointments.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center">
-              <Calendar className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No upcoming appointments</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">Book an appointment to get started</p>
+          <Card className="border-2 border-dashed border-muted-foreground/20">
+            <CardContent className="py-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                <Calendar className="w-8 h-8 text-muted-foreground/40" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">No Upcoming Appointments</h3>
+              <p className="text-sm text-muted-foreground">Book your first appointment to get started</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
-            {upcomingAppointments.map((appointment) => (
-              <Card key={appointment.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <CardContent className="p-0">
-                  <div className="flex items-stretch">
-                    {/* Date Column */}
-                    <div className="bg-primary/5 dark:bg-primary/10 p-3 sm:p-4 flex flex-col items-center justify-center min-w-[70px] sm:min-w-[80px] border-r border-border/50">
-                      <span className="text-[10px] sm:text-xs text-muted-foreground uppercase font-medium">
-                        {new Date(appointment.appointment_date).toLocaleDateString('en-US', { month: 'short' })}
-                      </span>
-                      <span className="text-xl sm:text-2xl font-bold text-primary">
-                        {new Date(appointment.appointment_date).getDate()}
-                      </span>
-                      <span className="text-[10px] sm:text-xs text-muted-foreground">
-                        {new Date(appointment.appointment_date).toLocaleDateString('en-US', { weekday: 'short' })}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 p-3 sm:p-4 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-sm sm:text-base truncate">{appointment.type || 'General Consultation'}</h3>
-                          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mt-0.5">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span>{appointment.appointment_time}</span>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className={`text-[10px] sm:text-xs flex-shrink-0 ${getStatusStyle(appointment.status)}`}>
-                          {appointment.status}
-                        </Badge>
+          <div className="space-y-3">
+            {upcomingAppointments.map((appointment, index) => {
+              const status = getStatusConfig(appointment.status);
+              const dateInfo = formatDateFull(appointment.appointment_date);
+              const canModify = canModifyAppointment(appointment);
+              const blockedReason = getModificationBlockedReason(appointment);
+              
+              return (
+                <Card 
+                  key={appointment.id} 
+                  className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${
+                    index === 0 ? 'ring-2 ring-primary/20 shadow-md' : ''
+                  }`}
+                >
+                  <CardContent className="p-0">
+                    <div className="flex">
+                      {/* Date Badge */}
+                      <div className={`w-20 sm:w-24 flex-shrink-0 ${status.light} flex flex-col items-center justify-center py-4 border-r ${status.border}`}>
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                          {dateInfo.month}
+                        </span>
+                        <span className={`text-2xl sm:text-3xl font-bold ${status.text}`}>
+                          {dateInfo.day}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {dateInfo.weekday}
+                        </span>
                       </div>
 
-                      {appointment.symptoms && (
-                        <p className="text-xs text-muted-foreground line-clamp-1 mb-2 bg-muted/50 rounded px-2 py-1">
-                          {appointment.symptoms}
-                        </p>
-                      )}
-
-                      {/* Actions */}
-                      {canModifyAppointment(appointment) ? (
-                        <div className="flex gap-2 mt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRescheduleClick(appointment)}
-                            className="flex-1 h-8 text-xs"
-                          >
-                            <RefreshCw className="w-3 h-3 mr-1" />
-                            Reschedule
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCancelClick(appointment)}
-                            className="flex-1 h-8 text-xs text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10"
-                          >
-                            <X className="w-3 h-3 mr-1" />
-                            Cancel
-                          </Button>
+                      {/* Content */}
+                      <div className="flex-1 p-4 min-w-0">
+                        {/* Header Row */}
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-bold text-base truncate">
+                              {appointment.type || 'General Consultation'}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {formatTime(appointment.appointment_time)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${status.light} ${status.text} ${status.border} border`}>
+                            {appointment.status}
+                          </div>
                         </div>
-                      ) : getModificationBlockedReason(appointment) ? (
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-2 flex items-start gap-1">
-                          <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                          <span>{getModificationBlockedReason(appointment)}</span>
-                        </p>
-                      ) : null}
+
+                        {/* Symptoms */}
+                        {appointment.symptoms && (
+                          <div className="mb-3 p-2.5 bg-muted/50 rounded-lg border border-border/50">
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {appointment.symptoms}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        {canModify ? (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRescheduleClick(appointment)}
+                              className="flex-1 h-9 text-xs font-semibold bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-all"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                              Reschedule
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelClick(appointment)}
+                              className="flex-1 h-9 text-xs font-semibold text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5 hover:border-destructive/50 transition-all"
+                            >
+                              <X className="w-3.5 h-3.5 mr-1.5" />
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : blockedReason ? (
+                          <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 p-2.5 rounded-lg border border-amber-200 dark:border-amber-500/20">
+                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="font-medium">{blockedReason}</span>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Past Appointments */}
       {pastAppointments.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <h2 className="text-lg font-semibold flex items-center gap-2 text-muted-foreground">
+        <section>
+          <h2 className="text-base font-semibold text-muted-foreground mb-3 flex items-center gap-2">
             History
-            <Badge variant="outline" className="text-xs">{pastAppointments.length}</Badge>
+            <Badge variant="outline" className="text-xs font-normal">
+              {pastAppointments.length}
+            </Badge>
           </h2>
 
           <div className="space-y-2">
-            {pastAppointments.slice(0, 5).map((appointment) => (
-              <Card key={appointment.id} className="bg-muted/30">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <div className="text-center min-w-[50px]">
-                    <span className="text-xs text-muted-foreground block">
-                      {new Date(appointment.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{appointment.type || 'Consultation'}</p>
-                    <p className="text-xs text-muted-foreground">{appointment.appointment_time}</p>
-                  </div>
-                  <Badge variant="outline" className={`text-[10px] ${getStatusStyle(appointment.status)}`}>
-                    {appointment.status}
-                  </Badge>
-                </CardContent>
-              </Card>
-            ))}
+            {pastAppointments.slice(0, 5).map((appointment) => {
+              const status = getStatusConfig(appointment.status);
+              return (
+                <Card key={appointment.id} className="bg-muted/30 border-muted">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg ${status.light} flex items-center justify-center border ${status.border}`}>
+                      <span className={`text-sm font-bold ${status.text}`}>
+                        {new Date(appointment.appointment_date).getDate()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{appointment.type || 'Consultation'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(appointment.appointment_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        {' • '}
+                        {formatTime(appointment.appointment_time)}
+                      </p>
+                    </div>
+                    <div className={`w-2 h-2 rounded-full ${status.bg}`} />
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Cancel Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent className="sm:max-w-md mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Cancel Appointment</DialogTitle>
-            <DialogDescription className="text-sm">
-              This action cannot be undone. Please provide a reason.
+        <DialogContent className="sm:max-w-md mx-4 rounded-2xl">
+          <DialogHeader className="pb-4">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+              <X className="w-6 h-6 text-destructive" />
+            </div>
+            <DialogTitle className="text-xl font-bold">Cancel Appointment</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. Your appointment slot will be released.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-3">
+          <div className="py-2">
             <Textarea
               placeholder="Reason for cancellation (optional)"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              className="min-h-[80px] text-sm"
+              className="min-h-[100px] resize-none rounded-xl"
             />
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter className="flex-col gap-2 sm:flex-row pt-2">
             <Button 
               variant="outline" 
               onClick={() => setCancelDialogOpen(false)}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-11 rounded-xl font-semibold"
             >
               Keep Appointment
             </Button>
@@ -311,7 +385,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
               variant="destructive" 
               onClick={handleCancelConfirm}
               disabled={processing}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-11 rounded-xl font-semibold"
             >
               {processing ? 'Cancelling...' : 'Cancel Appointment'}
             </Button>
@@ -321,11 +395,14 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
 
       {/* Reschedule Dialog */}
       <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
-        <DialogContent className="max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Reschedule Appointment</DialogTitle>
-            <DialogDescription className="text-sm">
-              Book a new time, then your current appointment will be cancelled.
+        <DialogContent className="max-w-lg mx-4 max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader className="pb-2">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+              <RefreshCw className="w-6 h-6 text-primary" />
+            </div>
+            <DialogTitle className="text-xl font-bold">Reschedule Appointment</DialogTitle>
+            <DialogDescription>
+              Select a new date and time. Your current appointment will be cancelled automatically.
             </DialogDescription>
           </DialogHeader>
           <PatientAppointmentBooking 
