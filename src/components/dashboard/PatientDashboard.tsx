@@ -10,6 +10,7 @@ import AppointmentsView from '../patient-portal/AppointmentsView';
 import DoctorMessaging from '../patient-portal/DoctorMessaging';
 import InsuranceClaimsView from '../patient-portal/InsuranceClaimsView';
 import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle, Users } from 'lucide-react';
+import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -387,74 +388,91 @@ const PatientDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Next Appointment Highlight */}
-      {nextAppointment && (
-        <Card className="card-gradient border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-8">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4 flex-1">
-                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-8 h-8 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-xl font-bold text-foreground">Next Appointment</h3>
-                    <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                      {nextAppointment.status}
-                    </Badge>
-                  </div>
-                  <p className="font-semibold text-2xl text-primary mb-3">{nextAppointment.type}</p>
-                  <div className="flex flex-wrap gap-4 text-muted-foreground">
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4" />
-                      <span className="font-medium">{nextAppointment.appointment_date}</span>
+            {/* Next Appointment Highlight */}
+            {nextAppointment && (
+              <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 via-primary/3 to-transparent overflow-hidden">
+                <CardContent className="p-4 sm:p-6 md:p-8">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Icon + Badge */}
+                    <div className="flex items-center gap-3 sm:flex-col sm:items-center">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-primary/10 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                        <Calendar className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-primary" />
+                      </div>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-xs sm:hidden">
+                        {nextAppointment.status}
+                      </Badge>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-medium">{nextAppointment.appointment_time}</span>
+                    
+                    {/* Content */}
+                    <div className="flex-1 space-y-2 sm:space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base sm:text-lg md:text-xl font-bold text-foreground">
+                          Next Appointment
+                        </h3>
+                        <Badge variant="outline" className="hidden sm:inline-flex bg-success/10 text-success border-success/20 text-xs">
+                          {nextAppointment.status}
+                        </Badge>
+                      </div>
+                      
+                      <p className="font-bold text-lg sm:text-xl md:text-2xl text-primary">
+                        {nextAppointment.type || 'General Consultation'}
+                      </p>
+                      
+                      {/* Date/Time - stacked on mobile */}
+                      <div className="flex flex-col xs:flex-row gap-2 xs:gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          <span className="font-medium">{format(new Date(nextAppointment.appointment_date), 'EEEE, MMMM d, yyyy')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span className="font-medium">{nextAppointment.appointment_time}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                </CardContent>
+              </Card>
+            )}
 
       {/* Cancelled Appointments Section */}
       {cancelledAppointments.length > 0 && (
-        <Card className="border-destructive/20 bg-gradient-to-r from-destructive/5 to-transparent">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-destructive" />
-                Recently Cancelled Appointments
-              </CardTitle>
-              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                {cancelledAppointments.length} cancelled
-              </Badge>
-            </div>
+        <Card className="border-destructive/20 bg-gradient-to-br from-destructive/5 via-background to-transparent overflow-hidden">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
+            <CardTitle className="flex items-center gap-2 text-destructive text-base sm:text-lg">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              Recently Cancelled
+            </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             <div className="space-y-3">
               {cancelledAppointments.map((apt) => (
-                <div key={apt.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-destructive" />
+                <div key={apt.id} className="p-3 sm:p-4 bg-muted/50 rounded-xl border border-border/50">
+                  <div className="flex items-start gap-3">
+                    {/* Smaller icon on mobile */}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-destructive/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-destructive" />
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{apt.type || 'Appointment'}</p>
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <span>{apt.appointment_date}</span>
-                        <span>•</span>
+                    
+                    <div className="flex-1 min-w-0">
+                      {/* Appointment type with badge */}
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <p className="font-semibold text-sm sm:text-base text-foreground truncate">
+                          {apt.type || 'Appointment'}
+                        </p>
+                        <Badge className="text-[10px] sm:text-xs bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 border-0 px-2 py-0.5">
+                          Cancelled
+                        </Badge>
+                      </div>
+                      
+                      {/* Date and time stacked on mobile */}
+                      <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs sm:text-sm text-muted-foreground">
+                        <span className="font-medium">{format(new Date(apt.appointment_date), 'MMM d, yyyy')}</span>
+                        <span className="hidden xs:inline">•</span>
                         <span>{apt.appointment_time}</span>
                       </div>
                     </div>
                   </div>
-                  <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20">
-                    Cancelled
-                  </Badge>
                 </div>
               ))}
             </div>
