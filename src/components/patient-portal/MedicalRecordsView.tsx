@@ -63,8 +63,10 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
 
   return (
     <div className="space-y-6 pb-6">
-      {/* Doctor Messaging */}
-      <DoctorMessaging patientData={patientData || null} />
+      {/* Doctor Messaging - Hidden on mobile, visible on sm+ screens */}
+      <div className="hidden sm:block">
+        <DoctorMessaging patientData={patientData || null} />
+      </div>
 
       {/* Prescription Refills */}
       <PrescriptionRefillRequest 

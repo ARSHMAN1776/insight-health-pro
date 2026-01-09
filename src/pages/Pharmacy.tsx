@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Pill, Package, AlertTriangle, TrendingUp, Building2, FileText } from 'lucide-react';
+import { Pill, Package, AlertTriangle, TrendingUp, Building2, FileText, Receipt } from 'lucide-react';
 import InventoryManagement from '../components/inventory/InventoryManagement';
 import PrescriptionManagement from '../components/prescriptions/PrescriptionManagement';
 import SupplierManagement from '../components/inventory/SupplierManagement';
 import PurchaseOrderManagement from '../components/inventory/PurchaseOrderManagement';
+import PharmacyBilling from '../components/pharmacy/PharmacyBilling';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const Pharmacy: React.FC = () => {
@@ -75,13 +76,33 @@ const Pharmacy: React.FC = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="inventory" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-          <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
-          <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
+      <Tabs defaultValue="billing" className="space-y-6">
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="billing" className="gap-1.5">
+            <Receipt className="w-4 h-4" />
+            <span className="hidden sm:inline">Billing</span>
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="gap-1.5">
+            <Package className="w-4 h-4" />
+            <span className="hidden sm:inline">Inventory</span>
+          </TabsTrigger>
+          <TabsTrigger value="suppliers" className="gap-1.5">
+            <Building2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Suppliers</span>
+          </TabsTrigger>
+          <TabsTrigger value="purchase-orders" className="gap-1.5">
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">Orders</span>
+          </TabsTrigger>
+          <TabsTrigger value="prescriptions" className="gap-1.5">
+            <Pill className="w-4 h-4" />
+            <span className="hidden sm:inline">Prescriptions</span>
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="billing">
+          <PharmacyBilling />
+        </TabsContent>
 
         <TabsContent value="inventory">
           <InventoryManagement />
