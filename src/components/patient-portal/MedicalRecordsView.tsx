@@ -74,56 +74,59 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
       />
 
       {/* Medical Records Section */}
-      <Card className="overflow-hidden shadow-lg">
-        <CardHeader className="p-4 pb-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
+      <Card className="overflow-hidden border-0 shadow-lg">
+        <CardHeader className="p-4 sm:p-5 pb-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileText className="w-4 h-4 text-primary" />
+            <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
-              Medical History
+              <span>Medical History</span>
             </CardTitle>
             {medicalRecords.length > 0 && (
-              <Badge className="bg-primary/10 text-primary border-0 font-semibold">
+              <Badge className="bg-primary/10 text-primary border-0 font-semibold text-xs">
                 {medicalRecords.length}
               </Badge>
             )}
           </div>
         </CardHeader>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           {medicalRecords.length === 0 ? (
-            <div className="text-center py-10">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-                <FileText className="w-7 h-7 text-muted-foreground/40" />
+            <div className="text-center py-8 sm:py-10">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground/40" />
               </div>
-              <h3 className="font-semibold text-foreground mb-1">No Medical Records</h3>
-              <p className="text-sm text-muted-foreground">Your medical history will appear here</p>
+              <h3 className="font-semibold text-foreground mb-1 text-sm sm:text-base">No Medical Records</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Your medical history will appear here</p>
             </div>
           ) : (
             <div className="space-y-3">
               {medicalRecords.map((record) => (
                 <div 
                   key={record.id} 
-                  className="p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border/50 transition-all"
+                  className="p-3 sm:p-4 bg-gradient-to-br from-muted/50 to-muted/20 hover:from-muted/70 hover:to-muted/30 rounded-xl border border-border/50 transition-all"
                 >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span className="font-medium">{record.visit_date}</span>
+                  {/* Date Badge */}
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-lg text-xs font-medium text-primary">
+                      <Calendar className="w-3 h-3" />
+                      {record.visit_date}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Diagnosis</p>
-                      <p className="text-sm font-semibold text-foreground">{record.diagnosis}</p>
-                    </div>
-                    {record.treatment && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Treatment</p>
-                        <p className="text-sm text-foreground/80">{record.treatment}</p>
-                      </div>
-                    )}
+                  
+                  {/* Diagnosis */}
+                  <div className="mb-2">
+                    <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Diagnosis</p>
+                    <p className="text-sm sm:text-base font-semibold text-foreground">{record.diagnosis}</p>
                   </div>
+                  
+                  {/* Treatment */}
+                  {record.treatment && (
+                    <div className="p-2.5 sm:p-3 bg-background/60 rounded-lg border border-border/30">
+                      <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Treatment</p>
+                      <p className="text-xs sm:text-sm text-foreground/80">{record.treatment}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -132,30 +135,30 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
       </Card>
 
       {/* Prescriptions Section */}
-      <Card className="overflow-hidden shadow-lg">
-        <CardHeader className="p-4 pb-3 border-b bg-gradient-to-r from-emerald-500/5 to-transparent">
+      <Card className="overflow-hidden border-0 shadow-lg">
+        <CardHeader className="p-4 sm:p-5 pb-3 border-b bg-gradient-to-r from-emerald-500/5 to-transparent">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <Pill className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Pill className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              Prescriptions
+              <span>Prescriptions</span>
             </CardTitle>
             {prescriptions.length > 0 && (
-              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0 font-semibold">
+              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0 font-semibold text-xs">
                 {prescriptions.length}
               </Badge>
             )}
           </div>
         </CardHeader>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           {prescriptions.length === 0 ? (
-            <div className="text-center py-10">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-                <Pill className="w-7 h-7 text-muted-foreground/40" />
+            <div className="text-center py-8 sm:py-10">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                <Pill className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground/40" />
               </div>
-              <h3 className="font-semibold text-foreground mb-1">No Prescriptions</h3>
-              <p className="text-sm text-muted-foreground">Your prescriptions will appear here</p>
+              <h3 className="font-semibold text-foreground mb-1 text-sm sm:text-base">No Prescriptions</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Your prescriptions will appear here</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -164,32 +167,35 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
                 return (
                   <div 
                     key={prescription.id} 
-                    className={`p-4 rounded-xl border transition-all ${status.bg} ${status.border}`}
+                    className={`p-3 sm:p-4 rounded-xl border transition-all ${status.bg} ${status.border}`}
                   >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div>
-                        <h4 className="font-bold text-base">{prescription.medication_name}</h4>
-                        <p className="text-sm text-muted-foreground">{prescription.dosage}</p>
+                    {/* Header with name and status */}
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm sm:text-base truncate">{prescription.medication_name}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{prescription.dosage}</p>
                       </div>
                       <Badge 
                         variant="outline" 
-                        className={`text-xs font-semibold ${status.text} ${status.border} ${status.bg}`}
+                        className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 flex-shrink-0 ${status.text} ${status.border} ${status.bg}`}
                       >
                         {prescription.status}
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center p-2 bg-background/50 rounded-lg">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Frequency</p>
-                        <p className="text-sm font-semibold mt-0.5 truncate">{prescription.frequency || '-'}</p>
+                    
+                    {/* Info grid - 2 cols on mobile, 3 on larger */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div className="p-2 bg-background/60 rounded-lg text-center">
+                        <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider">Frequency</p>
+                        <p className="text-xs sm:text-sm font-semibold mt-0.5 truncate">{prescription.frequency || '-'}</p>
                       </div>
-                      <div className="text-center p-2 bg-background/50 rounded-lg">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Duration</p>
-                        <p className="text-sm font-semibold mt-0.5">{prescription.duration || '-'}</p>
+                      <div className="p-2 bg-background/60 rounded-lg text-center">
+                        <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider">Duration</p>
+                        <p className="text-xs sm:text-sm font-semibold mt-0.5">{prescription.duration || '-'}</p>
                       </div>
-                      <div className="text-center p-2 bg-background/50 rounded-lg">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Date</p>
-                        <p className="text-sm font-semibold mt-0.5">{prescription.date_prescribed || '-'}</p>
+                      <div className="p-2 bg-background/60 rounded-lg text-center col-span-2 sm:col-span-1">
+                        <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider">Prescribed</p>
+                        <p className="text-xs sm:text-sm font-semibold mt-0.5">{prescription.date_prescribed || '-'}</p>
                       </div>
                     </div>
                   </div>
@@ -201,30 +207,30 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
       </Card>
 
       {/* Lab Results Section */}
-      <Card className="overflow-hidden shadow-lg">
-        <CardHeader className="p-4 pb-3 border-b bg-gradient-to-r from-purple-500/5 to-transparent">
+      <Card className="overflow-hidden border-0 shadow-lg">
+        <CardHeader className="p-4 sm:p-5 pb-3 border-b bg-gradient-to-r from-purple-500/5 to-transparent">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <TestTube className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                <TestTube className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
               </div>
-              Lab Results
+              <span>Lab Results</span>
             </CardTitle>
             {labTests.length > 0 && (
-              <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0 font-semibold">
+              <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0 font-semibold text-xs">
                 {labTests.length}
               </Badge>
             )}
           </div>
         </CardHeader>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           {labTests.length === 0 ? (
-            <div className="text-center py-10">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-                <TestTube className="w-7 h-7 text-muted-foreground/40" />
+            <div className="text-center py-8 sm:py-10">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                <TestTube className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground/40" />
               </div>
-              <h3 className="font-semibold text-foreground mb-1">No Lab Results</h3>
-              <p className="text-sm text-muted-foreground">Your lab test results will appear here</p>
+              <h3 className="font-semibold text-foreground mb-1 text-sm sm:text-base">No Lab Results</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Your lab test results will appear here</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -234,33 +240,38 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
                 return (
                   <div 
                     key={test.id} 
-                    className="p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border/50 transition-all"
+                    className="p-3 sm:p-4 bg-gradient-to-br from-muted/50 to-muted/20 hover:from-muted/70 hover:to-muted/30 rounded-xl border border-border/50 transition-all"
                   >
-                    <div className="flex items-start justify-between gap-3 mb-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-base truncate">{test.test_name}</h4>
-                        <p className="text-sm text-muted-foreground">{test.test_type}</p>
+                        <h4 className="font-bold text-sm sm:text-base truncate">{test.test_name}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{test.test_type}</p>
                       </div>
-                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${status.bg} ${status.border} border`}>
-                        <StatusIcon className={`w-3.5 h-3.5 ${status.text}`} />
-                        <span className={`text-xs font-semibold ${status.text}`}>{test.status}</span>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${status.bg} ${status.border} border`}>
+                        <StatusIcon className={`w-3 h-3 ${status.text}`} />
+                        <span className={`text-[10px] sm:text-xs font-semibold ${status.text}`}>{test.status}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
+                    
+                    {/* Meta info */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2">
+                      <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg">
+                        <Calendar className="w-3 h-3" />
                         {test.test_date}
                       </span>
                       {test.normal_range && (
-                        <span className="px-2 py-0.5 bg-muted rounded-full">
+                        <span className="bg-muted/50 px-2 py-1 rounded-lg text-[10px] sm:text-xs">
                           Range: {test.normal_range}
                         </span>
                       )}
                     </div>
+                    
+                    {/* Results */}
                     {test.results && (
-                      <div className="p-3 bg-background rounded-lg border border-border/50">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Results</p>
-                        <p className="text-sm font-medium text-foreground">{test.results}</p>
+                      <div className="p-2.5 sm:p-3 bg-background/60 rounded-lg border border-border/30">
+                        <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Results</p>
+                        <p className="text-xs sm:text-sm font-medium text-foreground">{test.results}</p>
                       </div>
                     )}
                   </div>
