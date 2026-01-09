@@ -1397,6 +1397,135 @@ export type Database = {
           },
         ]
       }
+      pharmacy_bill_items: {
+        Row: {
+          batch_number: string | null
+          bill_id: string | null
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          inventory_id: string | null
+          item_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          batch_number?: string | null
+          bill_id?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          inventory_id?: string | null
+          item_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          batch_number?: string | null
+          bill_id?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          inventory_id?: string | null
+          item_name?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_bill_items_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacy_bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pharmacy_bill_items_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pharmacy_bills: {
+        Row: {
+          bill_number: string
+          created_at: string | null
+          created_by: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          id: string
+          notes: string | null
+          patient_id: string | null
+          patient_name: string | null
+          payment_method: string | null
+          payment_status: string | null
+          prescription_id: string | null
+          subtotal: number
+          tax_amount: number | null
+          tax_percent: number | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          bill_number: string
+          created_at?: string | null
+          created_by?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          prescription_id?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          tax_percent?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          bill_number?: string
+          created_at?: string | null
+          created_by?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          prescription_id?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          tax_percent?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_bills_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pharmacy_bills_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       phi_audit_log: {
         Row: {
           action: string
