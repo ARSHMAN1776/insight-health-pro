@@ -165,77 +165,77 @@ const InsuranceClaimsView: React.FC<InsuranceClaimsViewProps> = ({ patientId }) 
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-6">
+      {/* Page Header - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Insurance Claims</h2>
-          <p className="text-muted-foreground">Track your insurance claims and reimbursements</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Insurance Claims</h2>
+          <p className="text-sm text-muted-foreground">Track claims & reimbursements</p>
         </div>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={fetchClaims}
-          className="flex items-center gap-2"
+          className="w-full sm:w-auto h-10 sm:h-9 flex items-center justify-center gap-2 rounded-xl font-medium"
         >
           <RefreshCw className="w-4 h-4" />
           Refresh
         </Button>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="card-gradient">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                <FileText className="w-5 h-5 text-primary" />
+      {/* Stats Overview - Mobile Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Claims</p>
-                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Approved</p>
-                <p className="text-2xl font-bold text-success">{stats.approved}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Total Claims</p>
+                <p className="text-lg sm:text-2xl font-bold text-foreground">{stats.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-gradient">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-warning/10 rounded-xl flex items-center justify-center">
-                <Clock className="w-5 h-5 text-warning" />
+        <Card className="border-0 shadow-md bg-gradient-to-br from-emerald-500/5 to-transparent">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-warning">{stats.pending}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Approved</p>
+                <p className="text-lg sm:text-2xl font-bold text-emerald-600">{stats.approved}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-gradient">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-primary" />
+        <Card className="border-0 shadow-md bg-gradient-to-br from-amber-500/5 to-transparent">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-amber-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Approved</p>
-                <p className="text-xl font-bold text-foreground">${stats.approvedAmount.toLocaleString()}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Pending</p>
+                <p className="text-lg sm:text-2xl font-bold text-amber-600">{stats.pending}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-gradient-to-br from-blue-500/5 to-transparent">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Approved $</p>
+                <p className="text-base sm:text-xl font-bold text-foreground">${stats.approvedAmount.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -244,19 +244,19 @@ const InsuranceClaimsView: React.FC<InsuranceClaimsViewProps> = ({ patientId }) 
 
       {/* Claims List */}
       {claims.length === 0 ? (
-        <Card className="card-gradient">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-muted-foreground" />
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-8 sm:p-12 text-center">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-7 h-7 sm:w-8 sm:h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">No Insurance Claims</h3>
-            <p className="text-muted-foreground">
-              You don't have any insurance claims yet. Claims will appear here once they are submitted.
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">No Insurance Claims</h3>
+            <p className="text-sm text-muted-foreground">
+              Claims will appear here once submitted.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {claims.map((claim) => {
             const statusConfig = getStatusConfig(claim.status);
             const StatusIcon = statusConfig.icon;
@@ -265,107 +265,111 @@ const InsuranceClaimsView: React.FC<InsuranceClaimsViewProps> = ({ patientId }) 
             return (
               <Card 
                 key={claim.id} 
-                className="card-gradient hover:shadow-lg transition-all duration-300 overflow-hidden"
+                className="border-0 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
               >
                 <CardContent className="p-0">
-                  {/* Main Row */}
+                  {/* Main Row - Mobile Optimized */}
                   <div 
-                    className="p-6 cursor-pointer"
+                    className="p-3 sm:p-4 cursor-pointer active:bg-muted/50 transition-colors"
                     onClick={() => setExpandedClaim(isExpanded ? null : claim.id)}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${statusConfig.color}`}>
-                          <StatusIcon className="w-6 h-6" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="font-semibold text-foreground">
+                    <div className="flex items-start gap-3">
+                      {/* Status Icon */}
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusConfig.color}`}>
+                        <StatusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
                               {claim.claim_number || 'Pending Number'}
                             </h3>
-                            <Badge className={statusConfig.color}>
-                              {statusConfig.label}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Building2 className="w-4 h-4" />
+                            <p className="text-xs text-muted-foreground truncate">
                               {claim.insurance_provider}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {format(new Date(claim.service_date), 'MMM d, yyyy')}
-                            </span>
+                            </p>
                           </div>
+                          <Badge className={`text-[10px] sm:text-xs px-2 py-0.5 flex-shrink-0 ${statusConfig.color}`}>
+                            {statusConfig.label}
+                          </Badge>
+                        </div>
+                        
+                        {/* Amount and Date Row */}
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="w-3 h-3" />
+                            <span>{format(new Date(claim.service_date), 'MMM d, yyyy')}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm sm:text-base font-bold text-foreground">
+                              ${claim.total_amount.toLocaleString()}
+                            </p>
+                            {claim.approved_amount && (
+                              <p className="text-[10px] sm:text-xs text-emerald-600">
+                                ${claim.approved_amount.toLocaleString()} approved
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="mt-3">
+                          <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mb-1">
+                            <span>Progress</span>
+                            <span>{statusConfig.progress}%</span>
+                          </div>
+                          <Progress value={statusConfig.progress} className="h-1.5 sm:h-2" />
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-foreground">
-                            ${claim.total_amount.toLocaleString()}
-                          </p>
-                          {claim.approved_amount && (
-                            <p className="text-sm text-success">
-                              ${claim.approved_amount.toLocaleString()} approved
-                            </p>
-                          )}
-                        </div>
-                        <Button variant="ghost" size="icon" className="shrink-0">
-                          {isExpanded ? (
-                            <ChevronUp className="w-5 h-5" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>Claim Progress</span>
-                        <span>{statusConfig.progress}%</span>
-                      </div>
-                      <Progress value={statusConfig.progress} className="h-2" />
+                      {/* Expand Icon */}
+                      <Button variant="ghost" size="icon" className="shrink-0 w-8 h-8 sm:w-9 sm:h-9">
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                        )}
+                      </Button>
                     </div>
                   </div>
 
-                  {/* Expanded Details */}
+                  {/* Expanded Details - Mobile Optimized */}
                   {isExpanded && (
-                    <div className="px-6 pb-6 pt-2 border-t border-border/50 bg-muted/30 animate-fade-in">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <h4 className="font-semibold text-foreground">Claim Details</h4>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 border-t border-border/50 bg-muted/30 animate-fade-in">
+                      <div className="space-y-4">
+                        {/* Claim Details */}
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-sm text-foreground">Claim Details</h4>
+                          <div className="space-y-2 text-xs sm:text-sm">
+                            <div className="flex justify-between p-2 bg-background/60 rounded-lg">
                               <span className="text-muted-foreground">Policy Number</span>
                               <span className="font-medium">{claim.policy_number}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Submission Date</span>
+                            <div className="flex justify-between p-2 bg-background/60 rounded-lg">
+                              <span className="text-muted-foreground">Submitted</span>
                               <span className="font-medium">
                                 {claim.submission_date 
                                   ? format(new Date(claim.submission_date), 'MMM d, yyyy')
                                   : 'Not submitted'}
                               </span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between p-2 bg-background/60 rounded-lg">
                               <span className="text-muted-foreground">Total Amount</span>
                               <span className="font-medium">${claim.total_amount.toLocaleString()}</span>
                             </div>
                             {claim.approved_amount !== null && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Approved Amount</span>
-                                <span className="font-medium text-success">
+                              <div className="flex justify-between p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+                                <span className="text-muted-foreground">Approved</span>
+                                <span className="font-medium text-emerald-600">
                                   ${claim.approved_amount.toLocaleString()}
                                 </span>
                               </div>
                             )}
                             {claim.patient_responsibility !== null && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Your Responsibility</span>
-                                <span className="font-medium text-warning">
+                              <div className="flex justify-between p-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg">
+                                <span className="text-muted-foreground">Your Cost</span>
+                                <span className="font-medium text-amber-600">
                                   ${claim.patient_responsibility.toLocaleString()}
                                 </span>
                               </div>
@@ -373,49 +377,50 @@ const InsuranceClaimsView: React.FC<InsuranceClaimsViewProps> = ({ patientId }) 
                           </div>
                         </div>
 
-                        <div className="space-y-4">
-                          {claim.status === 'denied' && (
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-destructive">Denial Information</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {claim.denial_reason || 'No reason provided'}
-                              </p>
-                              {claim.appeal_deadline && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <AlertCircle className="w-4 h-4 text-warning" />
-                                  <span className="text-warning">
-                                    Appeal deadline: {format(new Date(claim.appeal_deadline), 'MMM d, yyyy')}
-                                  </span>
-                                </div>
-                              )}
-                              {claim.appeal_submitted && (
-                                <Badge className="bg-orange-500/20 text-orange-600">
-                                  Appeal Submitted
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-
-                          {claim.status === 'appealed' && claim.appeal_notes && (
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-foreground">Appeal Notes</h4>
-                              <p className="text-sm text-muted-foreground">{claim.appeal_notes}</p>
-                            </div>
-                          )}
-
-                          <div className="space-y-2">
-                            <h4 className="font-semibold text-foreground">Timeline</h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-primary" />
-                                <span className="text-muted-foreground">Created:</span>
-                                <span>{format(new Date(claim.created_at), 'MMM d, yyyy h:mm a')}</span>
+                        {/* Denial Info */}
+                        {claim.status === 'denied' && (
+                          <div className="p-3 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-200 dark:border-red-500/20 space-y-2">
+                            <h4 className="font-semibold text-sm text-red-600 dark:text-red-400">Denial Reason</h4>
+                            <p className="text-xs sm:text-sm text-red-600/80 dark:text-red-300">
+                              {claim.denial_reason || 'No reason provided'}
+                            </p>
+                            {claim.appeal_deadline && (
+                              <div className="flex items-center gap-2 text-xs sm:text-sm mt-2">
+                                <AlertCircle className="w-4 h-4 text-amber-600" />
+                                <span className="text-amber-600 font-medium">
+                                  Appeal by: {format(new Date(claim.appeal_deadline), 'MMM d, yyyy')}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                                <span className="text-muted-foreground">Last Updated:</span>
-                                <span>{format(new Date(claim.updated_at), 'MMM d, yyyy h:mm a')}</span>
-                              </div>
+                            )}
+                            {claim.appeal_submitted && (
+                              <Badge className="bg-orange-500/20 text-orange-600 text-xs mt-2">
+                                Appeal Submitted
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Appeal Notes */}
+                        {claim.status === 'appealed' && claim.appeal_notes && (
+                          <div className="p-3 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/20">
+                            <h4 className="font-semibold text-sm text-orange-600 mb-1">Appeal Notes</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{claim.appeal_notes}</p>
+                          </div>
+                        )}
+
+                        {/* Timeline */}
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-sm text-foreground">Timeline</h4>
+                          <div className="space-y-2 text-xs sm:text-sm">
+                            <div className="flex items-center gap-2 p-2 bg-background/60 rounded-lg">
+                              <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                              <span className="text-muted-foreground">Created:</span>
+                              <span className="font-medium">{format(new Date(claim.created_at), 'MMM d, yyyy')}</span>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 bg-background/60 rounded-lg">
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground flex-shrink-0" />
+                              <span className="text-muted-foreground">Updated:</span>
+                              <span className="font-medium">{format(new Date(claim.updated_at), 'MMM d, yyyy')}</span>
                             </div>
                           </div>
                         </div>
