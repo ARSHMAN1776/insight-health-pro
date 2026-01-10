@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import PaymentManagementForm from '../forms/PaymentManagementForm';
 import RecordUpdateForm from '../forms/RecordUpdateForm';
 import PendingVerificationsWidget from './PendingVerificationsWidget';
+import ReceptionistQueueWidget from '../queue/ReceptionistQueueWidget';
 import { dataManager } from '../../lib/dataManager';
 import { useToast } from '../../hooks/use-toast';
 
@@ -90,6 +91,8 @@ const ReceptionistDashboard: React.FC = () => {
         })}
       </div>
 
+      {/* Queue Widget */}
+      <ReceptionistQueueWidget />
 
       {/* Pending Patient Verifications */}
       <PendingVerificationsWidget />
