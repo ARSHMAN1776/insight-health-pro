@@ -8,6 +8,7 @@ import { Textarea } from '../ui/textarea';
 import { Appointment, Patient } from '../../lib/dataManager';
 import PatientAppointmentBooking from './PatientAppointmentBooking';
 import WaitlistSignup from '../appointments/WaitlistSignup';
+import QueueStatusView from './QueueStatusView';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -182,6 +183,9 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
 
   return (
     <div className="space-y-6 pb-6">
+      {/* Queue Status - Shows when patient is checked in */}
+      {patientData && <QueueStatusView patientId={patientData.id} />}
+
       {/* Quick Actions - Premium Cards */}
       <div className="grid grid-cols-1 gap-4">
         <PatientAppointmentBooking 
