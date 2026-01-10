@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Calendar, Clock, User, Stethoscope, Plus, Building2, Filter, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, Plus, Building2, Filter, ShieldAlert, ShieldCheck, TicketCheck } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -32,6 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { dataManager, Appointment, Patient, Doctor } from '../../lib/dataManager';
 import DataTable, { Column } from '../shared/DataTable';
 import { useTimezone } from '@/hooks/useTimezone';
+import { useQueue } from '@/hooks/useQueue';
 
 interface Department {
   department_id: string;
@@ -67,6 +68,7 @@ const AppointmentScheduler: React.FC = () => {
   const { toast } = useToast();
   const { isRole } = useAuth();
   const { formatDate, formatTime, getTimezoneDisplay } = useTimezone();
+  const { checkInPatient } = useQueue();
   
   // Only administrators can approve/change appointment status
   const isAdmin = isRole('admin');
@@ -281,6 +283,51 @@ const AppointmentScheduler: React.FC = () => {
     }
   };
 
+  // Handle check-in for today's appointments
+  const handleCheckIn = async (appointment: Appointment) => {
+    try {
+      const patient = patients.find(p => p.id === appointment.patient_id);
+      const doctor = doctors.find(d => d.id === appointment.doctor_id);
+      
+      const result = await checkInPatient({
+        patientId: appointment.patient_id,
+        doctorId: appointment.doctor_id,
+        departmentId: doctor?.department_id || undefined,
+        appointmentId: appointment.id,
+        entryType: 'appointment',
+        priority: 'normal',
+        symptoms: appointment.symptoms || undefined,
+        notes: `Appointment check-in: ${appointment.type}`
+      });
+
+      if (result) {
+        // Update appointment status to checked_in
+        await dataManager.updateAppointment(appointment.id, { status: 'confirmed' });
+        const updatedAppointments = await dataManager.getAppointments();
+        setAppointments(updatedAppointments);
+        
+        toast({
+          title: 'Checked In Successfully',
+          description: `Token: ${result.token} - ${patient?.first_name} ${patient?.last_name}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking in patient:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to check in patient.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Check if appointment can be checked in (today's appointments that are scheduled/confirmed)
+  const canCheckIn = (appointment: Appointment) => {
+    const isToday = appointment.appointment_date === today;
+    const validStatus = ['scheduled', 'confirmed'].includes(appointment.status);
+    return isToday && validStatus;
+  };
+
   // Get department name for a doctor
   const getDepartmentName = (doctorId: string) => {
     const doctor = doctors.find(d => d.id === doctorId);
@@ -388,6 +435,28 @@ const AppointmentScheduler: React.FC = () => {
             {appointment.status}
           </Badge>
         )
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Queue',
+      render: (_, appointment) => (
+        canCheckIn(appointment) ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleCheckIn(appointment)}
+            className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground"
+          >
+            <TicketCheck className="h-4 w-4" />
+            Check In
+          </Button>
+        ) : appointment.status === 'in_progress' ? (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <TicketCheck className="h-3 w-3" />
+            In Queue
+          </Badge>
+        ) : null
       ),
     },
   ];

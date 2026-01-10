@@ -9,6 +9,7 @@ import MedicalRecordsView from '../patient-portal/MedicalRecordsView';
 import AppointmentsView from '../patient-portal/AppointmentsView';
 import DoctorMessaging from '../patient-portal/DoctorMessaging';
 import InsuranceClaimsView from '../patient-portal/InsuranceClaimsView';
+import QueueStatusView from '../patient-portal/QueueStatusView';
 import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -342,6 +343,9 @@ const PatientDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Queue Status - Shows when patient is checked in */}
+      {patientData && <QueueStatusView patientId={patientData.id} />}
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
