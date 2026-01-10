@@ -28,6 +28,7 @@ import { dataManager, Appointment, Patient, MedicalRecord, Prescription } from '
 import { supabase } from '../../integrations/supabase/client';
 import { useToast } from '../../hooks/use-toast';
 import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
+import DoctorQueueWidget from '../queue/DoctorQueueWidget';
 import { useTimezone } from '@/hooks/useTimezone';
 
 const DoctorDashboard: React.FC = () => {
@@ -305,6 +306,9 @@ const DoctorDashboard: React.FC = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Queue Widget */}
+        <DoctorQueueWidget />
+
         {/* Upcoming Appointments */}
         <Card className="card-gradient lg:col-span-2">
           <CardHeader>

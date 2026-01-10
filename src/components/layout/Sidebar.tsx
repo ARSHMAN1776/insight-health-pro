@@ -27,7 +27,8 @@ import {
   ArrowRightLeft,
   GitPullRequest,
   FileCheck,
-  ListPlus
+  ListPlus,
+  TicketCheck
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -73,6 +74,12 @@ const sidebarItems: SidebarItem[] = [
     icon: ListPlus,
     path: '/waitlist',
     roles: ['admin', 'receptionist']
+  },
+  {
+    label: 'Queue',
+    icon: TicketCheck,
+    path: '/queue',
+    roles: ['admin', 'doctor', 'nurse', 'receptionist']
   },
   {
     label: 'Departments',
