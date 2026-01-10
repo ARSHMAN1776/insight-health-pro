@@ -314,6 +314,60 @@ export type Database = {
           },
         ]
       }
+      daily_queues: {
+        Row: {
+          avg_consultation_mins: number | null
+          created_at: string | null
+          current_token_number: number | null
+          department_id: string | null
+          doctor_id: string | null
+          id: string
+          is_active: boolean | null
+          queue_date: string
+          token_prefix: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_consultation_mins?: number | null
+          created_at?: string | null
+          current_token_number?: number | null
+          department_id?: string | null
+          doctor_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          queue_date: string
+          token_prefix?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_consultation_mins?: number | null
+          created_at?: string | null
+          current_token_number?: number | null
+          department_id?: string | null
+          doctor_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          queue_date?: string
+          token_prefix?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_queues_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "daily_queues_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       department_doctors: {
         Row: {
           assigned_at: string | null
@@ -2029,6 +2083,94 @@ export type Database = {
           },
         ]
       }
+      queue_entries: {
+        Row: {
+          appointment_id: string | null
+          called_at: string | null
+          checked_in_at: string | null
+          completed_at: string | null
+          consultation_started_at: string | null
+          created_at: string | null
+          created_by: string | null
+          entry_type: string | null
+          estimated_wait_mins: number | null
+          id: string
+          notes: string | null
+          patient_id: string
+          position_in_queue: number | null
+          priority: string | null
+          queue_id: string
+          status: string | null
+          symptoms: string | null
+          token_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          called_at?: string | null
+          checked_in_at?: string | null
+          completed_at?: string | null
+          consultation_started_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          entry_type?: string | null
+          estimated_wait_mins?: number | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          position_in_queue?: number | null
+          priority?: string | null
+          queue_id: string
+          status?: string | null
+          symptoms?: string | null
+          token_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          called_at?: string | null
+          checked_in_at?: string | null
+          completed_at?: string | null
+          consultation_started_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          entry_type?: string | null
+          estimated_wait_mins?: number | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          position_in_queue?: number | null
+          priority?: string | null
+          queue_id?: string
+          status?: string | null
+          symptoms?: string | null
+          token_number?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queue_entries_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "queue_entries_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "queue_entries_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "daily_queues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
         Row: {
           appointment_id: string | null
@@ -2650,15 +2792,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_queue_position: { Args: { _queue_id: string }; Returns: number }
       doctor_has_patient_relationship: {
         Args: { _doctor_id: string; _patient_id: string }
         Returns: boolean
       }
+      estimate_wait_time: {
+        Args: { _position: number; _queue_id: string }
+        Returns: number
+      }
+      generate_next_token: { Args: { _queue_id: string }; Returns: string }
       get_doctor_departments: {
         Args: { _doctor_id: string }
         Returns: string[]
       }
       get_doctor_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_or_create_daily_queue: {
+        Args: { _department_id?: string; _doctor_id: string }
+        Returns: string
+      }
       get_patient_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
