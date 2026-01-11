@@ -4,7 +4,6 @@ import { FileText, Pill, TestTube, Calendar, Clock, ChevronRight, AlertCircle, C
 import { Badge } from '../ui/badge';
 import { MedicalRecord, Prescription, LabTest, Patient } from '../../lib/dataManager';
 import PrescriptionRefillRequest from './PrescriptionRefillRequest';
-import DoctorMessaging from './DoctorMessaging';
 
 interface MedicalRecordsViewProps {
   medicalRecords: MedicalRecord[];
@@ -63,11 +62,6 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
 
   return (
     <div className="space-y-6 pb-6">
-      {/* Doctor Messaging - Hidden on mobile, visible on sm+ screens */}
-      <div className="hidden sm:block">
-        <DoctorMessaging patientData={patientData || null} />
-      </div>
-
       {/* Prescription Refills */}
       <PrescriptionRefillRequest 
         patientData={patientData || null} 

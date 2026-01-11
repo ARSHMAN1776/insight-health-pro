@@ -318,12 +318,12 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
                   {/* Department Selection */}
                   <div className="space-y-2">
                     <Label>Department (Optional)</Label>
-                    <Select value={departmentId} onValueChange={setDepartmentId}>
+                    <Select value={departmentId} onValueChange={(val) => setDepartmentId(val === 'any' ? '' : val)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Any department" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any department</SelectItem>
+                        <SelectItem value="any">Any department</SelectItem>
                         {departments.map((dept) => (
                           <SelectItem key={dept.department_id} value={dept.department_id}>
                             {dept.department_name}
@@ -336,12 +336,12 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
                   {/* Doctor Selection */}
                   <div className="space-y-2">
                     <Label>Preferred Doctor (Optional)</Label>
-                    <Select value={doctorId} onValueChange={setDoctorId}>
+                    <Select value={doctorId} onValueChange={(val) => setDoctorId(val === 'any' ? '' : val)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Any available doctor" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any available doctor</SelectItem>
+                        <SelectItem value="any">Any available doctor</SelectItem>
                         {filteredDoctors.map((doctor) => (
                           <SelectItem key={doctor.id} value={doctor.id}>
                             Dr. {doctor.first_name} {doctor.last_name} - {doctor.specialization}
