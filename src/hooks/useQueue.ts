@@ -43,6 +43,8 @@ export interface QueueEntry {
   called_at: string | null;
   consultation_started_at: string | null;
   completed_at: string | null;
+  transferred_from: string | null;
+  transferred_to: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -446,6 +448,90 @@ export const useQueue = (options: UseQueueOptions = {}) => {
     }
   };
 
+  // Get patient's active queue entry today
+  const getPatientActiveEntry = async (patientId: string): Promise<QueueEntry | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('queue_entries')
+        .select(`
+          *,
+          patient:patients(id, first_name, last_name, phone, date_of_birth, gender),
+          queue:daily_queues(
+            *,
+            doctor:doctors(id, first_name, last_name, specialization),
+            department:departments(department_id, department_name)
+          )
+        `)
+        .eq('patient_id', patientId)
+        .in('status', ['waiting', 'called', 'in_consultation', 'completed', 'transferred'])
+        .order('checked_in_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as QueueEntry | null;
+    } catch (error) {
+      console.error('Error getting patient active entry:', error);
+      return null;
+    }
+  };
+
+  // Transfer patient to another doctor/department
+  const transferPatient = async (data: {
+    entryId: string;
+    newDoctorId: string;
+    newDepartmentId?: string;
+    notes?: string;
+  }): Promise<{ entry: QueueEntry; token: string } | null> => {
+    try {
+      // Get original entry
+      const { data: originalEntry, error: fetchError } = await supabase
+        .from('queue_entries')
+        .select('*')
+        .eq('id', data.entryId)
+        .single();
+
+      if (fetchError || !originalEntry) throw new Error('Original entry not found');
+
+      // Mark original as transferred
+      await supabase
+        .from('queue_entries')
+        .update({ 
+          status: 'transferred',
+          notes: data.notes ? `${originalEntry.notes || ''}\nTransferred: ${data.notes}` : originalEntry.notes
+        })
+        .eq('id', data.entryId);
+
+      // Create new entry in new queue
+      const result = await checkInPatient({
+        patientId: originalEntry.patient_id,
+        doctorId: data.newDoctorId,
+        departmentId: data.newDepartmentId,
+        entryType: originalEntry.entry_type as 'appointment' | 'walk_in' | 'emergency',
+        priority: originalEntry.priority as 'normal' | 'priority' | 'emergency',
+        symptoms: originalEntry.symptoms || undefined,
+        notes: `Transferred from previous queue. ${data.notes || ''}`
+      });
+
+      if (result) {
+        toast({
+          title: 'Patient Transferred',
+          description: `New token: ${result.token}`
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error transferring patient:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to transfer patient',
+        variant: 'destructive'
+      });
+      return null;
+    }
+  };
+
   // Calculate stats
   const stats: QueueStats = {
     totalWaiting: entries.filter(e => e.status === 'waiting' || e.status === 'called').length,
@@ -478,6 +564,8 @@ export const useQueue = (options: UseQueueOptions = {}) => {
     completeConsultation,
     markNoShow,
     cancelEntry,
+    getPatientActiveEntry,
+    transferPatient,
     refetch: () => {
       fetchQueues();
       if (queues.length > 0) {
