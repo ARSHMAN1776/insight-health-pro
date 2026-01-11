@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,8 @@ import {
   Phone,
   AlertTriangle,
   Coffee,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueue, QueueEntry } from '@/hooks/useQueue';
@@ -26,6 +27,8 @@ const DoctorQueueView: React.FC = () => {
   const { user } = useAuth();
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [isOnBreak, setIsOnBreak] = useState(false);
+  const [newEntryIds, setNewEntryIds] = useState<Set<string>>(new Set());
+  const previousEntriesRef = useRef<string[]>([]);
 
   // Get doctor ID
   useEffect(() => {
@@ -58,6 +61,27 @@ const DoctorQueueView: React.FC = () => {
 
   const currentQueue = queues[0];
   const currentPatient = inConsultationEntries[0] || calledEntries[0];
+
+  // Track new entries for animation
+  useEffect(() => {
+    const currentIds = waitingEntries.map(e => e.id);
+    const newIds = currentIds.filter(id => !previousEntriesRef.current.includes(id));
+    
+    if (newIds.length > 0) {
+      setNewEntryIds(prev => new Set([...prev, ...newIds]));
+      
+      // Clear highlight after 5 seconds
+      setTimeout(() => {
+        setNewEntryIds(prev => {
+          const updated = new Set(prev);
+          newIds.forEach(id => updated.delete(id));
+          return updated;
+        });
+      }, 5000);
+    }
+    
+    previousEntriesRef.current = currentIds;
+  }, [waitingEntries]);
 
   const handleCallNext = async () => {
     if (!currentQueue) return;
@@ -279,40 +303,51 @@ const DoctorQueueView: React.FC = () => {
                     No patients in queue
                   </p>
                 ) : (
-                  waitingEntries.map((entry, index) => (
-                    <div
-                      key={entry.id}
-                      className="p-3 rounded-lg border hover:bg-accent/50 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-primary">
-                            {entry.token_number}
+                  waitingEntries.map((entry, index) => {
+                    const isNew = newEntryIds.has(entry.id);
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`p-3 rounded-lg border hover:bg-accent/50 transition-all duration-300 ${
+                          isNew ? 'animate-new-entry border-primary/50 bg-primary/5' : ''
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-primary">
+                              {entry.token_number}
+                            </span>
+                            {isNew && (
+                              <Badge className="bg-primary/20 text-primary text-xs animate-pulse">
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                New
+                              </Badge>
+                            )}
+                            {entry.priority === 'emergency' && (
+                              <AlertTriangle className="h-4 w-4 text-destructive" />
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {getWaitTime(entry.checked_in_at)}
                           </span>
-                          {entry.priority === 'emergency' && (
-                            <AlertTriangle className="h-4 w-4 text-destructive" />
-                          )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {getWaitTime(entry.checked_in_at)}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium">
-                        {entry.patient?.first_name} {entry.patient?.last_name}
-                      </p>
-                      <div className="flex gap-1 mt-1">
-                        {getPriorityBadge(entry.priority)}
-                        <Badge variant="outline" className="text-xs">
-                          {entry.entry_type}
-                        </Badge>
-                      </div>
-                      {entry.symptoms && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                          {entry.symptoms}
+                        <p className="text-sm font-medium">
+                          {entry.patient?.first_name} {entry.patient?.last_name}
                         </p>
-                      )}
-                    </div>
-                  ))
+                        <div className="flex gap-1 mt-1">
+                          {getPriorityBadge(entry.priority)}
+                          <Badge variant="outline" className="text-xs">
+                            {entry.entry_type}
+                          </Badge>
+                        </div>
+                        {entry.symptoms && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                            {entry.symptoms}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>

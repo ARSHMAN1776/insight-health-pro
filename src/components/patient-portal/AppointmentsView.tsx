@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '../ui/card';
-import { Calendar, Clock, X, RefreshCw, AlertCircle, MapPin, User, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, X, RefreshCw, AlertCircle, MapPin, User, ChevronRight, TicketCheck } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
@@ -11,6 +11,7 @@ import WaitlistSignup from '../appointments/WaitlistSignup';
 import QueueStatusView from './QueueStatusView';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueue } from '@/hooks/useQueue';
 
 interface AppointmentsViewProps {
   appointments: Appointment[];
@@ -26,11 +27,13 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   onAppointmentBooked 
 }) => {
   const { toast } = useToast();
+  const { checkInPatient } = useQueue();
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [checkingIn, setCheckingIn] = useState<string | null>(null);
 
   const getStatusConfig = (status: string) => {
     switch (status.toLowerCase()) {
@@ -138,6 +141,60 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     const appointmentDate = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
     const hoursUntil = (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
     return ['scheduled', 'confirmed', 'pending'].includes(appointment.status) && hoursUntil > 24;
+  };
+
+  // Check if patient can self-check-in (within 30 mins of appointment time)
+  const canSelfCheckIn = (appointment: Appointment) => {
+    const appointmentDateTime = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
+    const now = new Date();
+    const minsUntil = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60);
+    const isToday = appointment.appointment_date === now.toISOString().split('T')[0];
+    
+    return isToday && 
+           ['scheduled', 'confirmed'].includes(appointment.status) && 
+           minsUntil <= 30 && 
+           minsUntil >= -15; // Allow up to 15 mins late
+  };
+
+  const handleSelfCheckIn = async (appointment: Appointment) => {
+    if (!patientData) return;
+    
+    setCheckingIn(appointment.id);
+    
+    try {
+      const result = await checkInPatient({
+        patientId: patientData.id,
+        doctorId: (appointment as any).doctor_id || (appointment as any).doctor?.id,
+        departmentId: (appointment as any).department_id,
+        appointmentId: appointment.id,
+        entryType: 'appointment',
+        priority: 'normal',
+        symptoms: appointment.symptoms || undefined
+      });
+
+      if (result) {
+        // Update appointment status
+        await supabase
+          .from('appointments')
+          .update({ status: 'confirmed' })
+          .eq('id', appointment.id);
+
+        toast({
+          title: 'Checked In Successfully! 🎉',
+          description: `Your token is ${result.token}. Please wait to be called.`,
+        });
+        
+        onAppointmentBooked?.();
+      }
+    } catch (error) {
+      toast({
+        title: 'Check-in Failed',
+        description: 'Unable to check in. Please visit the reception desk.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCheckingIn(null);
+    }
   };
 
   const getModificationBlockedReason = (appointment: Appointment): string | null => {
@@ -282,7 +339,25 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                         )}
 
                         {/* Action Buttons */}
-                        {canModify ? (
+                        {canSelfCheckIn(appointment) ? (
+                          <Button
+                            onClick={() => handleSelfCheckIn(appointment)}
+                            disabled={checkingIn === appointment.id}
+                            className="w-full h-11 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl"
+                          >
+                            {checkingIn === appointment.id ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                                Checking In...
+                              </>
+                            ) : (
+                              <>
+                                <TicketCheck className="w-4 h-4 mr-2" />
+                                Check In Now
+                              </>
+                            )}
+                          </Button>
+                        ) : canModify ? (
                           <div className="flex flex-col xs:flex-row gap-2">
                             <Button
                               variant="outline"

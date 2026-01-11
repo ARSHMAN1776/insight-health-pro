@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Monitor,
   UserPlus,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { useQueue, QueueEntry, DailyQueue } from '@/hooks/useQueue';
 import { format, differenceInMinutes } from 'date-fns';
@@ -34,6 +35,29 @@ const ReceptionistQueueControl: React.FC = () => {
   } = useQueue();
 
   const [selectedQueue, setSelectedQueue] = useState<string>('all');
+  const [newEntryIds, setNewEntryIds] = useState<Set<string>>(new Set());
+  const previousEntriesRef = useRef<string[]>([]);
+
+  // Track new entries for animation
+  useEffect(() => {
+    const currentIds = waitingEntries.map(e => e.id);
+    const newIds = currentIds.filter(id => !previousEntriesRef.current.includes(id));
+    
+    if (newIds.length > 0) {
+      setNewEntryIds(prev => new Set([...prev, ...newIds]));
+      
+      // Clear highlight after 5 seconds
+      setTimeout(() => {
+        setNewEntryIds(prev => {
+          const updated = new Set(prev);
+          newIds.forEach(id => updated.delete(id));
+          return updated;
+        });
+      }, 5000);
+    }
+    
+    previousEntriesRef.current = currentIds;
+  }, [waitingEntries]);
 
   // Filter entries by selected queue
   const filteredEntries = selectedQueue === 'all' 
@@ -198,6 +222,7 @@ const ReceptionistQueueControl: React.FC = () => {
                         onNoShow={() => markNoShow(entry.id)}
                         getWaitTime={getWaitTime}
                         queue={queues.find(q => q.id === entry.queue_id)}
+                        isNew={newEntryIds.has(entry.id)}
                       />
                     ))}
                     {filteredWaiting.length === 0 && (
@@ -303,7 +328,8 @@ const QueueEntryCard: React.FC<{
   onCancel: () => void;
   onNoShow: () => void;
   getWaitTime: (checkedInAt: string) => string;
-}> = ({ entry, queue, onCancel, onNoShow, getWaitTime }) => {
+  isNew?: boolean;
+}> = ({ entry, queue, onCancel, onNoShow, getWaitTime, isNew = false }) => {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'emergency':
@@ -329,12 +355,20 @@ const QueueEntryCard: React.FC<{
   };
 
   return (
-    <div className="p-3 rounded-lg border hover:bg-accent/50 transition-colors">
+    <div className={`p-3 rounded-lg border hover:bg-accent/50 transition-all duration-300 ${
+      isNew ? 'animate-new-entry border-primary/50 bg-primary/5' : ''
+    }`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <span className="font-mono font-bold text-primary text-lg">
             {entry.token_number}
           </span>
+          {isNew && (
+            <Badge className="bg-primary/20 text-primary text-xs animate-pulse">
+              <Sparkles className="h-3 w-3 mr-1" />
+              New
+            </Badge>
+          )}
           {getPriorityBadge(entry.priority)}
           {getStatusBadge(entry.status)}
         </div>
