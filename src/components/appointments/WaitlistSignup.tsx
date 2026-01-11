@@ -135,12 +135,7 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
   };
 
   const handleSubmit = async () => {
-    console.log('WaitlistSignup: handleSubmit called');
-    console.log('WaitlistSignup: patientData =', patientData);
-    console.log('WaitlistSignup: preferredDateStart =', preferredDateStart);
-    
     if (!patientData?.id) {
-      console.log('WaitlistSignup: No patient data');
       toast({
         title: 'Error',
         description: 'Patient record not found.',
@@ -150,7 +145,6 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
     }
 
     if (!preferredDateStart) {
-      console.log('WaitlistSignup: No preferred date');
       toast({
         title: 'Required',
         description: 'Please select a preferred start date.',
@@ -161,16 +155,6 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
 
     try {
       setSubmitting(true);
-      console.log('WaitlistSignup: Creating entry with:', {
-        patient_id: patientData.id,
-        doctor_id: doctorId || undefined,
-        department_id: departmentId || undefined,
-        preferred_date_start: preferredDateStart,
-        preferred_date_end: preferredDateEnd || undefined,
-        preferred_time_slots: preferredTimeSlots,
-        priority,
-        reason: reason || undefined,
-      });
 
       const success = await createEntry({
         patient_id: patientData.id,
@@ -183,15 +167,13 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
         reason: reason || undefined,
       });
 
-      console.log('WaitlistSignup: createEntry result =', success);
-
       if (success) {
         setIsDialogOpen(false);
         resetForm();
         onWaitlistJoined?.();
       }
     } catch (error) {
-      console.error('WaitlistSignup: Error in handleSubmit', error);
+      console.error('Error joining waitlist:', error);
     } finally {
       setSubmitting(false);
     }
@@ -222,8 +204,6 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ patientData, onWaitlist
   };
 
   const isVerified = patientData?.status === 'active';
-  
-  console.log('WaitlistSignup: patientData.status =', patientData?.status, 'isVerified =', isVerified);
 
   return (
     <div className="space-y-4">

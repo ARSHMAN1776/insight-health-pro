@@ -561,240 +561,20 @@ const PrescriptionManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Prescription Management</h1>
           <p className="text-muted-foreground">Manage patient prescriptions and medications</p>
         </div>
-        {canManagePrescriptions ? (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Prescription
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedPrescription ? 'Edit Prescription' : 'Create New Prescription'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="patient_id">Patient</Label>
-                  <Select 
-                    value={formData.patient_id} 
-                    onValueChange={(value) => setFormData({...formData, patient_id: value})}
-                    onOpenChange={() => {
-                      setTimeout(() => {
-                        const element = document.querySelector('[data-field="patient_id"]');
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }}
-                  >
-                    <SelectTrigger data-field="patient_id">
-                      <SelectValue placeholder="Select patient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map(patient => (
-                        <SelectItem key={patient.id} value={patient.id}>
-                          {patient.first_name} {patient.last_name} ({patient.id.substring(0, 8)})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="doctor_id">Doctor</Label>
-                  <Select 
-                    value={formData.doctor_id} 
-                    onValueChange={(value) => setFormData({...formData, doctor_id: value})}
-                    onOpenChange={() => {
-                      setTimeout(() => {
-                        const element = document.querySelector('[data-field="doctor_id"]');
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }}
-                  >
-                    <SelectTrigger data-field="doctor_id">
-                      <SelectValue placeholder="Select doctor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {doctors.map(doctor => (
-                        <SelectItem key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.first_name} {doctor.last_name} ({doctor.specialization})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="medication_name">Medication</Label>
-                  <Input
-                    id="medication_name"
-                    data-field="medication_name"
-                    value={formData.medication_name}
-                    onChange={(e) => setFormData({...formData, medication_name: e.target.value})}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        const element = document.querySelector('[data-field="medication_name"]');
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }}
-                    placeholder="e.g., Lisinopril"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dosage">Dosage</Label>
-                  <Input
-                    id="dosage"
-                    data-field="dosage"
-                    value={formData.dosage}
-                    onChange={(e) => setFormData({...formData, dosage: e.target.value})}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        const element = document.querySelector('[data-field="dosage"]');
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }}
-                    placeholder="e.g., 10mg"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequency</Label>
-                  <Input
-                    id="frequency"
-                    data-field="frequency"
-                    value={formData.frequency}
-                    onChange={(e) => setFormData({...formData, frequency: e.target.value})}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        const element = document.querySelector('[data-field="frequency"]');
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }}
-                    placeholder="e.g., Once daily"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration</Label>
-                  <Input
-                    id="duration"
-                    data-field="duration"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        const element = document.querySelector('[data-field="duration"]');
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }}
-                    placeholder="e.g., 30 days"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantity</Label>
-                  <Input
-                    id="quantity"
-                    data-field="quantity"
-                    type="number"
-                    min="1"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({...formData, quantity: e.target.value})}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        const element = document.querySelector('[data-field="quantity"]');
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }}
-                    placeholder="30"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="instructions">Instructions</Label>
-                <Textarea
-                  id="instructions"
-                  data-field="instructions"
-                  value={formData.instructions}
-                  onChange={(e) => setFormData({...formData, instructions: e.target.value})}
-                  onFocus={() => {
-                    setTimeout(() => {
-                      const element = document.querySelector('[data-field="instructions"]');
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 100);
-                  }}
-                  placeholder="Take with food, avoid alcohol..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="side_effects">Side Effects</Label>
-                <Textarea
-                  id="side_effects"
-                  data-field="side_effects"
-                  value={formData.side_effects}
-                  onChange={(e) => setFormData({...formData, side_effects: e.target.value})}
-                  onFocus={() => {
-                    setTimeout(() => {
-                      const element = document.querySelector('[data-field="side_effects"]');
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 100);
-                  }}
-                  placeholder="Dizziness, nausea..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="drug_interactions">Drug Interactions</Label>
-                <Textarea
-                  id="drug_interactions"
-                  data-field="drug_interactions"
-                  value={formData.drug_interactions}
-                  onChange={(e) => setFormData({...formData, drug_interactions: e.target.value})}
-                  onFocus={() => {
-                    setTimeout(() => {
-                      const element = document.querySelector('[data-field="drug_interactions"]');
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 100);
-                  }}
-                  placeholder="Avoid taking with aspirin, warfarin..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {selectedPrescription ? 'Update' : 'Create'} Prescription
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-        ) : (
-          <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5">
-            <Lock className="h-3.5 w-3.5" />
-            View Only
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {!canManagePrescriptions && (
+            <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5">
+              <Lock className="h-3.5 w-3.5" />
+              View Only
+            </Badge>
+          )}
+          {canManagePrescriptions && (
+            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Prescription
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -833,6 +613,170 @@ const PrescriptionManagement: React.FC = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Create/Edit Prescription Dialog */}
+      {canManagePrescriptions && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedPrescription ? 'Edit Prescription' : 'Create New Prescription'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="patient_id">Patient</Label>
+                  <Select 
+                    value={formData.patient_id} 
+                    onValueChange={(value) => setFormData({...formData, patient_id: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select patient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {patients.map(patient => (
+                        <SelectItem key={patient.id} value={patient.id}>
+                          {patient.first_name} {patient.last_name} ({patient.id.substring(0, 8)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="doctor_id">Doctor</Label>
+                  <Select 
+                    value={formData.doctor_id} 
+                    onValueChange={(value) => setFormData({...formData, doctor_id: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select doctor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {doctors.map(doctor => (
+                        <SelectItem key={doctor.id} value={doctor.id}>
+                          Dr. {doctor.first_name} {doctor.last_name} ({doctor.specialization})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="medication_name">Medication</Label>
+                  <Input
+                    id="medication_name"
+                    value={formData.medication_name}
+                    onChange={(e) => setFormData({...formData, medication_name: e.target.value})}
+                    placeholder="e.g., Lisinopril"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dosage">Dosage</Label>
+                  <Input
+                    id="dosage"
+                    value={formData.dosage}
+                    onChange={(e) => setFormData({...formData, dosage: e.target.value})}
+                    placeholder="e.g., 10mg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select
+                    value={formData.frequency}
+                    onValueChange={(value) => setFormData({...formData, frequency: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="once_daily">Once daily</SelectItem>
+                      <SelectItem value="twice_daily">Twice daily</SelectItem>
+                      <SelectItem value="three_times_daily">Three times daily</SelectItem>
+                      <SelectItem value="four_times_daily">Four times daily</SelectItem>
+                      <SelectItem value="as_needed">As needed</SelectItem>
+                      <SelectItem value="every_morning">Every morning</SelectItem>
+                      <SelectItem value="every_night">Every night</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duration</Label>
+                  <Input
+                    id="duration"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                    placeholder="e.g., 7 days"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantity</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                    placeholder="e.g., 30"
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="instructions">Instructions</Label>
+                <Textarea
+                  id="instructions"
+                  value={formData.instructions}
+                  onChange={(e) => setFormData({...formData, instructions: e.target.value})}
+                  placeholder="Take with food, avoid alcohol..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="side_effects">Side Effects</Label>
+                <Textarea
+                  id="side_effects"
+                  value={formData.side_effects}
+                  onChange={(e) => setFormData({...formData, side_effects: e.target.value})}
+                  placeholder="Dizziness, nausea..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="drug_interactions">Drug Interactions</Label>
+                <Textarea
+                  id="drug_interactions"
+                  value={formData.drug_interactions}
+                  onChange={(e) => setFormData({...formData, drug_interactions: e.target.value})}
+                  placeholder="Avoid taking with aspirin, warfarin..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {selectedPrescription ? 'Update' : 'Create'} Prescription
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Prescription View/Print Dialog */}
       <Dialog open={isPrescriptionViewOpen} onOpenChange={setIsPrescriptionViewOpen}>
