@@ -10,11 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import DataTable from '@/components/shared/DataTable';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, Pill, Calendar, User, FileText, Printer, Eye } from 'lucide-react';
+import { Search, Plus, Pill, Calendar, User, FileText, Printer, Eye, Lock } from 'lucide-react';
 import { dataManager } from '@/lib/dataManager';
 import type { Prescription } from '@/lib/dataManager';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PrescriptionManagement: React.FC = () => {
+  const { user, isRole } = useAuth();
+  const canManagePrescriptions = isRole('doctor') || isRole('admin');
+  
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -110,6 +114,10 @@ const PrescriptionManagement: React.FC = () => {
   };
 
   const handleEdit = (prescription: Prescription) => {
+    if (!canManagePrescriptions) {
+      toast({ title: 'Access Denied', description: 'Only doctors can edit prescriptions', variant: 'destructive' });
+      return;
+    }
     setSelectedPrescription(prescription);
     setFormData({
       patient_id: prescription.patient_id,
@@ -127,6 +135,10 @@ const PrescriptionManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!canManagePrescriptions) {
+      toast({ title: 'Access Denied', description: 'Only doctors can delete prescriptions', variant: 'destructive' });
+      return;
+    }
     try {
       await dataManager.deletePrescription(id);
       const updatedPrescriptions = await dataManager.getPrescriptions();
@@ -549,13 +561,14 @@ const PrescriptionManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Prescription Management</h1>
           <p className="text-muted-foreground">Manage patient prescriptions and medications</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Prescription
-            </Button>
-          </DialogTrigger>
+        {canManagePrescriptions ? (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Prescription
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth">
             <DialogHeader>
               <DialogTitle>
@@ -776,6 +789,12 @@ const PrescriptionManagement: React.FC = () => {
             </form>
           </DialogContent>
         </Dialog>
+        ) : (
+          <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5">
+            <Lock className="h-3.5 w-3.5" />
+            View Only
+          </Badge>
+        )}
       </div>
 
       <Card>
@@ -803,13 +822,13 @@ const PrescriptionManagement: React.FC = () => {
             title="Prescriptions"
             data={filteredPrescriptions}
             columns={columns}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onAdd={() => {
+            onEdit={canManagePrescriptions ? handleEdit : undefined}
+            onDelete={canManagePrescriptions ? handleDelete : undefined}
+            onAdd={canManagePrescriptions ? () => {
               setSelectedPrescription(null);
               resetForm();
               setIsDialogOpen(true);
-            }}
+            } : undefined}
             addButtonText="New Prescription"
           />
         </CardContent>
