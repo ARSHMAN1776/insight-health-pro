@@ -144,14 +144,15 @@ The system provides **7 role-specific dashboards**:
 | Patients | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ (View) |
 | Patient Registry | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Appointments | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Queue Management** | ✅ | ✅ (Own) | ✅ (View) | ✅ (Own) | ✅ | ❌ | ❌ |
 | Medical Records | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Prescriptions | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Prescriptions | ✅ | ✅ | ✅ (View) | ✅ (View) | ❌ | ✅ | ❌ |
 | Lab Tests | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
 | Rooms & Beds | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
 | Billing | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Pharmacy/Inventory | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
 | Blood Bank | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Operation Theatre | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Operation Theatre | ✅ | ✅ | ✅ (View) | ✅ (Own) | ❌ | ❌ | ❌ |
 | Departments | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Staff Management | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Reports | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -2495,9 +2496,166 @@ CREATE TYPE app_role AS ENUM (
 | 1.1 | December 2024 | Added blood bank, OT modules |
 | 1.2 | December 2024 | Added patient portal, messaging |
 | 1.3 | December 2024 | Added contact form email delivery |
+| 2.0 | January 2025 | Added insurance claims, referrals, supply chain |
+| 2.5 | January 2025 | Added shift handovers, pharmacy billing |
+| 3.0 | January 2026 | **Major Release** - Queue Management System, enhanced security |
+
+### v3.0 Release Notes (January 2026)
+
+#### New Features
+1. **Real-time Queue Management System**
+   - Token-based patient queuing with auto-generation
+   - Real-time position updates via Supabase subscriptions
+   - Priority queue handling (Emergency > Priority > Normal)
+   - Patient self-check-in for confirmed appointments
+   - Cross-department patient transfers
+   - Waiting room display component
+   - Printable token slips
+
+2. **Enhanced Security**
+   - Role-based RLS policies for surgery tables (surgeries, surgery_team, post_operation)
+   - Removed public access to sensitive medical data
+   - Improved audit logging
+
+3. **Patient Portal Improvements**
+   - Queue status view with dynamic messaging
+   - Self-check-in functionality
+   - Print token feature
+
+4. **Prescription Access Control**
+   - Only doctors/admins can add/edit prescriptions
+   - Other roles have view-only access
+
+5. **Waitlist Enhancements**
+   - Fixed "Any" department/doctor selection
+   - Improved form validation
+
+#### Database Changes
+- Added `daily_queues` table for queue management
+- Added `queue_entries` table for patient queue tracking
+- New RLS policies for queue tables
+- Updated surgery table security policies
+
+#### New Components
+- `QueueStatusView.tsx` - Patient queue status display
+- `DoctorQueueView.tsx` - Doctor queue management
+- `ReceptionistQueueControl.tsx` - Check-in interface
+- `PatientCheckIn.tsx` - Walk-in check-in form
+- `WaitingRoomDisplay.tsx` - Public waiting room display
+- `TokenSlip.tsx` - Printable token component
+
+#### New Hooks
+- `useQueue.ts` - Complete queue management hook with real-time subscriptions
+
 ---
 
-## 23. HIPAA Compliance Features
+## 23. Queue Management System
+
+### 23.1 Overview
+
+The Queue Management System provides real-time patient flow management from check-in to consultation completion.
+
+### 23.2 Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| **QueueStatusView** | `src/components/patient-portal/QueueStatusView.tsx` | Patient's view of their queue position |
+| **DoctorQueueView** | `src/components/queue/DoctorQueueView.tsx` | Doctor's queue management interface |
+| **DoctorQueueWidget** | `src/components/queue/DoctorQueueWidget.tsx` | Dashboard widget for doctors |
+| **ReceptionistQueueControl** | `src/components/queue/ReceptionistQueueControl.tsx` | Full queue control for receptionists |
+| **ReceptionistQueueWidget** | `src/components/queue/ReceptionistQueueWidget.tsx` | Dashboard widget for receptionists |
+| **PatientCheckIn** | `src/components/queue/PatientCheckIn.tsx` | Walk-in patient check-in form |
+| **WaitingRoomDisplay** | `src/components/queue/WaitingRoomDisplay.tsx` | Public display for waiting rooms |
+| **TokenSlip** | `src/components/queue/TokenSlip.tsx` | Printable token slip component |
+
+### 23.3 Features
+
+| Feature | Description |
+|---------|-------------|
+| **Real-time Sync** | Supabase real-time subscriptions for instant updates |
+| **Token Generation** | Auto-generated tokens (T-001, T-002, etc.) |
+| **Priority Queue** | Emergency > Priority > Normal ordering |
+| **Wait Time Estimation** | Based on average consultation time |
+| **Patient Self-Check-in** | Patients can check in for confirmed appointments |
+| **Department Transfer** | Transfer patients between departments |
+| **Visual Feedback** | Shimmer effects for newly called patients |
+| **Print Token** | Generate printable/PDF token slips |
+
+### 23.4 Hook: useQueue
+
+```typescript
+import { useQueue } from '@/hooks/useQueue';
+
+const {
+  // State
+  loading,
+  queues,
+  entries,
+  currentEntry,
+  stats,
+  
+  // Filtered entries
+  waitingEntries,
+  calledEntries,
+  inConsultationEntries,
+  completedEntries,
+  
+  // Actions
+  checkInPatient,
+  callNextPatient,
+  startConsultation,
+  completeConsultation,
+  markNoShow,
+  cancelEntry,
+  transferPatient,
+  getPatientActiveEntry,
+  refetch
+} = useQueue({ doctorId, departmentId, realtime: true });
+```
+
+### 23.5 Database Tables
+
+**daily_queues**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| queue_date | DATE | Date of queue |
+| doctor_id | UUID | Associated doctor |
+| department_id | UUID | Associated department |
+| current_token_number | INTEGER | Last issued token number |
+| token_prefix | VARCHAR(10) | Token prefix (default: 'T') |
+| is_active | BOOLEAN | Queue active status |
+| avg_consultation_mins | INTEGER | Average consultation time |
+
+**queue_entries**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| queue_id | UUID | Reference to daily_queues |
+| patient_id | UUID | Patient reference |
+| appointment_id | UUID | Optional appointment reference |
+| token_number | VARCHAR(20) | Generated token (e.g., 'T-001') |
+| entry_type | VARCHAR(20) | appointment, walk_in, emergency |
+| priority | VARCHAR(20) | normal, priority, emergency |
+| status | VARCHAR(20) | waiting, called, in_consultation, completed, no_show, cancelled, transferred |
+| checked_in_at | TIMESTAMPTZ | Check-in timestamp |
+| called_at | TIMESTAMPTZ | When patient was called |
+| consultation_started_at | TIMESTAMPTZ | Consultation start time |
+| completed_at | TIMESTAMPTZ | Completion timestamp |
+
+### 23.6 Access Control
+
+| Role | Permissions |
+|------|-------------|
+| Admin | Full access to all queues |
+| Receptionist | Full access to all queues |
+| Doctor | View/update own queue |
+| Nurse | View all queues |
+| Patient | View own queue entry, self-check-in |
+
+---
+
+## 24. HIPAA Compliance Features
 
 ### 23.1 PHI Audit Logging
 
@@ -2588,12 +2746,12 @@ All text meets WCAG AA contrast requirements:
 ---
 
 **Document Version:** 3.0  
-**Last Updated:** January 2025  
+**Last Updated:** January 2026  
 **System Version:** HMS v3.0  
-**Total Components:** 110+  
-**Total Database Tables:** 26+  
+**Total Components:** 120+  
+**Total Database Tables:** 47+  
 **Total Edge Functions:** 5  
-**Total Custom Hooks:** 12  
+**Total Custom Hooks:** 15  
 **Total Utility Libraries:** 12  
 
 ---
