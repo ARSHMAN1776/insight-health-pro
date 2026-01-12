@@ -1,11 +1,11 @@
 -- ============================================================================
 -- HOSPITAL MANAGEMENT SYSTEM - COMPLETE DATABASE SCHEMA
 -- ============================================================================
--- Version: 2.3.0
+-- Version: 3.0.0
 -- Database: PostgreSQL (Supabase)
 -- Last Updated: January 2026
 -- Description: Complete SQL schema for the Hospital Management System
--- Total Tables: 45+
+-- Total Tables: 47+
 -- 
 -- IMPORTANT: This schema is designed for fresh database setup.
 -- Execute in order: Extensions -> Types -> Functions -> Tables -> RLS -> FK
@@ -382,6 +382,44 @@ CREATE TABLE IF NOT EXISTS public.appointment_waitlist (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- TABLE: daily_queues (NEW - Queue Management)
+CREATE TABLE IF NOT EXISTS public.daily_queues (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    queue_date DATE NOT NULL,
+    department_id UUID,
+    doctor_id UUID,
+    current_token_number INTEGER DEFAULT 0,
+    token_prefix VARCHAR(10) DEFAULT 'T',
+    is_active BOOLEAN DEFAULT true,
+    avg_consultation_mins INTEGER DEFAULT 15,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    UNIQUE(queue_date, doctor_id)
+);
+
+-- TABLE: queue_entries (NEW - Queue Management)
+CREATE TABLE IF NOT EXISTS public.queue_entries (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    queue_id UUID NOT NULL,
+    patient_id UUID NOT NULL,
+    appointment_id UUID,
+    token_number VARCHAR(20) NOT NULL,
+    entry_type VARCHAR(20) DEFAULT 'walk_in' CHECK (entry_type IN ('appointment', 'walk_in', 'emergency')),
+    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('normal', 'priority', 'emergency')),
+    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'called', 'in_consultation', 'completed', 'no_show', 'cancelled', 'transferred')),
+    symptoms TEXT,
+    notes TEXT,
+    estimated_wait_mins INTEGER,
+    position_in_queue INTEGER,
+    checked_in_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    called_at TIMESTAMP WITH TIME ZONE,
+    consultation_started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- TABLE: medical_records
 CREATE TABLE IF NOT EXISTS public.medical_records (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -625,6 +663,41 @@ CREATE TABLE IF NOT EXISTS public.insurance_claim_items (
     total_price NUMERIC(12, 2) NOT NULL,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'denied')),
     denial_reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: pharmacy_bills
+CREATE TABLE IF NOT EXISTS public.pharmacy_bills (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    bill_number VARCHAR(50) NOT NULL UNIQUE,
+    patient_id UUID,
+    patient_name VARCHAR(200),
+    prescription_id UUID,
+    subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    discount_percent NUMERIC(5, 2) DEFAULT 0,
+    discount_amount NUMERIC(12, 2) DEFAULT 0,
+    tax_percent NUMERIC(5, 2) DEFAULT 0,
+    tax_amount NUMERIC(12, 2) DEFAULT 0,
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50),
+    payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'completed', 'cancelled', 'refunded')),
+    notes TEXT,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- TABLE: pharmacy_bill_items
+CREATE TABLE IF NOT EXISTS public.pharmacy_bill_items (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    bill_id UUID,
+    inventory_id UUID,
+    item_name VARCHAR(200) NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    total_price NUMERIC(12, 2) NOT NULL,
+    batch_number VARCHAR(50),
+    expiry_date DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
@@ -955,6 +1028,8 @@ ALTER TABLE public.patient_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.patient_vitals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointment_waitlist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_queues ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.queue_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.medical_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.prescriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.prescription_items ENABLE ROW LEVEL SECURITY;
@@ -968,6 +1043,8 @@ ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.insurance_claims ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.insurance_claim_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pharmacy_bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pharmacy_bill_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blood_groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blood_stock ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.donors ENABLE ROW LEVEL SECURITY;
@@ -990,14 +1067,13 @@ ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- STEP 6: DROP EXISTING POLICIES (for idempotent re-runs)
+-- STEP 6: DROP EXISTING RLS POLICIES (for clean re-runs)
 -- ============================================================================
 
-DO $$ 
+DO $$
 DECLARE
     r RECORD;
 BEGIN
-    -- Drop all existing policies on our tables for clean re-creation
     FOR r IN (
         SELECT schemaname, tablename, policyname 
         FROM pg_policies 
@@ -1072,6 +1148,7 @@ CREATE POLICY "patients_select_own" ON public.patients FOR SELECT USING (user_id
 CREATE POLICY "patients_update_own" ON public.patients FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 CREATE POLICY "patients_admin" ON public.patients FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "patients_nurse_select" ON public.patients FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "patients_receptionist" ON public.patients FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
 CREATE POLICY "patients_lab_select" ON public.patients FOR SELECT USING (public.has_role(auth.uid(), 'lab_technician'));
 CREATE POLICY "patients_doctor_select" ON public.patients FOR SELECT USING (
     public.has_role(auth.uid(), 'doctor') AND
@@ -1136,6 +1213,29 @@ CREATE POLICY "appointment_waitlist_doctor_select" ON public.appointment_waitlis
 CREATE POLICY "appointment_waitlist_receptionist" ON public.appointment_waitlist FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
 CREATE POLICY "appointment_waitlist_admin" ON public.appointment_waitlist FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+-- DAILY_QUEUES POLICIES (NEW)
+CREATE POLICY "daily_queues_admin" ON public.daily_queues FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "daily_queues_receptionist" ON public.daily_queues FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+CREATE POLICY "daily_queues_doctor_select" ON public.daily_queues FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "daily_queues_doctor_update" ON public.daily_queues FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid())) WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "daily_queues_nurse_select" ON public.daily_queues FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "daily_queues_patient_select" ON public.daily_queues FOR SELECT USING (public.has_role(auth.uid(), 'patient'));
+
+-- QUEUE_ENTRIES POLICIES (NEW)
+CREATE POLICY "queue_entries_admin" ON public.queue_entries FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "queue_entries_receptionist" ON public.queue_entries FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+CREATE POLICY "queue_entries_doctor_select" ON public.queue_entries FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.daily_queues dq WHERE dq.id = queue_id AND dq.doctor_id = public.get_doctor_id_for_user(auth.uid()))
+);
+CREATE POLICY "queue_entries_doctor_update" ON public.queue_entries FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.daily_queues dq WHERE dq.id = queue_id AND dq.doctor_id = public.get_doctor_id_for_user(auth.uid()))
+) WITH CHECK (
+    EXISTS (SELECT 1 FROM public.daily_queues dq WHERE dq.id = queue_id AND dq.doctor_id = public.get_doctor_id_for_user(auth.uid()))
+);
+CREATE POLICY "queue_entries_nurse_select" ON public.queue_entries FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "queue_entries_patient_select" ON public.queue_entries FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "queue_entries_patient_insert" ON public.queue_entries FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+
 -- MEDICAL_RECORDS POLICIES
 CREATE POLICY "medical_records_patient_select" ON public.medical_records FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
 CREATE POLICY "medical_records_doctor_select" ON public.medical_records FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
@@ -1155,6 +1255,7 @@ CREATE POLICY "prescriptions_doctor_insert" ON public.prescriptions FOR INSERT W
 CREATE POLICY "prescriptions_doctor_update" ON public.prescriptions FOR UPDATE USING (doctor_id = public.get_doctor_id_for_user(auth.uid())) WITH CHECK (doctor_id = public.get_doctor_id_for_user(auth.uid()));
 CREATE POLICY "prescriptions_pharmacist_select" ON public.prescriptions FOR SELECT USING (public.has_role(auth.uid(), 'pharmacist'));
 CREATE POLICY "prescriptions_pharmacist_update" ON public.prescriptions FOR UPDATE USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "prescriptions_nurse_select" ON public.prescriptions FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
 CREATE POLICY "prescriptions_admin" ON public.prescriptions FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- PRESCRIPTION_ITEMS POLICIES
@@ -1231,259 +1332,196 @@ CREATE POLICY "room_assignments_staff_manage" ON public.room_assignments FOR ALL
 );
 
 -- INVENTORY POLICIES
-CREATE POLICY "inventory_staff_select" ON public.inventory FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist') OR public.has_role(auth.uid(), 'nurse')
-);
-CREATE POLICY "inventory_pharmacist_insert" ON public.inventory FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
-CREATE POLICY "inventory_pharmacist_update" ON public.inventory FOR UPDATE USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "inventory_pharmacist" ON public.inventory FOR ALL USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
 CREATE POLICY "inventory_admin" ON public.inventory FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "inventory_nurse_select" ON public.inventory FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
 
 -- PAYMENTS POLICIES
 CREATE POLICY "payments_patient_select" ON public.payments FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-CREATE POLICY "payments_staff_select" ON public.payments FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
-);
-CREATE POLICY "payments_staff_manage" ON public.payments FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
-);
+CREATE POLICY "payments_receptionist" ON public.payments FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
+CREATE POLICY "payments_admin" ON public.payments FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- INSURANCE_CLAIMS POLICIES
 CREATE POLICY "insurance_claims_patient_select" ON public.insurance_claims FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
-CREATE POLICY "insurance_claims_doctor_select" ON public.insurance_claims FOR SELECT USING (
-    public.has_role(auth.uid(), 'doctor') AND public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), patient_id)
-);
 CREATE POLICY "insurance_claims_receptionist" ON public.insurance_claims FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
 CREATE POLICY "insurance_claims_admin" ON public.insurance_claims FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- INSURANCE_CLAIM_ITEMS POLICIES
-CREATE POLICY "insurance_claim_items_patient_select" ON public.insurance_claim_items FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.insurance_claims c WHERE c.id = claim_id AND c.patient_id = public.get_patient_id_for_user(auth.uid()))
+CREATE POLICY "insurance_claim_items_staff" ON public.insurance_claim_items FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
+) WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'receptionist')
 );
-CREATE POLICY "insurance_claim_items_doctor_select" ON public.insurance_claim_items FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.insurance_claims c WHERE c.id = claim_id AND 
-        public.has_role(auth.uid(), 'doctor') AND public.doctor_has_patient_relationship(public.get_doctor_id_for_user(auth.uid()), c.patient_id))
-);
-CREATE POLICY "insurance_claim_items_receptionist" ON public.insurance_claim_items FOR ALL USING (public.has_role(auth.uid(), 'receptionist')) WITH CHECK (public.has_role(auth.uid(), 'receptionist'));
-CREATE POLICY "insurance_claim_items_admin" ON public.insurance_claim_items FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- BLOOD_GROUPS POLICIES
+-- PHARMACY_BILLS POLICIES
+CREATE POLICY "pharmacy_bills_pharmacist" ON public.pharmacy_bills FOR ALL USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "pharmacy_bills_admin" ON public.pharmacy_bills FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "pharmacy_bills_patient_select" ON public.pharmacy_bills FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+-- PHARMACY_BILL_ITEMS POLICIES
+CREATE POLICY "pharmacy_bill_items_pharmacist" ON public.pharmacy_bill_items FOR ALL USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "pharmacy_bill_items_admin" ON public.pharmacy_bill_items FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- BLOOD BANK POLICIES
 CREATE POLICY "blood_groups_select" ON public.blood_groups FOR SELECT USING (true);
 CREATE POLICY "blood_groups_admin" ON public.blood_groups FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- BLOOD_STOCK POLICIES
 CREATE POLICY "blood_stock_staff_select" ON public.blood_stock FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
-    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'doctor')
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
 );
-CREATE POLICY "blood_stock_lab_manage" ON public.blood_stock FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+CREATE POLICY "blood_stock_admin" ON public.blood_stock FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "blood_stock_nurse_manage" ON public.blood_stock FOR ALL USING (public.has_role(auth.uid(), 'nurse')) WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+
+CREATE POLICY "donors_staff" ON public.donors FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
 ) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
 );
+CREATE POLICY "donors_doctor_select" ON public.donors FOR SELECT USING (public.has_role(auth.uid(), 'doctor'));
 
--- DONORS POLICIES
-CREATE POLICY "donors_staff_select" ON public.donors FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
-    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'receptionist')
-);
-CREATE POLICY "donors_staff_insert" ON public.donors FOR INSERT WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'receptionist')
-);
-CREATE POLICY "donors_staff_update" ON public.donors FOR UPDATE USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+CREATE POLICY "blood_issues_staff" ON public.blood_issues FOR ALL USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR public.has_role(auth.uid(), 'doctor')
 ) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
-);
-CREATE POLICY "donors_admin_delete" ON public.donors FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
-
--- BLOOD_ISSUES POLICIES
-CREATE POLICY "blood_issues_staff_select" ON public.blood_issues FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
-    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'doctor')
-);
-CREATE POLICY "blood_issues_staff_insert" ON public.blood_issues FOR INSERT WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'nurse')
-);
-CREATE POLICY "blood_issues_staff_update" ON public.blood_issues FOR UPDATE USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
-);
-CREATE POLICY "blood_issues_admin_delete" ON public.blood_issues FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
-
--- BLOOD_STOCK_TRANSACTIONS POLICIES
-CREATE POLICY "blood_stock_transactions_staff_select" ON public.blood_stock_transactions FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR 
-    public.has_role(auth.uid(), 'lab_technician') OR public.has_role(auth.uid(), 'doctor')
-);
-CREATE POLICY "blood_stock_transactions_staff_insert" ON public.blood_stock_transactions FOR INSERT WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'lab_technician')
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR public.has_role(auth.uid(), 'doctor')
 );
 
--- OPERATION_THEATRES POLICIES
+CREATE POLICY "blood_transactions_staff_select" ON public.blood_stock_transactions FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse') OR public.has_role(auth.uid(), 'doctor')
+);
+CREATE POLICY "blood_transactions_staff_insert" ON public.blood_stock_transactions FOR INSERT WITH CHECK (
+    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
+);
+
+-- OPERATION THEATRE POLICIES
 CREATE POLICY "operation_theatres_staff_select" ON public.operation_theatres FOR SELECT USING (
     public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
 );
 CREATE POLICY "operation_theatres_admin" ON public.operation_theatres FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- SURGERIES POLICIES
-CREATE POLICY "surgeries_staff_select" ON public.surgeries FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
-);
-CREATE POLICY "surgeries_doctor_manage" ON public.surgeries FOR ALL USING (
-    doctor_id = public.get_doctor_id_for_user(auth.uid()) OR public.has_role(auth.uid(), 'admin')
+-- SURGERIES POLICIES (Role-based - Security Fixed)
+CREATE POLICY "surgeries_admin" ON public.surgeries FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "surgeries_doctor_select" ON public.surgeries FOR SELECT USING (public.has_role(auth.uid(), 'doctor'));
+CREATE POLICY "surgeries_doctor_own" ON public.surgeries FOR ALL USING (
+    public.has_role(auth.uid(), 'doctor') AND doctor_id = public.get_doctor_id_for_user(auth.uid())
 ) WITH CHECK (
-    doctor_id = public.get_doctor_id_for_user(auth.uid()) OR public.has_role(auth.uid(), 'admin')
+    public.has_role(auth.uid(), 'doctor') AND doctor_id = public.get_doctor_id_for_user(auth.uid())
+);
+CREATE POLICY "surgeries_nurse_select" ON public.surgeries FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "surgeries_patient_own" ON public.surgeries FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+
+-- SURGERY_TEAM POLICIES (Role-based - Security Fixed)
+CREATE POLICY "surgery_team_admin" ON public.surgery_team FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "surgery_team_doctor_select" ON public.surgery_team FOR SELECT USING (public.has_role(auth.uid(), 'doctor'));
+CREATE POLICY "surgery_team_doctor_own" ON public.surgery_team FOR ALL USING (
+    public.has_role(auth.uid(), 'doctor') AND EXISTS (
+        SELECT 1 FROM public.surgeries s WHERE s.id = surgery_id AND s.doctor_id = public.get_doctor_id_for_user(auth.uid())
+    )
+) WITH CHECK (
+    public.has_role(auth.uid(), 'doctor') AND EXISTS (
+        SELECT 1 FROM public.surgeries s WHERE s.id = surgery_id AND s.doctor_id = public.get_doctor_id_for_user(auth.uid())
+    )
+);
+CREATE POLICY "surgery_team_nurse_select" ON public.surgery_team FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+
+-- POST_OPERATION POLICIES (Role-based - Security Fixed)
+CREATE POLICY "post_operation_admin" ON public.post_operation FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "post_operation_doctor_select" ON public.post_operation FOR SELECT USING (public.has_role(auth.uid(), 'doctor'));
+CREATE POLICY "post_operation_doctor_own" ON public.post_operation FOR ALL USING (
+    public.has_role(auth.uid(), 'doctor') AND EXISTS (
+        SELECT 1 FROM public.surgeries s WHERE s.id = surgery_id AND s.doctor_id = public.get_doctor_id_for_user(auth.uid())
+    )
+) WITH CHECK (
+    public.has_role(auth.uid(), 'doctor') AND EXISTS (
+        SELECT 1 FROM public.surgeries s WHERE s.id = surgery_id AND s.doctor_id = public.get_doctor_id_for_user(auth.uid())
+    )
+);
+CREATE POLICY "post_operation_nurse_select" ON public.post_operation FOR SELECT USING (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "post_operation_nurse_update" ON public.post_operation FOR UPDATE USING (public.has_role(auth.uid(), 'nurse')) WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "post_operation_patient_own" ON public.post_operation FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.surgeries s WHERE s.id = surgery_id AND s.patient_id = public.get_patient_id_for_user(auth.uid()))
 );
 
--- SURGERY_TEAM POLICIES
-CREATE POLICY "surgery_team_staff_select" ON public.surgery_team FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
-);
-CREATE POLICY "surgery_team_manage" ON public.surgery_team FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor')
-);
+-- SHIFT HANDOVER POLICIES
+CREATE POLICY "shift_handovers_nurse" ON public.shift_handovers FOR ALL USING (public.has_role(auth.uid(), 'nurse')) WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "shift_handovers_admin" ON public.shift_handovers FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- POST_OPERATION POLICIES
-CREATE POLICY "post_operation_staff_select" ON public.post_operation FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
-);
-CREATE POLICY "post_operation_manage" ON public.post_operation FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'doctor') OR public.has_role(auth.uid(), 'nurse')
-);
-
--- SHIFT_HANDOVERS POLICIES
-CREATE POLICY "shift_handovers_nurse_select" ON public.shift_handovers FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
-);
-CREATE POLICY "shift_handovers_nurse_manage" ON public.shift_handovers FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
-);
-
--- SHIFT_HANDOVER_PATIENTS POLICIES
-CREATE POLICY "shift_handover_patients_nurse_select" ON public.shift_handover_patients FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
-);
-CREATE POLICY "shift_handover_patients_nurse_manage" ON public.shift_handover_patients FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'nurse')
-);
+CREATE POLICY "shift_handover_patients_nurse" ON public.shift_handover_patients FOR ALL USING (public.has_role(auth.uid(), 'nurse')) WITH CHECK (public.has_role(auth.uid(), 'nurse'));
+CREATE POLICY "shift_handover_patients_admin" ON public.shift_handover_patients FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- NOTIFICATIONS POLICIES
-CREATE POLICY "notifications_own_select" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "notifications_own_update" ON public.notifications FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "notifications_own_delete" ON public.notifications FOR DELETE USING (auth.uid() = user_id);
-CREATE POLICY "notifications_system_insert" ON public.notifications FOR INSERT WITH CHECK (true);
-CREATE POLICY "notifications_admin" ON public.notifications FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "notifications_own" ON public.notifications FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "notifications_admin_insert" ON public.notifications FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- REMINDERS POLICIES
 CREATE POLICY "reminders_own" ON public.reminders FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "reminders_admin" ON public.reminders FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- PHI_AUDIT_LOG POLICIES
-CREATE POLICY "phi_audit_log_admin_select" ON public.phi_audit_log FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
+-- PHI_AUDIT_LOG POLICIES (Immutable - no UPDATE/DELETE)
 CREATE POLICY "phi_audit_log_insert" ON public.phi_audit_log FOR INSERT WITH CHECK (true);
+CREATE POLICY "phi_audit_log_admin_select" ON public.phi_audit_log FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
 
--- DIAGNOSIS_CODES POLICIES
+-- CLINICAL CODES POLICIES
 CREATE POLICY "diagnosis_codes_select" ON public.diagnosis_codes FOR SELECT USING (true);
 CREATE POLICY "diagnosis_codes_admin" ON public.diagnosis_codes FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- PROCEDURE_CODES POLICIES
 CREATE POLICY "procedure_codes_select" ON public.procedure_codes FOR SELECT USING (true);
 CREATE POLICY "procedure_codes_admin" ON public.procedure_codes FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- DRUG_INTERACTIONS POLICIES
 CREATE POLICY "drug_interactions_select" ON public.drug_interactions FOR SELECT USING (true);
 CREATE POLICY "drug_interactions_admin" ON public.drug_interactions FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- SUPPLIERS POLICIES
-CREATE POLICY "suppliers_staff_select" ON public.suppliers FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-);
-CREATE POLICY "suppliers_manage" ON public.suppliers FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-);
+-- SUPPLY CHAIN POLICIES
+CREATE POLICY "suppliers_pharmacist" ON public.suppliers FOR ALL USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "suppliers_admin" ON public.suppliers FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- PURCHASE_ORDERS POLICIES
-CREATE POLICY "purchase_orders_staff_select" ON public.purchase_orders FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-);
-CREATE POLICY "purchase_orders_manage" ON public.purchase_orders FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-);
+CREATE POLICY "purchase_orders_pharmacist" ON public.purchase_orders FOR ALL USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "purchase_orders_admin" ON public.purchase_orders FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- PURCHASE_ORDER_ITEMS POLICIES
-CREATE POLICY "purchase_order_items_staff_select" ON public.purchase_order_items FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-);
-CREATE POLICY "purchase_order_items_manage" ON public.purchase_order_items FOR ALL USING (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-) WITH CHECK (
-    public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'pharmacist')
-);
+CREATE POLICY "purchase_order_items_pharmacist" ON public.purchase_order_items FOR ALL USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
+CREATE POLICY "purchase_order_items_admin" ON public.purchase_order_items FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- ============================================================================
 -- STEP 8: CREATE INDEXES
 -- ============================================================================
 
-CREATE INDEX IF NOT EXISTS idx_profiles_first_name ON public.profiles(first_name);
-CREATE INDEX IF NOT EXISTS idx_profiles_last_name ON public.profiles(last_name);
-CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user ON public.user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
-CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings(user_id);
-CREATE INDEX IF NOT EXISTS idx_hospital_settings_category ON public.hospital_settings(setting_category);
-CREATE INDEX IF NOT EXISTS idx_departments_status ON public.departments(status);
-CREATE INDEX IF NOT EXISTS idx_doctors_specialization ON public.doctors(specialization);
-CREATE INDEX IF NOT EXISTS idx_doctors_department_id ON public.doctors(department_id);
+CREATE INDEX IF NOT EXISTS idx_user_settings_user ON public.user_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_doctors_user ON public.doctors(user_id);
+CREATE INDEX IF NOT EXISTS idx_doctors_department ON public.doctors(department_id);
 CREATE INDEX IF NOT EXISTS idx_doctors_status ON public.doctors(status);
-CREATE INDEX IF NOT EXISTS idx_doctors_user_id ON public.doctors(user_id);
 CREATE INDEX IF NOT EXISTS idx_department_doctors_department ON public.department_doctors(department_id);
 CREATE INDEX IF NOT EXISTS idx_department_doctors_doctor ON public.department_doctors(doctor_id);
-CREATE INDEX IF NOT EXISTS idx_nurses_department ON public.nurses(department);
-CREATE INDEX IF NOT EXISTS idx_nurses_status ON public.nurses(status);
-CREATE INDEX IF NOT EXISTS idx_staff_schedules_staff ON public.staff_schedules(staff_id);
-CREATE INDEX IF NOT EXISTS idx_staff_schedules_day ON public.staff_schedules(day_of_week);
-CREATE INDEX IF NOT EXISTS idx_patients_user_id ON public.patients(user_id);
+CREATE INDEX IF NOT EXISTS idx_patients_user ON public.patients(user_id);
+CREATE INDEX IF NOT EXISTS idx_patients_department ON public.patients(department_id);
 CREATE INDEX IF NOT EXISTS idx_patients_status ON public.patients(status);
-CREATE INDEX IF NOT EXISTS idx_patients_department_id ON public.patients(department_id);
-CREATE INDEX IF NOT EXISTS idx_patient_registration_queue_status ON public.patient_registration_queue(status);
+CREATE INDEX IF NOT EXISTS idx_patient_registration_status ON public.patient_registration_queue(status);
 CREATE INDEX IF NOT EXISTS idx_patient_messages_patient ON public.patient_messages(patient_id);
 CREATE INDEX IF NOT EXISTS idx_patient_messages_doctor ON public.patient_messages(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_patient_vitals_patient ON public.patient_vitals(patient_id);
-CREATE INDEX IF NOT EXISTS idx_patient_vitals_recorded_at ON public.patient_vitals(recorded_at);
 CREATE INDEX IF NOT EXISTS idx_appointments_patient ON public.appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON public.appointments(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON public.appointments(appointment_date);
 CREATE INDEX IF NOT EXISTS idx_appointments_status ON public.appointments(status);
 CREATE INDEX IF NOT EXISTS idx_appointment_waitlist_patient ON public.appointment_waitlist(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointment_waitlist_status ON public.appointment_waitlist(status);
+CREATE INDEX IF NOT EXISTS idx_daily_queues_date ON public.daily_queues(queue_date);
+CREATE INDEX IF NOT EXISTS idx_daily_queues_doctor ON public.daily_queues(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_daily_queues_date_doctor ON public.daily_queues(queue_date, doctor_id);
+CREATE INDEX IF NOT EXISTS idx_queue_entries_queue ON public.queue_entries(queue_id);
+CREATE INDEX IF NOT EXISTS idx_queue_entries_patient ON public.queue_entries(patient_id);
+CREATE INDEX IF NOT EXISTS idx_queue_entries_status ON public.queue_entries(status);
+CREATE INDEX IF NOT EXISTS idx_queue_entries_checked_in ON public.queue_entries(checked_in_at);
 CREATE INDEX IF NOT EXISTS idx_medical_records_patient ON public.medical_records(patient_id);
 CREATE INDEX IF NOT EXISTS idx_medical_records_doctor ON public.medical_records(doctor_id);
-CREATE INDEX IF NOT EXISTS idx_medical_records_visit_date ON public.medical_records(visit_date);
 CREATE INDEX IF NOT EXISTS idx_prescriptions_patient ON public.prescriptions(patient_id);
 CREATE INDEX IF NOT EXISTS idx_prescriptions_doctor ON public.prescriptions(doctor_id);
-CREATE INDEX IF NOT EXISTS idx_prescriptions_status ON public.prescriptions(status);
 CREATE INDEX IF NOT EXISTS idx_prescription_items_prescription ON public.prescription_items(prescription_id);
 CREATE INDEX IF NOT EXISTS idx_lab_tests_patient ON public.lab_tests(patient_id);
 CREATE INDEX IF NOT EXISTS idx_lab_tests_doctor ON public.lab_tests(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_lab_tests_status ON public.lab_tests(status);
 CREATE INDEX IF NOT EXISTS idx_referrals_patient ON public.referrals(patient_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referring_doctor ON public.referrals(referring_doctor_id);
-CREATE INDEX IF NOT EXISTS idx_referrals_status ON public.referrals(status);
-CREATE INDEX IF NOT EXISTS idx_rooms_status ON public.rooms(status);
+CREATE INDEX IF NOT EXISTS idx_referrals_receiving_doctor ON public.referrals(receiving_doctor_id);
 CREATE INDEX IF NOT EXISTS idx_room_assignments_room ON public.room_assignments(room_id);
 CREATE INDEX IF NOT EXISTS idx_room_assignments_patient ON public.room_assignments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_category ON public.inventory(category);
@@ -1492,11 +1530,12 @@ CREATE INDEX IF NOT EXISTS idx_payments_patient ON public.payments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments(payment_status);
 CREATE INDEX IF NOT EXISTS idx_insurance_claims_patient ON public.insurance_claims(patient_id);
 CREATE INDEX IF NOT EXISTS idx_insurance_claims_status ON public.insurance_claims(status);
-CREATE INDEX IF NOT EXISTS idx_insurance_claim_items_claim ON public.insurance_claim_items(claim_id);
+CREATE INDEX IF NOT EXISTS idx_pharmacy_bills_patient ON public.pharmacy_bills(patient_id);
+CREATE INDEX IF NOT EXISTS idx_pharmacy_bill_items_bill ON public.pharmacy_bill_items(bill_id);
 CREATE INDEX IF NOT EXISTS idx_blood_stock_group ON public.blood_stock(blood_group_id);
 CREATE INDEX IF NOT EXISTS idx_donors_blood_group ON public.donors(blood_group_id);
 CREATE INDEX IF NOT EXISTS idx_blood_issues_patient ON public.blood_issues(patient_id);
-CREATE INDEX IF NOT EXISTS idx_blood_stock_transactions_group ON public.blood_stock_transactions(blood_group_id);
+CREATE INDEX IF NOT EXISTS idx_blood_transactions_blood_group ON public.blood_stock_transactions(blood_group_id);
 CREATE INDEX IF NOT EXISTS idx_surgeries_patient ON public.surgeries(patient_id);
 CREATE INDEX IF NOT EXISTS idx_surgeries_doctor ON public.surgeries(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_surgeries_date ON public.surgeries(surgery_date);
@@ -1562,6 +1601,12 @@ CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON public.appointmen
 DROP TRIGGER IF EXISTS update_appointment_waitlist_updated_at ON public.appointment_waitlist;
 CREATE TRIGGER update_appointment_waitlist_updated_at BEFORE UPDATE ON public.appointment_waitlist FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_daily_queues_updated_at ON public.daily_queues;
+CREATE TRIGGER update_daily_queues_updated_at BEFORE UPDATE ON public.daily_queues FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_queue_entries_updated_at ON public.queue_entries;
+CREATE TRIGGER update_queue_entries_updated_at BEFORE UPDATE ON public.queue_entries FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 DROP TRIGGER IF EXISTS update_medical_records_updated_at ON public.medical_records;
 CREATE TRIGGER update_medical_records_updated_at BEFORE UPDATE ON public.medical_records FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
@@ -1597,6 +1642,9 @@ CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON public.payments FOR E
 
 DROP TRIGGER IF EXISTS update_insurance_claims_updated_at ON public.insurance_claims;
 CREATE TRIGGER update_insurance_claims_updated_at BEFORE UPDATE ON public.insurance_claims FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_pharmacy_bills_updated_at ON public.pharmacy_bills;
+CREATE TRIGGER update_pharmacy_bills_updated_at BEFORE UPDATE ON public.pharmacy_bills FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_blood_stock_updated_at ON public.blood_stock;
 CREATE TRIGGER update_blood_stock_updated_at BEFORE UPDATE ON public.blood_stock FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -1684,6 +1732,23 @@ DO $$ BEGIN
         ALTER TABLE public.appointment_waitlist ADD CONSTRAINT fk_appointment_waitlist_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
     END IF;
     
+    -- Queue foreign keys (NEW)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_daily_queues_doctor') THEN
+        ALTER TABLE public.daily_queues ADD CONSTRAINT fk_daily_queues_doctor FOREIGN KEY (doctor_id) REFERENCES public.doctors(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_daily_queues_department') THEN
+        ALTER TABLE public.daily_queues ADD CONSTRAINT fk_daily_queues_department FOREIGN KEY (department_id) REFERENCES public.departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_queue_entries_queue') THEN
+        ALTER TABLE public.queue_entries ADD CONSTRAINT fk_queue_entries_queue FOREIGN KEY (queue_id) REFERENCES public.daily_queues(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_queue_entries_patient') THEN
+        ALTER TABLE public.queue_entries ADD CONSTRAINT fk_queue_entries_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_queue_entries_appointment') THEN
+        ALTER TABLE public.queue_entries ADD CONSTRAINT fk_queue_entries_appointment FOREIGN KEY (appointment_id) REFERENCES public.appointments(id) ON DELETE SET NULL;
+    END IF;
+    
     -- Medical records foreign keys
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_medical_records_patient') THEN
         ALTER TABLE public.medical_records ADD CONSTRAINT fk_medical_records_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
@@ -1767,6 +1832,20 @@ DO $$ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_insurance_claim_items_claim') THEN
         ALTER TABLE public.insurance_claim_items ADD CONSTRAINT fk_insurance_claim_items_claim FOREIGN KEY (claim_id) REFERENCES public.insurance_claims(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Pharmacy bills foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_pharmacy_bills_patient') THEN
+        ALTER TABLE public.pharmacy_bills ADD CONSTRAINT fk_pharmacy_bills_patient FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_pharmacy_bills_prescription') THEN
+        ALTER TABLE public.pharmacy_bills ADD CONSTRAINT fk_pharmacy_bills_prescription FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_pharmacy_bill_items_bill') THEN
+        ALTER TABLE public.pharmacy_bill_items ADD CONSTRAINT fk_pharmacy_bill_items_bill FOREIGN KEY (bill_id) REFERENCES public.pharmacy_bills(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_pharmacy_bill_items_inventory') THEN
+        ALTER TABLE public.pharmacy_bill_items ADD CONSTRAINT fk_pharmacy_bill_items_inventory FOREIGN KEY (inventory_id) REFERENCES public.inventory(id) ON DELETE SET NULL;
     END IF;
     
     -- Blood bank foreign keys
@@ -1932,23 +2011,23 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- DATABASE SCHEMA SUMMARY v2.4
+-- DATABASE SCHEMA SUMMARY v3.0
 -- ============================================================================
 /*
 ================================================================================
-              HOSPITAL MANAGEMENT SYSTEM DATABASE v2.4 (January 2026)
+              HOSPITAL MANAGEMENT SYSTEM DATABASE v3.0 (January 2026)
 ================================================================================
 
-TABLES (45+ Tables):
+TABLES (47+ Tables):
 ====================
 - User Management: profiles, user_roles, user_settings, hospital_settings
 - Department & Staff: departments, doctors, department_doctors, nurses, staff_schedules
 - Patient Management: patients, patient_registration_queue, patient_messages, patient_vitals
-- Clinical: appointments, appointment_waitlist, medical_records, prescriptions, 
-           prescription_items, prescription_refill_requests, prescription_templates, 
-           lab_tests, referrals
+- Clinical: appointments, appointment_waitlist, daily_queues, queue_entries, 
+            medical_records, prescriptions, prescription_items, prescription_refill_requests, 
+            prescription_templates, lab_tests, referrals
 - Facility: rooms, room_assignments, inventory
-- Financial: payments, insurance_claims, insurance_claim_items
+- Financial: payments, insurance_claims, insurance_claim_items, pharmacy_bills, pharmacy_bill_items
 - Blood Bank: blood_groups, blood_stock, donors, blood_issues, blood_stock_transactions
 - Operations: operation_theatres, surgeries, surgery_team, post_operation
 - Shift Handover: shift_handovers, shift_handover_patients
@@ -1956,6 +2035,14 @@ TABLES (45+ Tables):
 - Audit: phi_audit_log
 - Clinical Codes: diagnosis_codes, procedure_codes, drug_interactions
 - Supply Chain: suppliers, purchase_orders, purchase_order_items
+
+NEW IN v3.0:
+============
+✓ Queue Management System (daily_queues, queue_entries)
+✓ Real-time patient queue tracking
+✓ Token-based patient flow management
+✓ Enhanced surgery table security (role-based RLS)
+✓ Pharmacy billing tables
 
 USER ROLES (7):
 ===============
@@ -1970,6 +2057,7 @@ FEATURES:
 ✓ Soft delete support for critical tables
 ✓ Comprehensive foreign key constraints
 ✓ Performance indexes on all key columns
+✓ Queue Management with real-time updates
 ✓ FULLY IDEMPOTENT - Safe to run multiple times
 
 EXECUTION ORDER (12 Steps):
@@ -1998,6 +2086,6 @@ IDEMPOTENCY FEATURES:
 - Seed Data: ON CONFLICT DO NOTHING
 
 ================================================================================
-                              END OF SCHEMA v2.4
+                              END OF SCHEMA v3.0
 ================================================================================
 */
