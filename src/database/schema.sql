@@ -74,58 +74,11 @@ AS $$
     SELECT role FROM public.user_roles WHERE user_id = _user_id LIMIT 1;
 $$;
 
--- Function to get patient ID for a user
-CREATE OR REPLACE FUNCTION public.get_patient_id_for_user(_user_id UUID)
-RETURNS UUID
-LANGUAGE SQL
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT id FROM public.patients WHERE user_id = _user_id LIMIT 1;
-$$;
+-- NOTE: The following helper functions depend on tables created in STEP 4
+-- (patients, doctors, appointments, medical_records, prescriptions, department_doctors).
+-- They are defined later in STEP 4B to avoid "relation does not exist" errors
+-- when running this schema on a fresh database.
 
--- Function to get doctor ID for a user
-CREATE OR REPLACE FUNCTION public.get_doctor_id_for_user(_user_id UUID)
-RETURNS UUID
-LANGUAGE SQL
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT id FROM public.doctors WHERE user_id = _user_id LIMIT 1;
-$$;
-
--- Function to check if doctor has relationship with patient
-CREATE OR REPLACE FUNCTION public.doctor_has_patient_relationship(_doctor_id UUID, _patient_id UUID)
-RETURNS BOOLEAN
-LANGUAGE SQL
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.appointments
-        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
-        UNION
-        SELECT 1 FROM public.medical_records
-        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
-        UNION
-        SELECT 1 FROM public.prescriptions
-        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
-    );
-$$;
-
--- Function to get doctor's departments
-CREATE OR REPLACE FUNCTION public.get_doctor_departments(_doctor_id UUID)
-RETURNS SETOF UUID
-LANGUAGE SQL
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT department_id FROM public.department_doctors WHERE doctor_id = _doctor_id;
-$$;
 
 -- Timestamp update function
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
@@ -1013,6 +966,64 @@ CREATE TABLE IF NOT EXISTS public.purchase_order_items (
     status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'partially_received', 'received', 'cancelled')),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
+
+-- ============================================================================
+-- STEP 4B: TABLE-DEPENDENT HELPER FUNCTIONS
+-- (Defined after tables so fresh setup doesn't fail on missing relations)
+-- ============================================================================
+
+-- Function to get patient ID for a user
+CREATE OR REPLACE FUNCTION public.get_patient_id_for_user(_user_id UUID)
+RETURNS UUID
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT id FROM public.patients WHERE user_id = _user_id LIMIT 1;
+$$;
+
+-- Function to get doctor ID for a user
+CREATE OR REPLACE FUNCTION public.get_doctor_id_for_user(_user_id UUID)
+RETURNS UUID
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT id FROM public.doctors WHERE user_id = _user_id LIMIT 1;
+$$;
+
+-- Function to check if doctor has relationship with patient
+CREATE OR REPLACE FUNCTION public.doctor_has_patient_relationship(_doctor_id UUID, _patient_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.appointments
+        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
+        UNION
+        SELECT 1 FROM public.medical_records
+        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
+        UNION
+        SELECT 1 FROM public.prescriptions
+        WHERE doctor_id = _doctor_id AND patient_id = _patient_id AND deleted_at IS NULL
+    );
+$$;
+
+-- Function to get doctor's departments
+CREATE OR REPLACE FUNCTION public.get_doctor_departments(_doctor_id UUID)
+RETURNS SETOF UUID
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT department_id FROM public.department_doctors WHERE doctor_id = _doctor_id;
+$$;
 
 -- ============================================================================
 -- STEP 5: ENABLE ROW LEVEL SECURITY ON ALL TABLES
