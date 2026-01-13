@@ -217,11 +217,25 @@ VITE_SUPABASE_PROJECT_ID=your-project-id
 
 ---
 
+## 📦 What's Included
+
+| Item | Format | Description |
+|------|--------|-------------|
+| 📁 **Source Code** | `/src` | Complete React + TypeScript codebase (no `node_modules`) |
+| 📚 **Documentation** | `/docs` | Full setup guides, user manual, API docs (Markdown) |
+| 🗄️ **Database Schema** | `docs/DATABASE_SCHEMA.sql` | Complete PostgreSQL schema (47+ tables) |
+| 🔌 **Supabase Guide** | `docs/SUPABASE_SETUP_GUIDE.md` | Step-by-step backend connection |
+| 📖 **User Guide** | `docs/USER_GUIDE.md` | End-user documentation |
+
+---
+
 ## 📖 Documentation
 
 | Document | Description |
 |----------|-------------|
 | [Complete Project Guide](./docs/COMPLETE_PROJECT_GUIDE.md) | All features & workflows |
+| [Supabase Setup Guide](./docs/SUPABASE_SETUP_GUIDE.md) | **How to connect Supabase** |
+| [Database Schema](./docs/DATABASE_SCHEMA.sql) | Complete SQL schema (47+ tables) |
 | [Setup Guide](./docs/SETUP_GUIDE.md) | Installation & configuration |
 | [User Guide](./docs/USER_GUIDE.md) | End-user documentation |
 | [Disaster Recovery](./docs/DISASTER_RECOVERY_PLAYBOOK.md) | Backup & recovery |
