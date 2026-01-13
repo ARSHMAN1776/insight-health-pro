@@ -39,6 +39,16 @@ END $$;
 -- STEP 3: HELPER FUNCTIONS (MUST BE CREATED BEFORE TABLES WITH RLS)
 -- ============================================================================
 
+-- IMPORTANT: user_roles must exist before any function references it.
+-- We create it here (again later sections will not re-create due to IF NOT EXISTS).
+CREATE TABLE IF NOT EXISTS public.user_roles (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    role public.app_role NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    UNIQUE (user_id, role)
+);
+
 -- Function to check if user has a specific role
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
 RETURNS BOOLEAN
@@ -150,13 +160,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 -- TABLE: user_roles
-CREATE TABLE IF NOT EXISTS public.user_roles (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL,
-    role public.app_role NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    UNIQUE (user_id, role)
-);
+-- NOTE: Created earlier in STEP 3 so helper functions (has_role/get_user_role) compile on fresh setup.
+-- (Kept there to avoid "relation does not exist" during initial schema execution.)
 
 -- TABLE: user_settings
 CREATE TABLE IF NOT EXISTS public.user_settings (
