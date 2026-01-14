@@ -179,8 +179,8 @@ const DataTable: React.FC<DataTableProps> = ({
       </CardHeader>
       
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow>
                 {columns.map((column) => (
@@ -205,18 +205,22 @@ const DataTable: React.FC<DataTableProps> = ({
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + (actionable ? 1 : 0)} className="text-center py-8">
-                    No data found
+                  <TableCell colSpan={columns.length + (actionable ? 1 : 0)} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <Search className="w-8 h-8 opacity-50" />
+                      <p className="font-medium">No records found</p>
+                      <p className="text-sm">Try adjusting your search or filters</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 paginatedData.map((row, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={row.id || index}>
                     {columns.map((column) => (
                       <TableCell key={column.key}>
                         {column.render 
                           ? column.render(row[column.key], row)
-                          : String(row[column.key] || '-')
+                          : (row[column.key] != null && row[column.key] !== '' ? String(row[column.key]) : '-')
                         }
                       </TableCell>
                     ))}

@@ -187,7 +187,6 @@ const BloodStockManagement: React.FC = () => {
           table: 'blood_stock',
         },
         (payload) => {
-          console.log('Stock change received:', payload);
           fetchStocks();
         }
       )
@@ -306,7 +305,6 @@ const BloodStockManagement: React.FC = () => {
         source: sanitizedSource,
       }
     );
-    console.log(formatAuditLog(auditEntry));
 
     try {
       // Get fresh stock data to prevent race conditions
@@ -380,11 +378,8 @@ const BloodStockManagement: React.FC = () => {
         });
 
       if (transactionError) {
-        console.error('[AUDIT WARNING] Transaction log failed:', transactionError);
+        // Transaction log failed - silent
       }
-
-      // Success audit log
-      console.log(`[AUDIT SUCCESS] Stock ${dialogMode}: ${sanitizedUnitsValue} units by ${userRole} (${user.id}). Balance: ${freshUnits} → ${freshBalanceResult.newBalance}`);
 
       toast({
         title: 'Success',

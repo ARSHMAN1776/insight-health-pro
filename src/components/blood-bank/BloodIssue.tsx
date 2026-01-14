@@ -354,7 +354,6 @@ const BloodIssue: React.FC = () => {
         patient_name: selectedPatient ? `${selectedPatient.first_name} ${selectedPatient.last_name}` : 'Unknown',
       }
     );
-    console.log(formatAuditLog(auditEntry));
 
     try {
       // Get current stock with fresh data
@@ -426,11 +425,8 @@ const BloodIssue: React.FC = () => {
         });
 
       if (transactionError) {
-        console.error('[AUDIT WARNING] Transaction log failed:', transactionError);
+        // Transaction log failed - silent
       }
-
-      // Success audit log
-      console.log(`[AUDIT SUCCESS] Blood issue completed: ${units} units of ${bloodGroups.find(bg => bg.group_id === formData.blood_group_id)?.group_name} to patient ${selectedPatient?.first_name} ${selectedPatient?.last_name} by ${userRole} (${user.id})`);
 
       toast({
         title: 'Blood Issued Successfully',
