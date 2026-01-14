@@ -64,7 +64,6 @@ const PatientDashboard: React.FC = () => {
         .eq('status', 'pending');
 
       if (countError || totalError) {
-        console.error('Error fetching queue info:', countError || totalError);
         return;
       }
 
@@ -92,7 +91,7 @@ const PatientDashboard: React.FC = () => {
         submittedAt: userRegistration.created_at,
       });
     } catch (error) {
-      console.error('Error fetching verification status:', error);
+      // Silent fail for verification status
     }
   };
 
@@ -100,26 +99,21 @@ const PatientDashboard: React.FC = () => {
     try {
       setLoading(true);
       
-      console.log('Fetching patient data for user:', user?.id, user?.email);
-      
       // First try to fetch patient data by user_id (new method)
       let patient = null;
       if (user?.id) {
         patient = await dataManager.getPatientByUserId(user.id);
-        console.log('Patient record found by user_id:', patient);
       }
       
       // Fallback to email lookup for existing patients without user_id
       if (!patient && user?.email) {
         patient = await dataManager.getPatientByEmail(user.email);
-        console.log('Patient record found by email:', patient);
       }
       
       setPatientData(patient);
       
       // If patient found, fetch their specific data
       if (patient) {
-        console.log('Fetching patient-specific data for patient ID:', patient.id);
         const [appointmentsData, recordsData, prescriptionsData, labTestsData] = await Promise.all([
           dataManager.getAppointmentsByPatient(patient.id),
           dataManager.getMedicalRecordsByPatient(patient.id),
@@ -127,19 +121,11 @@ const PatientDashboard: React.FC = () => {
           dataManager.getLabTestsByPatient(patient.id)
         ]);
         
-        console.log('Fetched data:', {
-          appointments: appointmentsData.length,
-          records: recordsData.length,
-          prescriptions: prescriptionsData.length,
-          labTests: labTestsData.length
-        });
-        
         setAppointments(appointmentsData);
         setMedicalRecords(recordsData);
         setPrescriptions(prescriptionsData);
         setLabTests(labTestsData);
       } else {
-        console.warn('No patient record found for user:', user?.id, user?.email);
         // Fetch verification queue status
         if (user?.id) {
           await fetchVerificationStatus(user.id);
@@ -151,7 +137,6 @@ const PatientDashboard: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
       toast({
         title: "Error",
         description: "Failed to load dashboard data",

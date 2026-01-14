@@ -56,8 +56,6 @@ const RecordUpdateForm: React.FC<RecordUpdateFormProps> = ({ onClose }) => {
 
   const onSubmit = async (data: RecordFormData) => {
     try {
-      console.log('Record update data:', data);
-      
       toast({
         title: 'Success',
         description: 'Record updated successfully',

@@ -102,7 +102,6 @@ const AppointmentScheduler: React.FC = () => {
         setDepartments(deptData || []);
         setDepartmentDoctorsMap(deptDoctorsData || []);
       } catch (error) {
-        console.error('Error loading data:', error);
         toast({
           title: 'Error',
           description: 'Failed to load data. Please try again.',
@@ -211,7 +210,6 @@ const AppointmentScheduler: React.FC = () => {
       setSelectedAppointment(null);
       setIsDialogOpen(false);
     } catch (error) {
-      console.error('Error saving appointment:', error);
       toast({
         title: 'Error',
         description: 'Failed to save appointment. Please try again.',
@@ -251,7 +249,6 @@ const AppointmentScheduler: React.FC = () => {
         description: `Appointment marked as ${newStatus}`,
       });
     } catch (error) {
-      console.error('Error updating appointment:', error);
       toast({
         title: 'Error',
         description: 'Failed to update appointment status.',
@@ -274,7 +271,6 @@ const AppointmentScheduler: React.FC = () => {
         throw new Error('Delete failed');
       }
     } catch (error) {
-      console.error('Error deleting appointment:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete appointment.',
@@ -312,7 +308,6 @@ const AppointmentScheduler: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error checking in patient:', error);
       toast({
         title: 'Error',
         description: 'Failed to check in patient.',

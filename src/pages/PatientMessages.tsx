@@ -63,7 +63,6 @@ const PatientMessages: React.FC = () => {
             filter: `doctor_id=eq.${doctorId}`
           },
           (payload) => {
-            console.log('Message update received:', payload);
             fetchPatientConversations();
             if (selectedPatient) {
               fetchMessages();

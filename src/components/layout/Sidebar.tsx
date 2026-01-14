@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity,
   Calendar,
@@ -199,7 +199,13 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   // Fetch unread message count for doctors
   useEffect(() => {
@@ -253,7 +259,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
         }
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // Silent fail for unread count
     }
   };
 
@@ -356,7 +362,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={logout}
+          onClick={handleLogout}
           className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
         >
           <LogOut className="w-4 h-4 mr-2" />

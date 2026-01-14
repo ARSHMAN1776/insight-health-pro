@@ -163,7 +163,7 @@ const DoctorDashboard: React.FC = () => {
         pendingPostOps: pending
       });
     } catch (error) {
-      console.error('Error loading surgery stats:', error);
+      // Silent fail for surgery stats
     }
   };
 

@@ -140,7 +140,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Only set timeout if user is logged in
     if (session) {
       timeoutRef.current = setTimeout(async () => {
-        console.log('Session timeout due to inactivity');
         await supabase.auth.signOut();
         setUser(null);
         setSession(null);
@@ -214,7 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
       setUser(mappedUser);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      // Silent fail - user profile fetch failed
     }
   };
 
@@ -349,7 +348,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setSession(null);
     } catch (error) {
-      console.error('Logout error:', error);
+      // Silent fail - logout attempt failed
     }
   };
 
