@@ -16,6 +16,7 @@
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ============================================================================
 -- STEP 2: CUSTOM TYPES / ENUMS
