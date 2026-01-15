@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -16,7 +16,10 @@ import {
   FileText,
   Loader2,
   History,
-  X
+  X,
+  Upload,
+  Image as ImageIcon,
+  Trash2
 } from 'lucide-react';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +50,7 @@ interface LabTest {
   normal_range: string | null;
   notes: string | null;
   created_at: string | null;
+  report_image_url?: string | null;
   patients?: {
     first_name: string;
     last_name: string;
@@ -70,6 +74,10 @@ const LabTechnicianDashboard: React.FC = () => {
   const [selectedTest, setSelectedTest] = useState<LabTest | null>(null);
   const [patientHistory, setPatientHistory] = useState<LabTest[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [reportImageFile, setReportImageFile] = useState<File | null>(null);
+  const [reportImagePreview, setReportImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [resultForm, setResultForm] = useState({
     results: '',
     normalRange: '',
@@ -97,6 +105,7 @@ const LabTechnicianDashboard: React.FC = () => {
           normal_range,
           notes,
           created_at,
+          report_image_url,
           patients (
             first_name,
             last_name
@@ -170,7 +179,88 @@ const LabTechnicianDashboard: React.FC = () => {
       normalRange: test.normal_range || '',
       notes: test.notes || ''
     });
+    setReportImageFile(null);
+    setReportImagePreview(test.report_image_url || null);
     setResultDialogOpen(true);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: 'Invalid File Type',
+          description: 'Please upload an image (JPEG, PNG, GIF) or PDF file.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Please upload a file smaller than 10MB.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      setReportImageFile(file);
+      
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setReportImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setReportImagePreview(null);
+      }
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setReportImageFile(null);
+    setReportImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadReportImage = async (): Promise<string | null> => {
+    if (!reportImageFile || !selectedTest) return null;
+    
+    setUploadingImage(true);
+    try {
+      const fileExt = reportImageFile.name.split('.').pop();
+      const fileName = `${selectedTest.id}-${Date.now()}.${fileExt}`;
+      const filePath = `reports/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('lab-reports')
+        .upload(filePath, reportImageFile);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('lab-reports')
+        .getPublicUrl(filePath);
+      
+      return publicUrl;
+    } catch (error: any) {
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload report image.',
+        variant: 'destructive'
+      });
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const submitResults = async () => {
@@ -188,6 +278,15 @@ const LabTechnicianDashboard: React.FC = () => {
     try {
       setUpdating(selectedTest.id);
       
+      // Upload report image if selected
+      let reportImageUrl = selectedTest.report_image_url || null;
+      if (reportImageFile) {
+        const uploadedUrl = await uploadReportImage();
+        if (uploadedUrl) {
+          reportImageUrl = uploadedUrl;
+        }
+      }
+      
       const { error } = await supabase
         .from('lab_tests')
         .update({
@@ -195,12 +294,12 @@ const LabTechnicianDashboard: React.FC = () => {
           results: resultForm.results.trim(),
           normal_range: resultForm.normalRange.trim() || null,
           notes: resultForm.notes.trim() || null,
+          report_image_url: reportImageUrl,
           lab_technician: `${user?.firstName} ${user?.lastName}`
         })
         .eq('id', selectedTest.id);
 
       if (error) {
-        console.error('Results submission error:', error);
         if (error.code === '42501' || error.message?.includes('policy')) {
           throw new Error('Permission denied. Your lab technician role may not have permission to update results. Please contact an administrator.');
         }
@@ -209,13 +308,16 @@ const LabTechnicianDashboard: React.FC = () => {
 
       toast({
         title: 'Results Submitted',
-        description: 'Test results have been recorded successfully',
+        description: reportImageUrl 
+          ? 'Test results and report image have been recorded successfully' 
+          : 'Test results have been recorded successfully',
       });
 
       setResultDialogOpen(false);
+      setReportImageFile(null);
+      setReportImagePreview(null);
       loadLabTests();
     } catch (error: any) {
-      console.error('Lab results submission failed:', error);
       toast({
         title: 'Submission Failed',
         description: error?.message || 'Failed to submit results. Please try again or contact support.',
@@ -675,6 +777,67 @@ const LabTechnicianDashboard: React.FC = () => {
                     onChange={(e) => setResultForm(prev => ({ ...prev, notes: e.target.value }))}
                     className="min-h-[60px] mt-1"
                   />
+                </div>
+                
+                {/* Report Image Upload */}
+                <div>
+                  <Label>Report Image/Document</Label>
+                  <div className="mt-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    
+                    {reportImagePreview ? (
+                      <div className="relative border rounded-lg p-2 bg-muted/30">
+                        <div className="flex items-center gap-3">
+                          {reportImagePreview.startsWith('data:image') || reportImagePreview.startsWith('http') ? (
+                            <img 
+                              src={reportImagePreview} 
+                              alt="Report preview" 
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-primary/10 rounded flex items-center justify-center">
+                              <FileText className="w-8 h-8 text-primary" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              {reportImageFile?.name || 'Existing report'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {reportImageFile ? `${(reportImageFile.size / 1024).toFixed(1)} KB` : 'Uploaded'}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={removeSelectedFile}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-20 border-dashed"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <Upload className="w-5 h-5 text-muted-foreground" />
+                          <span className="text-sm">Upload Report Image or PDF</span>
+                        </div>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

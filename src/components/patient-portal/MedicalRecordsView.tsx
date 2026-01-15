@@ -270,6 +270,21 @@ const MedicalRecordsView: React.FC<MedicalRecordsViewProps> = ({
                         <p className="text-xs sm:text-sm font-medium text-foreground">{test.results}</p>
                       </div>
                     )}
+                    
+                    {/* Report Image/Document */}
+                    {(test as any).report_image_url && (
+                      <div className="mt-2">
+                        <a 
+                          href={(test as any).report_image_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
+                        >
+                          <FileText className="w-4 h-4" />
+                          View Full Report
+                        </a>
+                      </div>
+                    )}
                   </div>
                 );
               })}
