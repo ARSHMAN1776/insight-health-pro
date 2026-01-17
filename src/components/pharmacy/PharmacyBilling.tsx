@@ -96,7 +96,8 @@ const PharmacyBilling: React.FC = () => {
       if (error) throw error;
       setSearchResults(data || []);
     } catch (error) {
-      console.error('Error searching medicines:', error);
+      // Silently handle search errors - user will see empty results
+      setSearchResults([]);
       toast.error('Failed to search medicines');
     } finally {
       setIsSearching(false);
@@ -291,7 +292,8 @@ const PharmacyBilling: React.FC = () => {
           .eq('id', item.inventory_id);
 
         if (stockError) {
-          console.error('Error updating stock:', stockError);
+          // Log stock update failure but don't expose to console in production
+          toast.error(`Warning: Stock update failed for ${item.item_name}`);
         }
       }
 
@@ -305,8 +307,8 @@ const PharmacyBilling: React.FC = () => {
       toast.success('Bill completed successfully!');
 
     } catch (error) {
-      console.error('Error completing bill:', error);
-      toast.error('Failed to complete bill');
+      // Handle bill completion error without exposing details to console
+      toast.error('Failed to complete bill. Please try again.');
     } finally {
       setIsProcessing(false);
     }
