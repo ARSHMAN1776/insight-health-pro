@@ -28,7 +28,8 @@ import {
   GitPullRequest,
   FileCheck,
   ListPlus,
-  TicketCheck
+  TicketCheck,
+  CreditCard
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -181,6 +182,12 @@ const sidebarItems: SidebarItem[] = [
     label: 'PHI Audit Logs',
     icon: Shield,
     path: '/audit-logs',
+    roles: ['admin']
+  },
+  {
+    label: 'Payment Settings',
+    icon: CreditCard,
+    path: '/payment-settings',
     roles: ['admin']
   },
   {
