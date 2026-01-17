@@ -48,6 +48,7 @@ const Waitlist = React.lazy(() => import('./pages/Waitlist'));
 const Queue = React.lazy(() => import('./pages/Queue'));
 const WaitingRoomDisplay = React.lazy(() => import('./components/queue/WaitingRoomDisplay'));
 const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
+const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
 
 const queryClient = new QueryClient();
 
@@ -328,6 +329,13 @@ const App = () => (
                       <AuditLogs />
                     </Suspense>
                   </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/payment-settings" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                    <PaymentSettings />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
