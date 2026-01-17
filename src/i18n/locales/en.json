@@ -226,5 +226,25 @@
     "updateSuccess": "Updated successfully",
     "deleteConfirm": "Are you sure you want to delete this?",
     "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+  },
+  "ai": {
+    "diagnosisSuggestions": "Diagnosis Suggestions",
+    "analyzing": "Analyzing symptoms...",
+    "noSuggestions": "No suggestions available",
+    "confidence": "Confidence",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "recommendedTests": "Recommended Tests",
+    "redFlags": "Red Flags",
+    "disclaimer": "This is AI-generated clinical decision support. All diagnoses must be verified by a qualified healthcare professional.",
+    "getAiSuggestions": "Get AI Suggestions"
+  },
+  "offline": {
+    "youAreOffline": "You are offline",
+    "changesWillSync": "Changes will sync when you're back online",
+    "syncPending": "Sync pending",
+    "syncComplete": "Sync complete",
+    "syncFailed": "Sync failed"
   }
 }
