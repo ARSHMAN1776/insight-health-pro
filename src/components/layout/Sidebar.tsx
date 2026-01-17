@@ -178,6 +178,12 @@ const sidebarItems: SidebarItem[] = [
     roles: ['admin']
   },
   {
+    label: 'PHI Audit Logs',
+    icon: Shield,
+    path: '/audit-logs',
+    roles: ['admin']
+  },
+  {
     label: 'Patient Messages',
     icon: MessageCircle,
     path: '/patient-messages',

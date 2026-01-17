@@ -102,7 +102,7 @@ const SurgeryScheduler: React.FC<SurgerySchedulerProps> = ({ onSurgeryScheduled 
     }
   };
 
-  const checkOTAvailability = async () => {
+  const checkOTAvailability = async (): Promise<{ available: boolean; error?: string }> => {
     try {
       const { data, error } = await supabase
         .from('surgeries')
@@ -112,10 +112,13 @@ const SurgeryScheduler: React.FC<SurgerySchedulerProps> = ({ onSurgeryScheduled 
         .neq('status', 'cancelled')
         .or(`and(start_time.lte.${formData.end_time},end_time.gte.${formData.start_time})`);
 
-      if (error) throw error;
-      return (data || []).length === 0;
+      if (error) {
+        return { available: false, error: 'Failed to verify OT availability. Please try again.' };
+      }
+      return { available: (data || []).length === 0 };
     } catch (error) {
-      return true; // Proceed if check fails
+      // Fail safely - do not proceed if availability check fails
+      return { available: false, error: 'Unable to verify OT availability. Please contact support.' };
     }
   };
 
@@ -141,12 +144,12 @@ const SurgeryScheduler: React.FC<SurgerySchedulerProps> = ({ onSurgeryScheduled 
 
     setLoading(true);
     try {
-      // Check OT availability
-      const isAvailable = await checkOTAvailability();
-      if (!isAvailable) {
+      // Check OT availability with safe failure handling
+      const availabilityResult = await checkOTAvailability();
+      if (!availabilityResult.available) {
         toast({
-          title: 'Scheduling Conflict',
-          description: 'The selected OT is already booked during this time slot',
+          title: availabilityResult.error ? 'Availability Check Failed' : 'Scheduling Conflict',
+          description: availabilityResult.error || 'The selected OT is already booked during this time slot',
           variant: 'destructive'
         });
         setLoading(false);
