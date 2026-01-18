@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.ai-diagnosis]
 verify_jwt = false
+
+[functions.patient-symptom-checker]
+verify_jwt = false

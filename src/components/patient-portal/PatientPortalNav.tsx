@@ -1,16 +1,17 @@
 import React from 'react';
-import { LayoutDashboard, FileText, Calendar, LogOut, MessageCircle, Receipt, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, LogOut, MessageCircle, Receipt, Brain } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface PatientPortalNavProps {
-  activeTab: 'dashboard' | 'records' | 'appointments' | 'messages' | 'insurance';
-  onTabChange: (tab: 'dashboard' | 'records' | 'appointments' | 'messages' | 'insurance') => void;
+  activeTab: 'dashboard' | 'records' | 'appointments' | 'messages' | 'insurance' | 'symptom-check';
+  onTabChange: (tab: 'dashboard' | 'records' | 'appointments' | 'messages' | 'insurance' | 'symptom-check') => void;
   onLogout: () => void;
 }
 
 const PatientPortalNav: React.FC<PatientPortalNavProps> = ({ activeTab, onTabChange, onLogout }) => {
   const navItems = [
     { id: 'dashboard', label: 'Home', shortLabel: 'Home', icon: LayoutDashboard },
+    { id: 'symptom-check', label: 'AI Health', shortLabel: 'AI', icon: Brain },
     { id: 'appointments', label: 'Appointments', shortLabel: 'Appts', icon: Calendar },
     { id: 'records', label: 'Records', shortLabel: 'Records', icon: FileText },
     { id: 'messages', label: 'Messages', shortLabel: 'Chat', icon: MessageCircle },
