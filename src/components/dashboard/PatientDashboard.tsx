@@ -10,6 +10,7 @@ import AppointmentsView from '../patient-portal/AppointmentsView';
 import DoctorMessaging from '../patient-portal/DoctorMessaging';
 import InsuranceClaimsView from '../patient-portal/InsuranceClaimsView';
 import QueueStatusView from '../patient-portal/QueueStatusView';
+import PatientSymptomChecker from '../patient-portal/PatientSymptomChecker';
 import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -23,7 +24,7 @@ const PatientDashboard: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'records' | 'appointments' | 'messages' | 'insurance'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'records' | 'appointments' | 'messages' | 'insurance' | 'symptom-check'>('dashboard');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
@@ -586,6 +587,28 @@ const PatientDashboard: React.FC = () => {
         {activeTab === 'insurance' && patientData && (
           <div className="animate-fade-in">
             <InsuranceClaimsView patientId={patientData.id} />
+          </div>
+        )}
+
+        {activeTab === 'symptom-check' && (
+          <div className="animate-fade-in">
+            <div className="mb-8">
+              <h2 className="text-4xl font-bold text-foreground mb-3">AI Symptom Checker</h2>
+              <p className="text-muted-foreground text-lg">
+                Get AI-powered health guidance and find the right doctor for your symptoms
+              </p>
+            </div>
+            <PatientSymptomChecker 
+              patientAge={patientData ? calculateAge(patientData.date_of_birth) : undefined}
+              patientGender={patientData?.gender}
+              onBookAppointment={(doctorId) => {
+                setActiveTab('appointments');
+                toast({
+                  title: "Ready to Book",
+                  description: "You can now book an appointment with your recommended doctor.",
+                });
+              }}
+            />
           </div>
         )}
       </main>
