@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { dataManager, MedicalRecord, Patient, Doctor } from '../../lib/dataManager';
-import { FileText, Plus, Search, Calendar, User, Stethoscope } from 'lucide-react';
+import { FileText, Plus, Search, Calendar, User, Stethoscope, Brain } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -18,6 +18,7 @@ import {
   logMedicalRecordDelete,
   getUserContextFromAuth 
 } from '../../lib/auditLogger';
+import AIDiagnosisSuggestions from '../ai/AIDiagnosisSuggestions';
 
 const MedicalRecords: React.FC = () => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
@@ -27,6 +28,8 @@ const MedicalRecords: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
+  const [showAIDiagnosis, setShowAIDiagnosis] = useState(false);
+  const [selectedPatientForAI, setSelectedPatientForAI] = useState<{ id: string; symptoms: string } | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -385,7 +388,24 @@ const MedicalRecords: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Symptoms</Label>
+              <div className="flex items-center justify-between">
+                <Label>Symptoms</Label>
+                {formData.symptoms && formData.patient_id && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedPatientForAI({ id: formData.patient_id, symptoms: formData.symptoms });
+                      setShowAIDiagnosis(true);
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <Brain className="h-3 w-3" />
+                    AI Diagnosis
+                  </Button>
+                )}
+              </div>
               <Textarea
                 value={formData.symptoms}
                 onChange={(e) => setFormData({...formData, symptoms: e.target.value})}
@@ -443,6 +463,30 @@ const MedicalRecords: React.FC = () => {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Diagnosis Dialog */}
+      <Dialog open={showAIDiagnosis} onOpenChange={setShowAIDiagnosis}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              AI-Powered Diagnosis Suggestions
+            </DialogTitle>
+          </DialogHeader>
+          {selectedPatientForAI && (
+            <AIDiagnosisSuggestions
+              symptoms={selectedPatientForAI.symptoms}
+              onDiagnosisSelect={(diagnosis, icdCode) => {
+                setFormData(prev => ({
+                  ...prev,
+                  diagnosis: icdCode ? `${diagnosis} (${icdCode})` : diagnosis
+                }));
+                setShowAIDiagnosis(false);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

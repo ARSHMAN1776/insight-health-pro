@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./components/theme-provider";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
+import OfflineIndicator from "./components/shared/OfflineIndicator";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import MainLayout from "./components/layout/MainLayout";
@@ -77,6 +78,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <OfflineIndicator />
           <BrowserRouter>
           <Routes>
               {/* Public verification routes */}
