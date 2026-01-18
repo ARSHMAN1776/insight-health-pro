@@ -92,7 +92,8 @@ const PatientDashboard: React.FC = () => {
         submittedAt: userRegistration.created_at,
       });
     } catch (error) {
-      // Silent fail for verification status
+      console.error('Failed to fetch verification status:', error);
+      // Non-critical - don't show error toast, just log
     }
   };
 

@@ -24,6 +24,52 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication check - require valid JWT token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Missing or invalid authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify the JWT token using Supabase client
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.57.2");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Invalid token:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check user role - only doctors and admins can use AI diagnosis
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const allowedRoles = ["doctor", "admin"];
+    if (!userRole || !allowedRoles.includes(userRole.role)) {
+      console.error("Unauthorized role:", userRole?.role);
+      return new Response(
+        JSON.stringify({ error: "Only doctors and admins can use AI diagnosis" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`AI Diagnosis request from user ${user.id} (${userRole.role})`);
+
     const { symptoms, patientAge, patientGender, medicalHistory, vitalSigns }: DiagnosisRequest = await req.json();
     
     if (!symptoms || symptoms.trim().length === 0) {
