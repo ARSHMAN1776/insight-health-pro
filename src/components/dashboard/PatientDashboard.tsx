@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { dataManager, Appointment, MedicalRecord, Prescription, LabTest, Patient } from '../../lib/dataManager';
@@ -11,6 +11,7 @@ import DoctorMessaging from '../patient-portal/DoctorMessaging';
 import InsuranceClaimsView from '../patient-portal/InsuranceClaimsView';
 import QueueStatusView from '../patient-portal/QueueStatusView';
 import PatientSymptomChecker from '../patient-portal/PatientSymptomChecker';
+import { DashboardSkeleton } from '../shared/CardSkeleton';
 import { Bell, Clock, Calendar, Shield, FileText, Pill, LayoutDashboard, Phone, Mail, MapPin, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -513,7 +514,21 @@ const PatientDashboard: React.FC = () => {
     </div>
   );
 
-  // Don't block access if no patient record - just show basic info
+  // Show loading skeleton while fetching data
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PatientPortalNav 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          onLogout={handleLogout}
+        />
+        <main className="container-elegant py-12">
+          <DashboardSkeleton />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
