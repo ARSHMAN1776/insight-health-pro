@@ -46,6 +46,51 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication check - require valid JWT token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Missing or invalid authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required. Please log in." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify the JWT token
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Invalid token:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired session. Please log in again." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check user role - only patients can use symptom checker
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const allowedRoles = ["patient", "doctor", "admin", "nurse"];
+    if (!userRole || !allowedRoles.includes(userRole.role)) {
+      console.error("Unauthorized role:", userRole?.role);
+      return new Response(
+        JSON.stringify({ error: "Only patients can use the symptom checker" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Symptom check request from user ${user.id} (${userRole.role})`);
+
     const { symptoms, age, gender, medicalHistory, currentMedications }: SymptomCheckRequest = await req.json();
 
     // Validate required fields
