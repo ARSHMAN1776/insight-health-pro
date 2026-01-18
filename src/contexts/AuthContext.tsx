@@ -213,7 +213,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
       setUser(mappedUser);
     } catch (error) {
-      // Silent fail - user profile fetch failed
+      console.error('Failed to fetch user profile:', error);
+      // Continue with basic user info - profile fetch is not critical for auth
     }
   };
 
@@ -348,7 +349,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setSession(null);
     } catch (error) {
-      // Silent fail - logout attempt failed
+      console.error('Logout failed:', error);
+      // Force clear local state even if server logout fails
+      setUser(null);
+      setSession(null);
     }
   };
 

@@ -51,7 +51,20 @@ const WaitingRoomDisplay = React.lazy(() => import('./components/queue/WaitingRo
 const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes - clinical data doesn't change frequently
+      gcTime: 1000 * 60 * 30, // 30 minutes cache (formerly cacheTime)
+      refetchOnWindowFocus: false, // Prevent aggressive refetching on tab switch
+      retry: 2, // Retry failed requests twice
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
