@@ -262,22 +262,14 @@ export const useQueue = (options: UseQueueOptions = {}) => {
 
       // Calculate position based on priority
       const priority = data.priority || 'normal';
-      let position: number;
-
-      // For emergency, get position at front; for priority, after emergencies; for normal, at end
-      const { data: positionData, error: posError } = await supabase.rpc('calculate_queue_position', {
-        _queue_id: queueId,
-        _priority: priority
+      
+      // Get position - the RPC function handles priority internally now
+      const { data: position, error: posError } = await supabase.rpc('calculate_queue_position', {
+        _queue_id: queueId
       });
       
       if (posError) {
-        // Fallback to simple position calculation if RPC doesn't support priority
-        const { data: fallbackPos } = await supabase.rpc('calculate_queue_position', {
-          _queue_id: queueId
-        });
-        position = fallbackPos || 1;
-      } else {
-        position = positionData || 1;
+        console.error('Error calculating position:', posError);
       }
 
       // Create entry

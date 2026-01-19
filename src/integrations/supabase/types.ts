@@ -2929,7 +2929,9 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_queue_position: { Args: { _queue_id: string }; Returns: number }
+      calculate_queue_position:
+        | { Args: { _queue_id: string }; Returns: number }
+        | { Args: { _priority?: string; _queue_id: string }; Returns: number }
       doctor_has_patient_relationship: {
         Args: { _doctor_id: string; _patient_id: string }
         Returns: boolean
