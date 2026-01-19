@@ -85,6 +85,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointment_waitlist_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointment_waitlist_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
@@ -155,6 +162,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
             referencedColumns: ["id"]
           },
           {
@@ -366,6 +380,13 @@ export type Database = {
             referencedRelation: "doctors"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "daily_queues_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       department_doctors: {
@@ -408,6 +429,13 @@ export type Database = {
             referencedRelation: "doctors"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "department_doctors_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       departments: {
@@ -444,6 +472,13 @@ export type Database = {
             columns: ["department_head"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departments_department_head_fkey"
+            columns: ["department_head"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -934,6 +969,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lab_tests_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lab_tests_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
@@ -1000,6 +1042,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_records_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
             referencedColumns: ["id"]
           },
           {
@@ -1183,6 +1232,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_messages_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
             referencedColumns: ["id"]
           },
           {
@@ -1830,6 +1886,13 @@ export type Database = {
             referencedRelation: "doctors"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "prescription_templates_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       prescriptions: {
@@ -1893,6 +1956,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
             referencedColumns: ["id"]
           },
           {
@@ -2256,10 +2326,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "referrals_receiving_doctor_id_fkey"
+            columns: ["receiving_doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "referrals_referring_doctor_id_fkey"
             columns: ["referring_doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referring_doctor_id_fkey"
+            columns: ["referring_doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -2689,6 +2773,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "surgeries_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "surgeries_ot_id_fkey"
             columns: ["ot_id"]
             isOneToOne: false
@@ -2789,7 +2880,53 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      doctors_directory: {
+        Row: {
+          availability_schedule: Json | null
+          consultation_fee: number | null
+          department: string | null
+          department_id: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          specialization: string | null
+          status: string | null
+          years_of_experience: number | null
+        }
+        Insert: {
+          availability_schedule?: Json | null
+          consultation_fee?: number | null
+          department?: string | null
+          department_id?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          specialization?: string | null
+          status?: string | null
+          years_of_experience?: number | null
+        }
+        Update: {
+          availability_schedule?: Json | null
+          consultation_fee?: number | null
+          department?: string | null
+          department_id?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          specialization?: string | null
+          status?: string | null
+          years_of_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_queue_position: { Args: { _queue_id: string }; Returns: number }

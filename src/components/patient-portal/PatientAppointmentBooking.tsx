@@ -114,9 +114,8 @@ const PatientAppointmentBooking: React.FC<PatientAppointmentBookingProps> = ({
             .eq('status', 'Active')
             .order('department_name'),
           supabase
-            .from('doctors')
+            .from('doctors_directory')
             .select('id, first_name, last_name, specialization, department_id, consultation_fee')
-            .eq('status', 'active')
             .order('last_name'),
           supabase
             .from('department_doctors')
