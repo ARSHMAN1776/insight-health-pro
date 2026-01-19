@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -79,6 +79,10 @@ export const useQueue = (options: UseQueueOptions = {}) => {
   const [queues, setQueues] = useState<DailyQueue[]>([]);
   const [entries, setEntries] = useState<QueueEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<QueueEntry | null>(null);
+  
+  // Use refs to avoid stale closures in real-time callbacks
+  const queuesRef = useRef<DailyQueue[]>([]);
+  queuesRef.current = queues;
 
   const fetchQueues = useCallback(async () => {
     try {
@@ -143,7 +147,7 @@ export const useQueue = (options: UseQueueOptions = {}) => {
     }
   }, []);
 
-  // Real-time subscription
+  // Real-time subscription with ref to avoid stale closure
   useEffect(() => {
     if (!realtime) return;
 
@@ -156,8 +160,14 @@ export const useQueue = (options: UseQueueOptions = {}) => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'queue_entries' },
           () => {
+            // Use ref to get current queue IDs
+            const currentQueueIds = queuesRef.current.map(q => q.id);
             fetchQueues();
-            fetchEntries(queues.map(q => q.id));
+            if (currentQueueIds.length > 0) {
+              fetchEntries(currentQueueIds);
+            } else {
+              fetchEntries();
+            }
           }
         )
         .on(
@@ -177,7 +187,7 @@ export const useQueue = (options: UseQueueOptions = {}) => {
         supabase.removeChannel(channel);
       }
     };
-  }, [realtime, fetchQueues, fetchEntries, queues]);
+  }, [realtime, fetchQueues, fetchEntries]);
 
   // Initial fetch
   useEffect(() => {
@@ -224,6 +234,22 @@ export const useQueue = (options: UseQueueOptions = {}) => {
     notes?: string;
   }): Promise<{ entry: QueueEntry; token: string } | null> => {
     try {
+      // Validate patient exists
+      if (!data.patientId) {
+        throw new Error('Patient ID is required');
+      }
+
+      // Check for existing active entry for this patient
+      const existingEntry = await getPatientActiveEntry(data.patientId);
+      if (existingEntry && ['waiting', 'called', 'in_consultation'].includes(existingEntry.status)) {
+        toast({
+          title: 'Already Checked In',
+          description: `Patient already has an active entry (Token: ${existingEntry.token_number})`,
+          variant: 'destructive'
+        });
+        return null;
+      }
+
       // Get or create queue
       const queueId = await getOrCreateQueue(data.doctorId, data.departmentId);
       if (!queueId) throw new Error('Failed to get queue');
@@ -234,11 +260,25 @@ export const useQueue = (options: UseQueueOptions = {}) => {
       });
       if (tokenError) throw tokenError;
 
-      // Calculate position
-      const { data: position, error: posError } = await supabase.rpc('calculate_queue_position', {
-        _queue_id: queueId
+      // Calculate position based on priority
+      const priority = data.priority || 'normal';
+      let position: number;
+
+      // For emergency, get position at front; for priority, after emergencies; for normal, at end
+      const { data: positionData, error: posError } = await supabase.rpc('calculate_queue_position', {
+        _queue_id: queueId,
+        _priority: priority
       });
-      if (posError) throw posError;
+      
+      if (posError) {
+        // Fallback to simple position calculation if RPC doesn't support priority
+        const { data: fallbackPos } = await supabase.rpc('calculate_queue_position', {
+          _queue_id: queueId
+        });
+        position = fallbackPos || 1;
+      } else {
+        position = positionData || 1;
+      }
 
       // Create entry
       const { data: entry, error } = await supabase
@@ -249,7 +289,7 @@ export const useQueue = (options: UseQueueOptions = {}) => {
           appointment_id: data.appointmentId || null,
           token_number: token,
           entry_type: data.entryType,
-          priority: data.priority || 'normal',
+          priority: priority,
           symptoms: data.symptoms || null,
           notes: data.notes || null,
           position_in_queue: position
@@ -273,7 +313,7 @@ export const useQueue = (options: UseQueueOptions = {}) => {
       console.error('Error checking in patient:', error);
       toast({
         title: 'Error',
-        description: 'Failed to check in patient',
+        description: error instanceof Error ? error.message : 'Failed to check in patient',
         variant: 'destructive'
       });
       return null;
@@ -283,12 +323,17 @@ export const useQueue = (options: UseQueueOptions = {}) => {
   // Call next patient
   const callNextPatient = async (queueId: string): Promise<QueueEntry | null> => {
     try {
-      // Find next waiting patient
+      if (!queueId) {
+        throw new Error('Queue ID is required');
+      }
+
+      // Find next waiting patient, prioritizing by priority level then position
       const { data: nextPatient, error: findError } = await supabase
         .from('queue_entries')
         .select('*')
         .eq('queue_id', queueId)
         .eq('status', 'waiting')
+        .order('priority', { ascending: false }) // emergency > priority > normal
         .order('position_in_queue', { ascending: true })
         .limit(1)
         .single();
@@ -337,6 +382,10 @@ export const useQueue = (options: UseQueueOptions = {}) => {
   // Start consultation
   const startConsultation = async (entryId: string): Promise<boolean> => {
     try {
+      if (!entryId) {
+        throw new Error('Entry ID is required');
+      }
+
       const { error } = await supabase
         .from('queue_entries')
         .update({
@@ -367,6 +416,10 @@ export const useQueue = (options: UseQueueOptions = {}) => {
   // Complete consultation
   const completeConsultation = async (entryId: string): Promise<boolean> => {
     try {
+      if (!entryId) {
+        throw new Error('Entry ID is required');
+      }
+
       const { error } = await supabase
         .from('queue_entries')
         .update({
@@ -397,6 +450,10 @@ export const useQueue = (options: UseQueueOptions = {}) => {
   // Mark patient as no-show
   const markNoShow = async (entryId: string): Promise<boolean> => {
     try {
+      if (!entryId) {
+        throw new Error('Entry ID is required');
+      }
+
       const { error } = await supabase
         .from('queue_entries')
         .update({ status: 'no_show' })
@@ -424,6 +481,10 @@ export const useQueue = (options: UseQueueOptions = {}) => {
   // Cancel entry
   const cancelEntry = async (entryId: string): Promise<boolean> => {
     try {
+      if (!entryId) {
+        throw new Error('Entry ID is required');
+      }
+
       const { error } = await supabase
         .from('queue_entries')
         .update({ status: 'cancelled' })
@@ -451,6 +512,8 @@ export const useQueue = (options: UseQueueOptions = {}) => {
   // Get patient's active queue entry today
   const getPatientActiveEntry = async (patientId: string): Promise<QueueEntry | null> => {
     try {
+      if (!patientId) return null;
+
       const { data, error } = await supabase
         .from('queue_entries')
         .select(`
@@ -484,6 +547,10 @@ export const useQueue = (options: UseQueueOptions = {}) => {
     notes?: string;
   }): Promise<{ entry: QueueEntry; token: string } | null> => {
     try {
+      if (!data.entryId || !data.newDoctorId) {
+        throw new Error('Entry ID and new doctor ID are required');
+      }
+
       // Get original entry
       const { data: originalEntry, error: fetchError } = await supabase
         .from('queue_entries')
@@ -568,8 +635,11 @@ export const useQueue = (options: UseQueueOptions = {}) => {
     transferPatient,
     refetch: () => {
       fetchQueues();
-      if (queues.length > 0) {
-        fetchEntries(queues.map(q => q.id));
+      const currentQueueIds = queuesRef.current.map(q => q.id);
+      if (currentQueueIds.length > 0) {
+        fetchEntries(currentQueueIds);
+      } else {
+        fetchEntries();
       }
     }
   };
