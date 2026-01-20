@@ -40,13 +40,17 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[85vh] flex items-center overflow-hidden">
       {/* Parallax Background Image */}
-      <ParallaxSection className="absolute inset-0" speed={0.3}>
-        <img 
-          src="https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&h=1080&fit=crop&q=90" 
-          alt="Bright modern hospital with glass facade"
-          className="w-full h-[120%] object-cover"
+      <ParallaxSection className="absolute inset-0 w-full h-full" speed={0.3}>
+        <div 
+          className="w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&h=1080&fit=crop&q=90')",
+            minHeight: '100%'
+          }}
+          role="img"
+          aria-label="Bright modern hospital with glass facade"
         />
       </ParallaxSection>
       
