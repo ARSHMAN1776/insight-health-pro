@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TextReveal, MagneticButton, ParallaxSection } from '@/components/animations';
-
+import heroHospital from '@/assets/hero-hospital.jpg';
 const HeroSection = () => {
   const navigate = useNavigate();
 
@@ -41,16 +41,13 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-background">
-      {/* Background Image - Right Side */}
+      {/* Background Image - Full Cover */}
       <div className="absolute inset-0">
         <ParallaxSection className="absolute inset-0 w-full h-full" speed={0.3}>
-          <div 
-            className="w-full h-full bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: "url('https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&h=1080&fit=crop&q=90')",
-            }}
-            role="img"
-            aria-label="Modern hospital building"
+          <img 
+            src={heroHospital}
+            alt="Modern hospital building"
+            className="w-full h-full object-cover"
           />
         </ParallaxSection>
         
