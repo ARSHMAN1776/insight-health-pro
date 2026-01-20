@@ -12,6 +12,7 @@ import TestimonialsSection from '@/components/landing/TestimonialsSection';
 import CTASection from '@/components/landing/CTASection';
 import Footer from '@/components/landing/Footer';
 import BackToTop from '@/components/shared/BackToTop';
+import AIChatbot from '@/components/chatbot/AIChatbot';
 
 const Index = () => {
   return (
@@ -29,6 +30,7 @@ const Index = () => {
       <CTASection />
       <Footer />
       <BackToTop />
+      <AIChatbot />
     </div>
   );
 };
