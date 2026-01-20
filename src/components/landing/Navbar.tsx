@@ -13,7 +13,13 @@ import {
   Calendar,
   Users,
   FileText,
-  Shield
+  Shield,
+  Activity,
+  Bed,
+  CreditCard,
+  Bell,
+  BarChart3,
+  ClipboardList
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,6 +29,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '@/components/ui/navigation-menu';
+import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -32,7 +47,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -73,11 +88,15 @@ const Navbar = () => {
     },
   ];
 
-  const modules = [
-    { name: 'Patient Management', icon: Users },
-    { name: 'Appointment Scheduling', icon: Calendar },
-    { name: 'Medical Records', icon: FileText },
-    { name: 'Security & Compliance', icon: Shield },
+  const features = [
+    { name: 'Patient Management', icon: Users, description: 'Complete patient registry and records' },
+    { name: 'Appointment Scheduling', icon: Calendar, description: 'Smart scheduling with queue management' },
+    { name: 'Medical Records', icon: FileText, description: 'Electronic health records (EHR)' },
+    { name: 'Billing & Payments', icon: CreditCard, description: 'Integrated billing and invoicing' },
+    { name: 'Lab & Diagnostics', icon: Activity, description: 'Lab test ordering and results' },
+    { name: 'Bed Management', icon: Bed, description: 'Room and bed allocation system' },
+    { name: 'Notifications', icon: Bell, description: 'Real-time alerts and reminders' },
+    { name: 'Reports & Analytics', icon: BarChart3, description: 'Comprehensive reporting dashboard' },
   ];
 
   const isActive = (path: string) => {
@@ -103,91 +122,174 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`sticky top-0 z-50 transition-all duration-500 ${
+    <nav className={cn(
+      "sticky top-0 z-50 transition-all duration-500 border-b",
       isScrolled 
-        ? 'backdrop-blur-xl bg-background/90 shadow-lg' 
-        : 'bg-transparent'
-    }`}>
-      {/* Animated border line */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary to-transparent animate-[shimmer_3s_ease-in-out_infinite]" 
-          style={{
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 3s ease-in-out infinite',
-          }}
-        />
-      </div>
-
+        ? 'bg-background/95 backdrop-blur-xl shadow-lg border-border/50' 
+        : 'bg-background/80 backdrop-blur-sm border-transparent'
+    )}>
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
+        <div className="flex items-center justify-between h-16 lg:h-20">
+          {/* Logo Section */}
           <div 
-            className="flex items-center space-x-3 cursor-pointer group" 
+            className="flex items-center gap-3 cursor-pointer group flex-shrink-0" 
             onClick={() => navigate('/')}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-primary rounded-xl blur-md opacity-50 group-hover:opacity-70 transition-opacity" />
-              <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                <Heart className="w-7 h-7 text-primary-foreground" />
+              <div className="absolute inset-0 bg-primary rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+              <div className="relative w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <Heart className="w-5 h-5 lg:w-6 lg:h-6 text-primary-foreground" />
               </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">HealthCare HMS</h1>
-              <p className="text-xs text-muted-foreground">Hospital Management System</p>
+            <div className="hidden sm:block">
+              <h1 className="text-lg lg:text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+                HealthCare HMS
+              </h1>
+              <p className="text-[10px] lg:text-xs text-muted-foreground leading-tight">
+                Hospital Management System
+              </p>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-1">
-            {/* Solutions Dropdown */}
+          <div className="hidden xl:flex items-center">
+            <NavigationMenu>
+              <NavigationMenuList className="gap-0">
+                {/* Solutions Dropdown */}
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="h-10 px-4 text-sm font-medium text-foreground/80 hover:text-foreground bg-transparent hover:bg-muted/50 data-[state=open]:bg-muted/50">
+                    Solutions
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-[500px] p-4 bg-popover">
+                      <div className="grid grid-cols-2 gap-3">
+                        {solutions.map((solution) => {
+                          const Icon = solution.icon;
+                          return (
+                            <NavigationMenuLink
+                              key={solution.name}
+                              onClick={() => handleNavClick(solution.path)}
+                              className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/60 cursor-pointer transition-colors group"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                                <Icon className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm text-foreground">{solution.name}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{solution.description}</p>
+                              </div>
+                            </NavigationMenuLink>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                {/* Features Dropdown */}
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="h-10 px-4 text-sm font-medium text-foreground/80 hover:text-foreground bg-transparent hover:bg-muted/50 data-[state=open]:bg-muted/50">
+                    Features
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-[600px] p-4 bg-popover">
+                      <div className="grid grid-cols-2 gap-2">
+                        {features.map((feature) => {
+                          const Icon = feature.icon;
+                          return (
+                            <NavigationMenuLink
+                              key={feature.name}
+                              onClick={() => handleNavClick('/#features')}
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/60 cursor-pointer transition-colors group"
+                            >
+                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                                <Icon className="w-4 h-4 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm text-foreground">{feature.name}</p>
+                                <p className="text-xs text-muted-foreground">{feature.description}</p>
+                              </div>
+                            </NavigationMenuLink>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <button
+                          onClick={() => handleNavClick('/#features')}
+                          className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1"
+                        >
+                          View all features
+                          <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
+                        </button>
+                      </div>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                {/* Regular Nav Links */}
+                {navLinks.slice(1).map((link) => (
+                  <NavigationMenuItem key={link.path}>
+                    <button 
+                      onClick={() => handleNavClick(link.path)}
+                      className={cn(
+                        "h-10 px-4 text-sm font-medium transition-colors rounded-md",
+                        isActive(link.path)
+                          ? 'text-primary bg-primary/10'
+                          : 'text-foreground/80 hover:text-foreground hover:bg-muted/50'
+                      )}
+                    >
+                      {link.name}
+                    </button>
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+
+          {/* Desktop CTA Buttons */}
+          <div className="hidden xl:flex items-center gap-3">
+            <Button 
+              variant="ghost"
+              onClick={() => navigate('/contact')}
+              className="h-10 px-5 text-sm font-medium text-primary hover:text-primary hover:bg-primary/10 rounded-full"
+            >
+              Request Demo
+            </Button>
+            
+            <Button 
+              onClick={() => navigate('/login')}
+              className="h-10 px-6 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 hover:scale-105"
+            >
+              Login
+            </Button>
+          </div>
+
+          {/* Tablet Navigation (md to xl) */}
+          <div className="hidden lg:flex xl:hidden items-center gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 px-4 py-2.5 rounded-full font-medium text-foreground/70 hover:text-foreground hover:bg-muted/50 transition-all duration-300">
+                <button className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-muted/50 rounded-md transition-colors">
                   Solutions
                   <ChevronDown className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-80 p-2" align="start">
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider px-2">
-                  By Facility Type
-                </DropdownMenuLabel>
+              <DropdownMenuContent className="w-64 bg-popover" align="start">
                 {solutions.map((solution) => {
                   const Icon = solution.icon;
                   return (
                     <DropdownMenuItem 
                       key={solution.name}
                       onClick={() => handleNavClick(solution.path)}
-                      className="flex items-start gap-3 p-3 cursor-pointer rounded-lg"
+                      className="flex items-start gap-3 p-3 cursor-pointer"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-5 h-5 text-primary" />
-                      </div>
+                      <Icon className="w-5 h-5 text-primary mt-0.5" />
                       <div>
-                        <p className="font-medium">{solution.name}</p>
+                        <p className="font-medium text-sm">{solution.name}</p>
                         <p className="text-xs text-muted-foreground">{solution.description}</p>
                       </div>
                     </DropdownMenuItem>
                   );
                 })}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider px-2">
-                  Key Modules
-                </DropdownMenuLabel>
-                <div className="grid grid-cols-2 gap-1 p-1">
-                  {modules.map((module) => {
-                    const Icon = module.icon;
-                    return (
-                      <div 
-                        key={module.name}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => handleNavClick('/#features')}
-                      >
-                        <Icon className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">{module.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -195,57 +297,58 @@ const Navbar = () => {
               <button 
                 key={link.path}
                 onClick={() => handleNavClick(link.path)}
-                className={`relative px-4 py-2.5 rounded-full font-medium transition-all duration-300 ${
+                className={cn(
+                  "px-3 py-2 text-sm font-medium rounded-md transition-colors",
                   isActive(link.path)
                     ? 'text-primary bg-primary/10'
-                    : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'
-                }`}
+                    : 'text-foreground/80 hover:text-foreground hover:bg-muted/50'
+                )}
               >
                 {link.name}
-                {isActive(link.path) && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
-                )}
               </button>
             ))}
             
-            <div className="w-px h-8 bg-border/50 mx-2" />
+            <div className="w-px h-6 bg-border mx-1" />
             
             <Button 
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => navigate('/contact')}
-              className="rounded-full border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+              className="text-sm font-medium text-primary hover:text-primary hover:bg-primary/10"
             >
-              Request Demo
+              Demo
             </Button>
             
             <Button 
+              size="sm"
               onClick={() => navigate('/login')}
-              className="relative overflow-hidden bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary px-6 rounded-full shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 hover:scale-105"
+              className="text-sm font-medium bg-primary hover:bg-primary/90"
             >
-              <span className="relative z-10">Login</span>
+              Login
             </Button>
           </div>
 
           {/* Mobile Menu Button */}
           <button 
-            className="lg:hidden p-2 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+            className="lg:hidden p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-foreground" />
+              <X className="w-5 h-5 text-foreground" />
             ) : (
-              <Menu className="w-6 h-6 text-foreground" />
+              <Menu className="w-5 h-5 text-foreground" />
             )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden py-6 border-t border-border/30 animate-fade-in">
-            <div className="flex flex-col space-y-2">
+          <div className="lg:hidden py-4 border-t border-border/30 animate-fade-in">
+            <div className="flex flex-col gap-1">
               {/* Solutions Section */}
-              <div className="px-4 py-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Solutions</p>
+              <div className="px-2 py-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">Solutions</p>
                 <div className="grid grid-cols-2 gap-2">
                   {solutions.map((solution) => {
                     const Icon = solution.icon;
@@ -253,43 +356,48 @@ const Navbar = () => {
                       <button 
                         key={solution.name}
                         onClick={() => handleNavClick(solution.path)}
-                        className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 text-left"
+                        className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 text-left transition-colors"
                       >
-                        <Icon className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium">{solution.name}</span>
+                        <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-sm font-medium text-foreground">{solution.name}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="h-px bg-border/30 my-2" />
+              <div className="h-px bg-border/30 mx-2" />
 
-              {navLinks.map((link) => (
-                <button 
-                  key={link.path}
-                  onClick={() => handleNavClick(link.path)}
-                  className={`text-left px-4 py-3 rounded-xl font-medium transition-all ${
-                    isActive(link.path)
-                      ? 'text-primary bg-primary/10'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  {link.name}
-                </button>
-              ))}
+              {/* Navigation Links */}
+              <div className="py-2">
+                {navLinks.map((link) => (
+                  <button 
+                    key={link.path}
+                    onClick={() => handleNavClick(link.path)}
+                    className={cn(
+                      "w-full text-left px-4 py-3 rounded-xl font-medium transition-colors",
+                      isActive(link.path)
+                        ? 'text-primary bg-primary/10'
+                        : 'text-foreground/80 hover:text-foreground hover:bg-muted/50'
+                    )}
+                  >
+                    {link.name}
+                  </button>
+                ))}
+              </div>
               
-              <div className="pt-4 space-y-2 px-4">
+              {/* CTA Buttons */}
+              <div className="pt-4 space-y-2 px-2">
                 <Button 
                   variant="outline"
                   onClick={() => { navigate('/contact'); setIsMobileMenuOpen(false); }}
-                  className="w-full rounded-full border-primary/30 text-primary"
+                  className="w-full h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 font-medium"
                 >
                   Request Demo
                 </Button>
                 <Button 
                   onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 rounded-full"
+                  className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl font-medium"
                 >
                   Login
                 </Button>
@@ -298,13 +406,6 @@ const Navbar = () => {
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes shimmer {
-          0%, 100% { transform: translateX(-100%); }
-          50% { transform: translateX(100%); }
-        }
-      `}</style>
     </nav>
   );
 };
