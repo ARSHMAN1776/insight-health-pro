@@ -51,9 +51,9 @@ const HeroSection = () => {
           />
         </ParallaxSection>
         
-        {/* Gradient Overlay - Stronger on left, transparent on right */}
+        {/* Gradient Overlay - Light blur from left */}
         <motion.div 
-          className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent"
+          className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/40 to-transparent"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
