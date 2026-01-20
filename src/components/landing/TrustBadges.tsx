@@ -1,5 +1,7 @@
 import React from 'react';
 import { Shield, Award, Clock, HeartPulse, Lock, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ScrollReveal, TiltCard } from '@/components/animations';
 
 const badges = [
   {
@@ -50,49 +52,74 @@ const TrustBadges = () => {
   return (
     <section className="py-20 bg-gradient-to-b from-background via-muted/20 to-background overflow-hidden">
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="text-center mb-16">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+        <ScrollReveal animation="fade-up" className="text-center mb-16">
+          <motion.span 
+            className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4"
+            whileHover={{ scale: 1.05 }}
+          >
             Why Choose Us
-          </span>
+          </motion.span>
           <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-4">
             Trusted & <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Secure</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Your data security is our top priority. We maintain the highest industry standards.
           </p>
-        </div>
+        </ScrollReveal>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {badges.map((badge, index) => {
             const Icon = badge.icon;
             return (
-              <div 
-                key={index} 
-                className={`group relative flex flex-col items-center text-center p-8 rounded-3xl bg-card/50 backdrop-blur-sm border border-border/30 hover:border-primary/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${badge.shadowColor}`}
-                style={{ animationDelay: `${index * 0.1}s` }}
+              <ScrollReveal
+                key={index}
+                animation="fade-up"
+                delay={index * 0.08}
               >
-                {/* Gradient glow effect on hover */}
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${badge.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
-                
-                {/* Icon container with gradient border */}
-                <div className="relative mb-6">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${badge.gradient} rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-500`} />
-                  <div className={`relative w-16 h-16 bg-gradient-to-br ${badge.gradient} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
-                    <Icon className="w-8 h-8 text-white" strokeWidth={1.5} />
-                  </div>
-                </div>
+                <TiltCard tiltAmount={6}>
+                  <motion.div 
+                    className={`group relative flex flex-col items-center text-center p-8 rounded-3xl bg-card/50 backdrop-blur-sm border border-border/30 hover:border-primary/30 transition-all duration-500 ${badge.shadowColor}`}
+                    whileHover={{ y: -8 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    {/* Gradient glow effect on hover */}
+                    <motion.div 
+                      className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${badge.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
+                    />
+                    
+                    {/* Icon container with gradient border */}
+                    <div className="relative mb-6">
+                      <motion.div 
+                        className={`absolute inset-0 bg-gradient-to-br ${badge.gradient} rounded-2xl blur-lg opacity-40`}
+                        animate={{ opacity: [0.4, 0.6, 0.4] }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                      />
+                      <motion.div 
+                        className={`relative w-16 h-16 bg-gradient-to-br ${badge.gradient} rounded-2xl flex items-center justify-center`}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                      >
+                        <Icon className="w-8 h-8 text-white" strokeWidth={1.5} />
+                      </motion.div>
+                    </div>
 
-                {/* Content */}
-                <h3 className="font-bold text-foreground mb-3 text-lg group-hover:text-primary transition-colors duration-300">
-                  {badge.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {badge.description}
-                </p>
+                    {/* Content */}
+                    <h3 className="font-bold text-foreground mb-3 text-lg group-hover:text-primary transition-colors duration-300">
+                      {badge.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {badge.description}
+                    </p>
 
-                {/* Decorative corner accent */}
-                <div className={`absolute top-4 right-4 w-2 h-2 rounded-full bg-gradient-to-br ${badge.gradient} opacity-60`} />
-              </div>
+                    {/* Decorative corner accent */}
+                    <motion.div 
+                      className={`absolute top-4 right-4 w-2 h-2 rounded-full bg-gradient-to-br ${badge.gradient}`}
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                    />
+                  </motion.div>
+                </TiltCard>
+              </ScrollReveal>
             );
           })}
         </div>

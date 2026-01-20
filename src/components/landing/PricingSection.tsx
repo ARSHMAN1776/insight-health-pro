@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ScrollReveal, TiltCard, MagneticButton } from '@/components/animations';
 
 const plans = [
   {
@@ -70,99 +72,143 @@ const PricingSection: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="pricing" className="py-20 px-4 bg-gradient-to-b from-muted/30 to-background">
+    <section id="pricing" className="py-20 px-4 bg-gradient-to-b from-muted/30 to-background overflow-hidden">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+        <ScrollReveal animation="fade-up" className="text-center mb-16">
+          <motion.span 
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4"
+            whileHover={{ scale: 1.05 }}
+          >
             <Sparkles className="w-4 h-4" />
             Transparent Pricing
-          </span>
+          </motion.span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Plans That <span className="text-primary">Scale</span> With You
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Choose the perfect plan for your healthcare facility. All plans include a 14-day free trial.
           </p>
-        </div>
+        </ScrollReveal>
 
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => {
+          {plans.map((plan, index) => {
             const Icon = plan.icon;
             return (
-              <Card 
+              <ScrollReveal
                 key={plan.name}
-                className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
-                  plan.popular 
-                    ? 'border-primary shadow-lg scale-105 z-10' 
-                    : 'border-border/50 hover:border-primary/30'
-                }`}
+                animation="fade-up"
+                delay={index * 0.1}
               >
-                {plan.popular && (
-                  <div className="absolute top-0 right-0">
-                    <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground px-3 py-1">
-                      Most Popular
-                    </Badge>
-                  </div>
-                )}
-                
-                <CardHeader className="text-center pb-4">
-                  <div className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4 ${
-                    plan.popular ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
-                  }`}>
-                    <Icon className="w-7 h-7" />
-                  </div>
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
-                
-                <CardContent className="text-center">
-                  <div className="mb-6">
-                    <span className="text-5xl font-bold text-foreground">
-                      {plan.price === 'Custom' ? '' : '$'}{plan.price}
-                    </span>
-                    <span className="text-muted-foreground">{plan.period}</span>
-                  </div>
-                  
-                  <ul className="space-y-3 mb-8 text-left">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-3">
-                        <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    variant={plan.variant}
-                    className={`w-full rounded-full ${
+                <TiltCard tiltAmount={plan.popular ? 4 : 6}>
+                  <Card 
+                    className={`relative overflow-hidden transition-all duration-300 h-full ${
                       plan.popular 
-                        ? 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25' 
-                        : ''
+                        ? 'border-primary shadow-lg shadow-primary/20 z-10' 
+                        : 'border-border/50 hover:border-primary/30'
                     }`}
-                    onClick={() => navigate('/contact')}
                   >
-                    {plan.cta}
-                  </Button>
-                </CardContent>
-              </Card>
+                    {plan.popular && (
+                      <motion.div 
+                        className="absolute top-0 right-0"
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground px-3 py-1">
+                          Most Popular
+                        </Badge>
+                      </motion.div>
+                    )}
+                    
+                    {/* Breathing glow for popular plan */}
+                    {plan.popular && (
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none"
+                        animate={{ opacity: [0.3, 0.5, 0.3] }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                      />
+                    )}
+                    
+                    <CardHeader className="text-center pb-4 relative">
+                      <motion.div 
+                        className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4 ${
+                          plan.popular ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
+                        }`}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                      >
+                        <Icon className="w-7 h-7" />
+                      </motion.div>
+                      <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="text-center relative">
+                      <div className="mb-6">
+                        <motion.span 
+                          className="text-5xl font-bold text-foreground"
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.2 + index * 0.1, type: "spring" }}
+                        >
+                          {plan.price === 'Custom' ? '' : '$'}{plan.price}
+                        </motion.span>
+                        <span className="text-muted-foreground">{plan.period}</span>
+                      </div>
+                      
+                      <ul className="space-y-3 mb-8 text-left">
+                        {plan.features.map((feature, featureIndex) => (
+                          <motion.li 
+                            key={feature} 
+                            className="flex items-start gap-3"
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.3 + featureIndex * 0.05 }}
+                          >
+                            <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-muted-foreground">{feature}</span>
+                          </motion.li>
+                        ))}
+                      </ul>
+                      
+                      <MagneticButton strength={0.2}>
+                        <Button 
+                          variant={plan.variant}
+                          className={`w-full rounded-full ${
+                            plan.popular 
+                              ? 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25' 
+                              : ''
+                          }`}
+                          onClick={() => navigate('/contact')}
+                        >
+                          {plan.cta}
+                        </Button>
+                      </MagneticButton>
+                    </CardContent>
+                  </Card>
+                </TiltCard>
+              </ScrollReveal>
             );
           })}
         </div>
 
         {/* Bottom Note */}
-        <div className="mt-12 text-center">
+        <ScrollReveal animation="fade-up" delay={0.4} className="mt-12 text-center">
           <p className="text-muted-foreground text-sm">
             All prices in USD. Need a custom solution?{' '}
-            <span 
-              className="text-primary font-medium cursor-pointer hover:underline"
+            <motion.span 
+              className="text-primary font-medium cursor-pointer"
+              whileHover={{ scale: 1.05 }}
               onClick={() => navigate('/contact')}
             >
               Let's talk
-            </span>
+            </motion.span>
           </p>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );
