@@ -89,14 +89,14 @@ const Navbar = () => {
   ];
 
   const features = [
-    { name: 'Patient Management', icon: Users, description: 'Complete patient registry and records' },
-    { name: 'Appointment Scheduling', icon: Calendar, description: 'Smart scheduling with queue management' },
-    { name: 'Medical Records', icon: FileText, description: 'Electronic health records (EHR)' },
-    { name: 'Billing & Payments', icon: CreditCard, description: 'Integrated billing and invoicing' },
-    { name: 'Lab & Diagnostics', icon: Activity, description: 'Lab test ordering and results' },
-    { name: 'Bed Management', icon: Bed, description: 'Room and bed allocation system' },
-    { name: 'Notifications', icon: Bell, description: 'Real-time alerts and reminders' },
-    { name: 'Reports & Analytics', icon: BarChart3, description: 'Comprehensive reporting dashboard' },
+    { name: 'Patient Management', icon: Users, description: 'Complete patient registry and records', path: '/features/patient-management' },
+    { name: 'Appointment Scheduling', icon: Calendar, description: 'Smart scheduling with queue management', path: '/features/appointment-scheduling' },
+    { name: 'Medical Records', icon: FileText, description: 'Electronic health records (EHR)', path: '/features/medical-records' },
+    { name: 'Billing & Payments', icon: CreditCard, description: 'Integrated billing and invoicing', path: '/features/billing-payments' },
+    { name: 'Lab & Diagnostics', icon: Activity, description: 'Lab test ordering and results', path: '/features/lab-diagnostics' },
+    { name: 'Bed Management', icon: Bed, description: 'Room and bed allocation system', path: '/features/bed-management' },
+    { name: 'Notifications', icon: Bell, description: 'Real-time alerts and reminders', path: '/features/notifications' },
+    { name: 'Reports & Analytics', icon: BarChart3, description: 'Comprehensive reporting dashboard', path: '/features/reports-analytics' },
   ];
 
   const isActive = (path: string) => {
@@ -199,7 +199,7 @@ const Navbar = () => {
                           return (
                             <NavigationMenuLink
                               key={feature.name}
-                              onClick={() => handleNavClick('/#features')}
+                              onClick={() => handleNavClick(feature.path)}
                               className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/60 cursor-pointer transition-colors group"
                             >
                               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
