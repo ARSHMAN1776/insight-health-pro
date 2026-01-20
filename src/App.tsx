@@ -22,6 +22,17 @@ import VerifyPrescription from './pages/VerifyPrescription';
 import VerifyPatient from './pages/VerifyPatient';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+
+// Feature pages
+import PatientManagementFeature from './pages/features/PatientManagement';
+import AppointmentSchedulingFeature from './pages/features/AppointmentScheduling';
+import MedicalRecordsFeature from './pages/features/MedicalRecordsFeature';
+import BillingPayments from './pages/features/BillingPayments';
+import LabDiagnostics from './pages/features/LabDiagnostics';
+import BedManagementFeature from './pages/features/BedManagement';
+import NotificationsFeature from './pages/features/Notifications';
+import ReportsAnalytics from './pages/features/ReportsAnalytics';
+
 // Lazy load components
 const AppointmentScheduler = React.lazy(() => import('./components/appointments/AppointmentScheduler'));
 const MedicalRecords = React.lazy(() => import('./components/medical/MedicalRecords'));
@@ -106,6 +117,16 @@ const App = () => (
               <Route path="/about" element={<AboutUs />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />
+              
+              {/* Feature pages */}
+              <Route path="/features/patient-management" element={<PatientManagementFeature />} />
+              <Route path="/features/appointment-scheduling" element={<AppointmentSchedulingFeature />} />
+              <Route path="/features/medical-records" element={<MedicalRecordsFeature />} />
+              <Route path="/features/billing-payments" element={<BillingPayments />} />
+              <Route path="/features/lab-diagnostics" element={<LabDiagnostics />} />
+              <Route path="/features/bed-management" element={<BedManagementFeature />} />
+              <Route path="/features/notifications" element={<NotificationsFeature />} />
+              <Route path="/features/reports-analytics" element={<ReportsAnalytics />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <MainLayout>
