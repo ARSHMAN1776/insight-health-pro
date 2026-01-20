@@ -40,27 +40,28 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-[85vh] flex items-center overflow-hidden">
-      {/* Parallax Background Image */}
-      <ParallaxSection className="absolute inset-0 w-full h-full" speed={0.3}>
-        <div 
-          className="w-full h-full bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&h=1080&fit=crop&q=90')",
-            minHeight: '100%'
-          }}
-          role="img"
-          aria-label="Bright modern hospital with glass facade"
+    <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-background">
+      {/* Background Image - Right Side */}
+      <div className="absolute inset-0">
+        <ParallaxSection className="absolute inset-0 w-full h-full" speed={0.3}>
+          <div 
+            className="w-full h-full bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: "url('https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&h=1080&fit=crop&q=90')",
+            }}
+            role="img"
+            aria-label="Modern hospital building"
+          />
+        </ParallaxSection>
+        
+        {/* Gradient Overlay - Stronger on left, transparent on right */}
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
         />
-      </ParallaxSection>
-      
-      {/* Animated gradient overlay */}
-      <motion.div 
-        className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-      />
+      </div>
       
       {/* Floating particles effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -87,16 +88,17 @@ const HeroSection = () => {
         ))}
       </div>
       
-      <div className="w-full relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div 
-          className="max-w-2xl py-10 pl-4 sm:pl-8 lg:pl-16 pr-8"
+          className="max-w-2xl py-16"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <motion.div variants={itemVariants} className="inline-block mb-6">
+          {/* Trust Badge */}
+          <motion.div variants={itemVariants} className="mb-8">
             <motion.span 
-              className="inline-flex items-center space-x-2 bg-primary/20 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/30 backdrop-blur-sm"
+              className="inline-flex items-center gap-2 bg-primary/10 text-primary px-5 py-2.5 rounded-full text-sm font-medium border border-primary/20"
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 400 }}
             >
@@ -105,56 +107,57 @@ const HeroSection = () => {
             </motion.span>
           </motion.div>
           
+          {/* Main Heading */}
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl lg:text-6xl font-bold text-foreground leading-tight mb-6"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6"
           >
             <TextReveal text="Modern Healthcare" delay={0.3} />
-            <span className="block text-gradient mt-2">
-              <TextReveal text="Management System" delay={0.5} />
+            <span className="block text-primary mt-2">
+              <TextReveal text="Management" delay={0.5} />
+            </span>
+            <span className="block text-primary">
+              <TextReveal text="System" delay={0.7} />
             </span>
           </motion.h1>
           
+          {/* Description */}
           <motion.p 
             variants={itemVariants}
-            className="text-lg text-foreground/90 leading-relaxed mb-8 [text-shadow:_0_2px_8px_rgb(0_0_0_/_40%)]"
+            className="text-lg text-muted-foreground leading-relaxed mb-10 max-w-xl"
           >
-            <span className="font-medium">Streamline your healthcare operations</span> with our comprehensive hospital management solution. 
-            <span className="text-foreground font-medium"> Empowering healthcare providers and patients</span> with cutting-edge technology.
+            <span>Streamline your healthcare operations</span> with our comprehensive hospital management solution.
+            <span className="font-semibold text-foreground"> Empowering healthcare providers and patients</span> with cutting-edge technology.
           </motion.p>
 
           {/* Stats Grid */}
           <motion.div 
             variants={itemVariants}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-6"
           >
             {stats.map((stat, index) => (
               <motion.div 
                 key={index} 
-                className="text-center p-3 rounded-xl bg-background/50 backdrop-blur-sm border border-border/30"
-                whileHover={{ 
-                  scale: 1.05, 
-                  backgroundColor: 'hsl(var(--primary) / 0.1)',
-                  borderColor: 'hsl(var(--primary) / 0.3)'
-                }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                className="text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
               >
                 <motion.div 
-                  className="text-2xl font-bold text-primary"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
+                  className="text-2xl sm:text-3xl font-bold text-primary"
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 400 }}
                 >
                   {stat.value}
                 </motion.div>
-                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground mt-1">{stat.label}</div>
               </motion.div>
             ))}
           </motion.div>
         </motion.div>
       </div>
 
-      {/* HIPAA Badge */}
+      {/* HIPAA Badge - Bottom Right */}
       <motion.div 
         className="absolute bottom-8 right-8 hidden lg:block"
         initial={{ opacity: 0, x: 50 }}
@@ -162,18 +165,14 @@ const HeroSection = () => {
         transition={{ delay: 1, type: "spring", stiffness: 100 }}
       >
         <motion.div 
-          className="bg-card/80 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-border/50"
-          whileHover={{ scale: 1.05, y: -5 }}
+          className="bg-card/90 backdrop-blur-sm rounded-xl px-5 py-3 shadow-lg border border-border"
+          whileHover={{ scale: 1.05, y: -3 }}
           transition={{ type: "spring", stiffness: 400 }}
         >
           <div className="flex items-center gap-3">
-            <motion.div 
-              className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center"
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-primary" />
-            </motion.div>
+            </div>
             <div>
               <p className="font-semibold text-sm text-foreground">HIPAA Compliant</p>
               <p className="text-xs text-muted-foreground">100% Secure</p>
