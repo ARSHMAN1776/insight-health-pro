@@ -14,6 +14,8 @@ import {
   Users
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { ScrollReveal, TiltCard } from '@/components/animations';
 
 const departments = [
   { 
@@ -90,56 +92,100 @@ const departments = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100,
+      damping: 15
+    }
+  }
+};
+
 const DepartmentsSection: React.FC = () => {
   return (
     <section id="departments" className="py-20 px-4">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+        <ScrollReveal animation="fade-up" className="text-center mb-16">
+          <motion.span 
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4"
+            whileHover={{ scale: 1.05 }}
+          >
             <Stethoscope className="w-4 h-4" />
             Comprehensive Coverage
-          </span>
+          </motion.span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Manage All <span className="text-primary">Departments</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Our HMS provides specialized modules for every department, ensuring seamless operations across your entire healthcare facility.
           </p>
-        </div>
+        </ScrollReveal>
 
         {/* Departments Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <motion.div 
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
           {departments.map((dept, index) => {
             const Icon = dept.icon;
             return (
-              <Card 
-                key={dept.name}
-                className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer overflow-hidden"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <CardContent className="p-4 sm:p-6">
-                  <div className={`w-12 h-12 rounded-xl ${dept.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
-                    {dept.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {dept.description}
-                  </p>
-                </CardContent>
-              </Card>
+              <motion.div key={dept.name} variants={itemVariants}>
+                <TiltCard tiltAmount={5}>
+                  <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer overflow-hidden h-full">
+                    <CardContent className="p-4 sm:p-6">
+                      <motion.div 
+                        className={`w-12 h-12 rounded-xl ${dept.color} flex items-center justify-center mb-4`}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                      >
+                        <Icon className="w-6 h-6" />
+                      </motion.div>
+                      <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                        {dept.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {dept.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TiltCard>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Bottom CTA */}
-        <div className="mt-12 text-center">
+        <ScrollReveal animation="fade-up" delay={0.3} className="mt-12 text-center">
           <p className="text-muted-foreground">
-            Need a custom department? <span className="text-primary font-medium cursor-pointer hover:underline">Contact us</span> for tailored solutions.
+            Need a custom department?{' '}
+            <motion.span 
+              className="text-primary font-medium cursor-pointer"
+              whileHover={{ scale: 1.05 }}
+            >
+              Contact us
+            </motion.span>{' '}
+            for tailored solutions.
           </p>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );
