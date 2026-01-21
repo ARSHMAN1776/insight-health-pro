@@ -5,6 +5,7 @@ import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInventoryAlerts } from '../../hooks/useInventoryAlerts';
 import { SkipLink } from '../shared/SkipLink';
+import AIChatbot from '../chatbot/AIChatbot';
 
 const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -25,6 +26,7 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         <main id="main-content" className="flex-1 overflow-y-auto" role="main">
           {children || <Outlet />}
         </main>
+        <AIChatbot />
       </div>
     );
   }
@@ -47,6 +49,7 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
           {children || <Outlet />}
         </main>
       </div>
+      <AIChatbot />
     </div>
   );
 };
