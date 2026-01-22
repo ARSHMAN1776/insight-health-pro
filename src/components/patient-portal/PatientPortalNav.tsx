@@ -21,22 +21,19 @@ const PatientPortalNav: React.FC<PatientPortalNavProps> = ({ activeTab, onTabCha
   return (
     <>
       {/* Desktop Navigation - Full Width Header */}
-      <nav className="sticky top-0 z-50 bg-gradient-to-r from-primary/5 via-background to-primary/5 backdrop-blur-xl border-b border-border/40 shadow-sm">
+      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-18">
+          <div className="flex items-center justify-between h-16">
             {/* Logo Section */}
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25 ring-2 ring-primary/20">
-                  <Heart className="w-6 h-6 text-primary-foreground" fill="currentColor" />
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full border-2 border-background" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
+                <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="font-bold text-xl tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                  Patient Portal
-                </h1>
-                <p className="text-xs text-muted-foreground font-medium">HealthCare HMS</p>
+              <div className="hidden sm:flex flex-col">
+                <span className="text-base font-semibold text-foreground leading-tight">
+                  HealthCare <span className="text-primary">HMS</span>
+                </span>
+                <span className="text-[11px] text-muted-foreground">Patient Portal</span>
               </div>
             </div>
 
