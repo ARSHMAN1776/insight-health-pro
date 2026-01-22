@@ -94,13 +94,14 @@ async function getPatientPrescriptions(supabase: ReturnType<typeof createClient>
 async function getPatientLabTests(supabase: ReturnType<typeof createClient>, patientId: string): Promise<QueryResult> {
   const { data, error } = await supabase
     .from('lab_tests')
-    .select('id, test_name, status, result, test_date, created_at')
+    .select('id, test_name, status, results, test_date, normal_range, notes, created_at')
     .eq('patient_id', patientId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(5);
 
   if (error) return { success: false, error: error.message };
-  return { success: true, data };
+  return { success: true, data: data || [] };
 }
 
 async function getDoctorSchedule(supabase: ReturnType<typeof createClient>, doctorName: string): Promise<QueryResult> {
