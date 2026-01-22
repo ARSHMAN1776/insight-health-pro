@@ -1,145 +1,56 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Users, ArrowLeft, CheckCircle, UserPlus, FileText, Shield, Search, Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Navbar from '@/components/landing/Navbar';
-import Footer from '@/components/landing/Footer';
-import { ScrollReveal } from '@/components/animations';
+import { Users, UserPlus, FileText, Shield, Search, Bell } from 'lucide-react';
+import FeaturePageLayout from '@/components/features/FeaturePageLayout';
+import patientManagementImg from '@/assets/features/patient-management.jpg';
 
 const PatientManagement = () => {
-  const navigate = useNavigate();
-
   const features = [
-    { icon: UserPlus, title: 'Easy Registration', description: 'Quick patient onboarding with comprehensive data capture' },
-    { icon: FileText, title: 'Complete Records', description: 'Maintain detailed medical history and visit records' },
-    { icon: Shield, title: 'Data Security', description: 'HIPAA-compliant storage with role-based access' },
-    { icon: Search, title: 'Smart Search', description: 'Find patients instantly with advanced search filters' },
-    { icon: Bell, title: 'Automated Alerts', description: 'Reminders for follow-ups and appointments' },
-    { icon: Users, title: 'Family Linking', description: 'Link family members for comprehensive care' },
+    { icon: UserPlus, title: 'Easy Registration', description: 'Quick patient onboarding with comprehensive data capture and digital forms that reduce wait times by 70%.' },
+    { icon: FileText, title: 'Complete Records', description: 'Maintain detailed medical history, visit records, and treatment plans all in one centralized location.' },
+    { icon: Shield, title: 'Data Security', description: 'HIPAA-compliant storage with role-based access control, encryption, and complete audit trails.' },
+    { icon: Search, title: 'Smart Search', description: 'Find patients instantly with advanced search filters, fuzzy matching, and QR code scanning.' },
+    { icon: Bell, title: 'Automated Alerts', description: 'Smart reminders for follow-ups, medication refills, and upcoming appointments.' },
+    { icon: Users, title: 'Family Linking', description: 'Link family members for comprehensive care coordination and shared medical history.' },
   ];
 
+  const stats = [
+    { value: '70%', label: 'Faster Registration' },
+    { value: '99.9%', label: 'Data Accuracy' },
+    { value: '50K+', label: 'Patients Managed' },
+    { value: '24/7', label: 'Access Available' },
+  ];
+
+  const benefits = [
+    { text: 'Digital patient registration' },
+    { text: 'Complete medical history' },
+    { text: 'Family member linking' },
+    { text: 'Insurance verification' },
+    { text: 'Emergency contacts' },
+    { text: 'Allergy tracking' },
+  ];
+
+  const testimonial = {
+    quote: "The patient management system has transformed how we handle registrations. What used to take 15 minutes now takes less than 3. Our patients love the streamlined experience.",
+    author: "Dr. Sarah Mitchell",
+    role: "Chief Medical Officer",
+    hospital: "Metro General Hospital"
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        
-        <div className="container mx-auto px-4 relative z-10">
-          <ScrollReveal>
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
-              className="mb-8 text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </ScrollReveal>
-
-          <div className="max-w-4xl">
-            <ScrollReveal delay={0.1}>
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-                <Users className="w-4 h-4" />
-                <span>Core Feature</span>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={0.2}>
-              <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6">
-                Patient Management
-              </h1>
-            </ScrollReveal>
-
-            <ScrollReveal delay={0.3}>
-              <p className="text-xl text-muted-foreground leading-relaxed mb-8">
-                Comprehensive patient registry and records management system. Streamline patient data, 
-                medical history, and care coordination in one secure platform.
-              </p>
-            </ScrollReveal>
-
-            <ScrollReveal delay={0.4}>
-              <div className="flex flex-wrap gap-4">
-                <Button 
-                  onClick={() => navigate('/login')}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg rounded-full"
-                >
-                  Get Started
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate('/contact')}
-                  className="px-8 py-6 text-lg rounded-full"
-                >
-                  Request Demo
-                </Button>
-              </div>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <ScrollReveal>
-            <h2 className="text-3xl lg:text-4xl font-bold text-center mb-4">
-              Key Capabilities
-            </h2>
-            <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-              Everything you need to manage patients efficiently and provide exceptional care
-            </p>
-          </ScrollReveal>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <ScrollReveal key={feature.title} delay={index * 0.1}>
-                  <motion.div
-                    className="bg-card p-6 rounded-2xl border border-border hover:border-primary/30 transition-all duration-300"
-                    whileHover={{ y: -5, boxShadow: '0 20px 40px -20px rgba(0,0,0,0.1)' }}
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                      <Icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
-                  </motion.div>
-                </ScrollReveal>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <ScrollReveal>
-            <div className="bg-gradient-to-r from-primary to-primary/80 rounded-3xl p-12 text-center">
-              <h2 className="text-3xl lg:text-4xl font-bold text-primary-foreground mb-4">
-                Ready to Transform Patient Care?
-              </h2>
-              <p className="text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-                Join thousands of healthcare providers who trust our platform for patient management.
-              </p>
-              <Button 
-                onClick={() => navigate('/login')}
-                variant="secondary"
-                className="px-8 py-6 text-lg rounded-full"
-              >
-                Start Free Trial
-              </Button>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      <Footer />
-    </div>
+    <FeaturePageLayout
+      badge="Core Feature"
+      badgeIcon={Users}
+      title="Patient Management"
+      subtitle="Complete patient lifecycle management"
+      description="Comprehensive patient registry and records management system. Streamline patient data, medical history, and care coordination in one secure, HIPAA-compliant platform designed for modern healthcare."
+      heroImage={patientManagementImg}
+      features={features}
+      stats={stats}
+      benefits={benefits}
+      testimonial={testimonial}
+      ctaTitle="Ready to Transform Patient Care?"
+      ctaDescription="Join thousands of healthcare providers who trust our platform for seamless patient management. Start your free trial today."
+    />
   );
 };
 
