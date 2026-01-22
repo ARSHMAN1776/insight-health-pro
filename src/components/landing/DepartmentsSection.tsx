@@ -11,180 +11,194 @@ import {
   Microscope,
   Pill,
   Scissors,
-  Users
+  Users,
+  ArrowRight
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { ScrollReveal, TiltCard } from '@/components/animations';
+import { ScrollReveal } from '@/components/animations';
+import { useNavigate } from 'react-router-dom';
 
 const departments = [
   { 
     name: 'General Medicine', 
     icon: Stethoscope, 
-    description: 'Primary care and internal medicine',
-    color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+    description: 'Primary care & internal medicine',
+    gradient: 'from-blue-500 to-cyan-500',
+    patients: '2,400+',
   },
   { 
     name: 'Cardiology', 
     icon: Heart, 
-    description: 'Heart and cardiovascular care',
-    color: 'bg-red-500/10 text-red-600 dark:text-red-400'
+    description: 'Heart & cardiovascular care',
+    gradient: 'from-red-500 to-rose-500',
+    patients: '1,800+',
   },
   { 
     name: 'Neurology', 
     icon: Brain, 
-    description: 'Brain and nervous system',
-    color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+    description: 'Brain & nervous system',
+    gradient: 'from-purple-500 to-violet-500',
+    patients: '1,200+',
   },
   { 
     name: 'Orthopedics', 
     icon: Bone, 
-    description: 'Bones, joints, and muscles',
-    color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+    description: 'Bones, joints & muscles',
+    gradient: 'from-orange-500 to-amber-500',
+    patients: '1,600+',
   },
   { 
     name: 'Pediatrics', 
     icon: Baby, 
-    description: 'Child and adolescent health',
-    color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400'
+    description: 'Child & adolescent health',
+    gradient: 'from-pink-500 to-rose-400',
+    patients: '2,100+',
   },
   { 
     name: 'Ophthalmology', 
     icon: Eye, 
-    description: 'Eye care and vision',
-    color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+    description: 'Eye care & vision',
+    gradient: 'from-cyan-500 to-teal-500',
+    patients: '900+',
   },
   { 
     name: 'Emergency', 
     icon: Activity, 
     description: '24/7 emergency services',
-    color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+    gradient: 'from-rose-600 to-red-600',
+    patients: '5,000+',
   },
   { 
     name: 'Radiology', 
     icon: Microscope, 
-    description: 'Imaging and diagnostics',
-    color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+    description: 'Imaging & diagnostics',
+    gradient: 'from-indigo-500 to-purple-500',
+    patients: '3,200+',
   },
   { 
     name: 'Laboratory', 
     icon: Syringe, 
-    description: 'Lab tests and analysis',
-    color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+    description: 'Lab tests & analysis',
+    gradient: 'from-emerald-500 to-teal-500',
+    patients: '4,500+',
   },
   { 
     name: 'Pharmacy', 
     icon: Pill, 
     description: 'Medication management',
-    color: 'bg-green-500/10 text-green-600 dark:text-green-400'
+    gradient: 'from-green-500 to-emerald-500',
+    patients: '6,000+',
   },
   { 
     name: 'Surgery', 
     icon: Scissors, 
     description: 'Surgical procedures',
-    color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+    gradient: 'from-amber-500 to-yellow-500',
+    patients: '800+',
   },
   { 
     name: 'Outpatient', 
     icon: Users, 
     description: 'Outpatient services',
-    color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400'
+    gradient: 'from-teal-500 to-cyan-500',
+    patients: '7,000+',
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05
-    }
-  }
-};
+const DepartmentsSection = () => {
+  const navigate = useNavigate();
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1,
-    transition: {
-      type: "spring" as const,
-      stiffness: 100,
-      damping: 15
-    }
-  }
-};
-
-const DepartmentsSection: React.FC = () => {
   return (
-    <section id="departments" className="py-20 px-4">
-      <div className="container mx-auto max-w-7xl">
+    <section id="departments" className="py-24 lg:py-32 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-muted/30" />
+      <div className="absolute top-1/2 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2" />
+      <div className="absolute top-1/2 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2" />
+      
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
         {/* Header */}
         <ScrollReveal animation="fade-up" className="text-center mb-16">
-          <motion.span 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4"
-            whileHover={{ scale: 1.05 }}
+          <motion.div 
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-primary/15 to-primary/5 text-primary text-sm font-semibold mb-6 border border-primary/10"
+            whileHover={{ scale: 1.02 }}
           >
             <Stethoscope className="w-4 h-4" />
-            Comprehensive Coverage
-          </motion.span>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Manage All <span className="text-primary">Departments</span>
+            <span>Comprehensive Coverage</span>
+          </motion.div>
+          <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-6">
+            Manage Every
+            <span className="block text-primary mt-2">Department Seamlessly</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Our HMS provides specialized modules for every department, ensuring seamless operations across your entire healthcare facility.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Specialized modules for every department, ensuring seamless operations across your entire healthcare facility.
           </p>
         </ScrollReveal>
 
         {/* Departments Grid */}
-        <motion.div 
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
           {departments.map((dept, index) => {
             const Icon = dept.icon;
             return (
-              <motion.div key={dept.name} variants={itemVariants}>
-                <TiltCard tiltAmount={5}>
-                  <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer overflow-hidden h-full">
-                    <CardContent className="p-4 sm:p-6">
+              <ScrollReveal
+                key={dept.name}
+                animation="fade-up"
+                delay={index * 0.03}
+              >
+                <motion.div 
+                  className="group relative cursor-pointer"
+                  whileHover={{ y: -6 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <div className="relative h-full overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5">
+                    {/* Gradient Background on Hover */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${dept.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`} />
+                    
+                    <div className="p-5 lg:p-6">
+                      {/* Icon */}
                       <motion.div 
-                        className={`w-12 h-12 rounded-xl ${dept.color} flex items-center justify-center mb-4`}
+                        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${dept.gradient} flex items-center justify-center mb-4 shadow-lg`}
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 400 }}
                       >
-                        <Icon className="w-6 h-6" />
+                        <Icon className="w-6 h-6 text-white" strokeWidth={1.5} />
                       </motion.div>
-                      <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                      
+                      {/* Content */}
+                      <h3 className="font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
                         {dept.name}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mb-3">
                         {dept.description}
                       </p>
-                    </CardContent>
-                  </Card>
-                </TiltCard>
-              </motion.div>
+                      
+                      {/* Stats */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-primary">{dept.patients} patients</span>
+                        <motion.div 
+                          className="w-6 h-6 rounded-full bg-muted flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          whileHover={{ scale: 1.1 }}
+                        >
+                          <ArrowRight className="w-3 h-3 text-primary" />
+                        </motion.div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </ScrollReveal>
             );
           })}
-        </motion.div>
+        </div>
 
         {/* Bottom CTA */}
-        <ScrollReveal animation="fade-up" delay={0.3} className="mt-12 text-center">
-          <p className="text-muted-foreground">
-            Need a custom department?{' '}
-            <motion.span 
-              className="text-primary font-medium cursor-pointer"
-              whileHover={{ scale: 1.05 }}
-            >
-              Contact us
-            </motion.span>{' '}
-            for tailored solutions.
-          </p>
+        <ScrollReveal animation="fade-up" delay={0.4} className="mt-16 text-center">
+          <motion.button
+            onClick={() => navigate('/contact')}
+            className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
+            whileHover={{ x: 5 }}
+          >
+            Need a custom department? Contact us
+            <ArrowRight className="w-4 h-4" />
+          </motion.button>
         </ScrollReveal>
       </div>
     </section>
