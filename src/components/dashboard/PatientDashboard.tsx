@@ -128,14 +128,31 @@ const PatientDashboard: React.FC = () => {
         setMedicalRecords(recordsData);
         setPrescriptions(prescriptionsData);
         setLabTests(labTestsData);
+        
+        // Check verification status for pending patients
+        if (patient.status === 'pending_verification' && user?.id) {
+          await fetchVerificationStatus(user.id);
+        }
+        
+        // Show helpful message for new patients with no records yet
+        if (recordsData.length === 0 && appointmentsData.length === 0 && prescriptionsData.length === 0) {
+          // Only show if patient is verified but has no data
+          if (patient.status === 'active') {
+            toast({
+              title: "Welcome to Your Portal!",
+              description: "Your account is ready. Book your first appointment to get started.",
+              variant: "default"
+            });
+          }
+        }
       } else {
-        // Fetch verification queue status
+        // No patient record found at all - likely a new registration
         if (user?.id) {
           await fetchVerificationStatus(user.id);
         }
         toast({
-          title: "Patient Record Not Found",
-          description: "Your registration is pending verification. Please wait for hospital staff to approve your account.",
+          title: "Registration Pending",
+          description: "Your account is being set up. Please wait for hospital staff to complete your registration.",
           variant: "default"
         });
       }
