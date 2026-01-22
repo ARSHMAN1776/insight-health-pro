@@ -1,133 +1,176 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
   FileText, 
   Shield, 
   Activity, 
   Pill,
-  Video
+  Video,
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { ScrollReveal, TiltCard, MouseGlow } from '@/components/animations';
+import { ScrollReveal, TiltCard } from '@/components/animations';
 
 const features = [
   {
     icon: Calendar,
     title: 'Smart Scheduling',
-    description: 'AI-powered appointment scheduling with real-time availability and automated reminders.',
-    color: 'bg-medical-blue',
-    image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&h=300&fit=crop&q=80',
+    description: 'AI-powered appointment scheduling with real-time availability, automated reminders, and intelligent conflict resolution.',
+    gradient: 'from-blue-500 to-cyan-500',
+    link: '/features/appointment-scheduling',
+    stats: '40% faster booking',
   },
   {
     icon: FileText,
     title: 'Electronic Health Records',
-    description: 'Secure, centralized medical records accessible anytime with complete privacy.',
-    color: 'bg-medical-green',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=300&fit=crop&q=80',
+    description: 'Secure, centralized medical records with instant access, complete audit trails, and seamless data portability.',
+    gradient: 'from-emerald-500 to-teal-500',
+    link: '/features/medical-records',
+    stats: 'Zero data loss',
   },
   {
     icon: Shield,
-    title: 'HIPAA Compliant',
-    description: 'Bank-level security ensuring your medical data meets industry standards.',
-    color: 'bg-medical-purple',
-    image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop&q=80',
+    title: 'HIPAA Compliance',
+    description: 'Bank-level 256-bit encryption ensuring your medical data exceeds all industry security standards.',
+    gradient: 'from-violet-500 to-purple-500',
+    link: '/features/billing-payments',
+    stats: '100% compliant',
   },
   {
     icon: Activity,
     title: 'Lab & Diagnostics',
-    description: 'Integrated lab test management with instant results and reports.',
-    color: 'bg-medical-orange',
-    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=400&h=300&fit=crop&q=80',
+    description: 'Integrated lab management with instant results, automated reporting, and real-time status tracking.',
+    gradient: 'from-orange-500 to-amber-500',
+    link: '/features/lab-diagnostics',
+    stats: '2x faster results',
   },
   {
     icon: Pill,
     title: 'Pharmacy Integration',
-    description: 'Seamless prescription management with refill tracking and alerts.',
-    color: 'bg-medical-red',
-    image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=300&fit=crop&q=80',
+    description: 'Complete prescription lifecycle management with refill tracking, interaction alerts, and inventory sync.',
+    gradient: 'from-rose-500 to-pink-500',
+    link: '/features/patient-management',
+    stats: 'Zero errors',
   },
   {
     icon: Video,
     title: 'Telemedicine Ready',
-    description: 'Virtual consultations with HD video and secure messaging.',
-    color: 'bg-medical-blue',
-    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=300&fit=crop&q=80',
+    description: 'HD video consultations with integrated scheduling, secure messaging, and digital prescriptions.',
+    gradient: 'from-indigo-500 to-blue-500',
+    link: '/features/notifications',
+    stats: '24/7 available',
   },
 ];
 
 const FeaturesSection = () => {
+  const navigate = useNavigate();
+
   return (
-    <section className="py-20 bg-muted/30 relative overflow-hidden">
-      {/* Animated Background Decoration */}
-      <motion.div 
-        className="absolute top-1/2 left-0 w-1/2 h-96 bg-gradient-to-r from-primary/5 to-transparent blur-3xl"
-        animate={{ 
-          x: [0, 50, 0],
-          opacity: [0.3, 0.5, 0.3]
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
+    <section className="py-24 lg:py-32 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       
-      <MouseGlow className="container mx-auto px-4 lg:px-8 relative z-10" glowColor="rgba(59, 130, 246, 0.08)">
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
         <ScrollReveal animation="fade-up" className="text-center mb-16">
-          <motion.span 
-            className="inline-block bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4"
-            whileHover={{ scale: 1.05 }}
+          <motion.div 
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-primary/15 to-primary/5 text-primary text-sm font-semibold mb-6 border border-primary/10"
+            whileHover={{ scale: 1.02 }}
           >
-            Features
-          </motion.span>
-          <h2 className="text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Comprehensive Healthcare Solutions
+            <Sparkles className="w-4 h-4" />
+            <span>Powerful Features</span>
+          </motion.div>
+          <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-6">
+            Everything You Need to
+            <span className="block text-primary mt-2">Deliver Exceptional Care</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Everything you need to deliver exceptional patient care and streamline operations
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Comprehensive healthcare solutions designed to streamline operations, 
+            enhance patient experience, and drive better outcomes.
           </p>
         </ScrollReveal>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
               <ScrollReveal 
                 key={index}
                 animation="fade-up"
-                delay={index * 0.1}
+                delay={index * 0.08}
               >
-                <TiltCard tiltAmount={8} glareEffect>
-                  <Card className="group overflow-hidden border-2 hover:border-primary/20 transition-all duration-500 hover:shadow-xl bg-card h-full">
-                    {/* Image Header */}
-                    <div className="relative h-48 overflow-hidden">
-                      <motion.img 
-                        src={feature.image} 
-                        alt={feature.title}
-                        className="w-full h-full object-cover"
-                        whileHover={{ scale: 1.1 }}
-                        transition={{ duration: 0.6 }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-                      <motion.div 
-                        className={`absolute bottom-4 left-4 w-12 h-12 ${feature.color} rounded-xl flex items-center justify-center shadow-lg`}
-                        whileHover={{ scale: 1.15, rotate: 5 }}
-                        transition={{ type: "spring", stiffness: 400 }}
-                      >
-                        <Icon className="w-6 h-6 text-white" />
-                      </motion.div>
+                <TiltCard tiltAmount={5} glareEffect>
+                  <motion.div 
+                    className="group relative h-full cursor-pointer"
+                    onClick={() => navigate(feature.link)}
+                    whileHover={{ y: -8 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <div className="relative h-full overflow-hidden rounded-3xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-500">
+                      {/* Gradient Background on Hover */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500`} />
+                      
+                      {/* Content */}
+                      <div className="relative p-8">
+                        {/* Icon */}
+                        <div className="relative mb-6">
+                          <motion.div 
+                            className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-lg`}
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            transition={{ type: "spring", stiffness: 400 }}
+                          >
+                            <Icon className="w-8 h-8 text-white" strokeWidth={1.5} />
+                          </motion.div>
+                          {/* Glow Effect */}
+                          <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.gradient} blur-xl opacity-30`} />
+                        </div>
+                        
+                        {/* Title & Description */}
+                        <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+                          {feature.title}
+                        </h3>
+                        <p className="text-muted-foreground leading-relaxed mb-6">
+                          {feature.description}
+                        </p>
+                        
+                        {/* Stats Badge */}
+                        <div className="flex items-center justify-between">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r ${feature.gradient} bg-opacity-10 text-xs font-semibold text-foreground`}>
+                            {feature.stats}
+                          </span>
+                          <motion.div 
+                            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                          >
+                            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </motion.div>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
-                        {feature.title}
-                      </h3>
-                      <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-                    </CardContent>
-                  </Card>
+                  </motion.div>
                 </TiltCard>
               </ScrollReveal>
             );
           })}
         </div>
-      </MouseGlow>
+
+        {/* Bottom CTA */}
+        <ScrollReveal animation="fade-up" delay={0.5} className="mt-16 text-center">
+          <motion.button
+            onClick={() => navigate('/features/patient-management')}
+            className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full font-semibold shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-300"
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Explore All Features
+            <ArrowRight className="w-5 h-5" />
+          </motion.button>
+        </ScrollReveal>
+      </div>
     </section>
   );
 };

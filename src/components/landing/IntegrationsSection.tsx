@@ -7,119 +7,182 @@ import {
   Shield,
   Wifi,
   Zap,
-  Link
+  Link,
+  ArrowRight,
+  Code2
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { ScrollReveal } from '@/components/animations';
+import { useNavigate } from 'react-router-dom';
 
 const integrations = [
   {
     name: 'Payment Gateways',
     description: 'Stripe, PayPal, Square',
     icon: CreditCard,
-    color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+    gradient: 'from-violet-500 to-purple-500',
   },
   {
     name: 'Email Services',
     description: 'SendGrid, Mailchimp, AWS SES',
     icon: Mail,
-    color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    gradient: 'from-blue-500 to-cyan-500',
   },
   {
     name: 'SMS & Notifications',
     description: 'Twilio, WhatsApp Business',
     icon: MessageSquare,
-    color: 'bg-green-500/10 text-green-600 dark:text-green-400',
+    gradient: 'from-green-500 to-emerald-500',
   },
   {
     name: 'Cloud Storage',
     description: 'AWS S3, Google Cloud, Azure',
     icon: Cloud,
-    color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+    gradient: 'from-sky-500 to-blue-500',
   },
   {
     name: 'Security & Auth',
     description: 'OAuth, SAML, 2FA',
     icon: Shield,
-    color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+    gradient: 'from-rose-500 to-pink-500',
   },
   {
     name: 'IoT Devices',
     description: 'Medical device connectivity',
     icon: Wifi,
-    color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    gradient: 'from-amber-500 to-orange-500',
   },
   {
     name: 'Lab Equipment',
     description: 'HL7, FHIR compatible',
     icon: Zap,
-    color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    gradient: 'from-emerald-500 to-teal-500',
   },
   {
     name: 'EHR Systems',
     description: 'Seamless data exchange',
     icon: Link,
-    color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    gradient: 'from-purple-500 to-indigo-500',
   },
 ];
 
-const IntegrationsSection: React.FC = () => {
+const IntegrationsSection = () => {
+  const navigate = useNavigate();
+
   return (
-    <section className="py-20 px-4 bg-gradient-to-b from-background to-muted/30">
-      <div className="container mx-auto max-w-7xl">
+    <section className="py-24 lg:py-32 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-muted/30" />
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+      
+      {/* Decorative Elements */}
+      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2" />
+      <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2" />
+      
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+        <ScrollReveal animation="fade-up" className="text-center mb-16">
+          <motion.div 
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-primary/15 to-primary/5 text-primary text-sm font-semibold mb-6 border border-primary/10"
+            whileHover={{ scale: 1.02 }}
+          >
             <Link className="w-4 h-4" />
-            Seamless Integrations
-          </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Connect With Your <span className="text-primary">Existing Tools</span>
+            <span>Seamless Integrations</span>
+          </motion.div>
+          <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-6">
+            Connect With Your
+            <span className="block text-primary mt-2">Existing Tools</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Our HMS integrates with popular healthcare and business tools to create a unified ecosystem.
           </p>
-        </div>
+        </ScrollReveal>
 
         {/* Integrations Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6 max-w-5xl mx-auto">
           {integrations.map((integration, index) => {
             const Icon = integration.icon;
             return (
-              <Card 
+              <ScrollReveal
                 key={integration.name}
-                className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer"
-                style={{ animationDelay: `${index * 50}ms` }}
+                animation="fade-up"
+                delay={index * 0.05}
               >
-                <CardContent className="p-5 text-center">
-                  <div className={`w-12 h-12 mx-auto rounded-xl ${integration.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-6 h-6" />
+                <motion.div 
+                  className="group relative cursor-pointer"
+                  whileHover={{ y: -6 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <div className="relative h-full overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 p-6 text-center">
+                    {/* Gradient Background on Hover */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${integration.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`} />
+                    
+                    <div className="relative">
+                      {/* Icon */}
+                      <motion.div 
+                        className={`w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br ${integration.gradient} flex items-center justify-center mb-4 shadow-lg`}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                      >
+                        <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
+                      </motion.div>
+                      
+                      {/* Content */}
+                      <h3 className="font-bold text-foreground mb-1 text-sm group-hover:text-primary transition-colors">
+                        {integration.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {integration.description}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1 text-sm">
-                    {integration.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {integration.description}
-                  </p>
-                </CardContent>
-              </Card>
+                </motion.div>
+              </ScrollReveal>
             );
           })}
         </div>
 
-        {/* API Note */}
-        <div className="mt-12 p-6 bg-card border border-border/50 rounded-2xl max-w-3xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Zap className="w-7 h-7 text-primary" />
+        {/* API Card */}
+        <ScrollReveal animation="fade-up" delay={0.4}>
+          <motion.div 
+            className="mt-12 lg:mt-16 max-w-4xl mx-auto"
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card to-muted/30 border border-border/50 p-8 lg:p-10">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,hsl(var(--primary))_25%,hsl(var(--primary))_50%,transparent_50%,transparent_75%,hsl(var(--primary))_75%)] bg-[length:10px_10px]" />
+              </div>
+              
+              <div className="relative flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
+                {/* Icon */}
+                <motion.div 
+                  className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-xl shadow-primary/20 flex-shrink-0"
+                  whileHover={{ scale: 1.05, rotate: 5 }}
+                >
+                  <Code2 className="w-10 h-10 text-primary-foreground" />
+                </motion.div>
+                
+                {/* Content */}
+                <div className="flex-1 text-center lg:text-left">
+                  <h4 className="text-2xl font-bold text-foreground mb-2">Custom API Access</h4>
+                  <p className="text-muted-foreground mb-4">
+                    Need a custom integration? Our RESTful API allows you to connect any third-party service or build custom workflows tailored to your facility's needs.
+                  </p>
+                  <motion.button
+                    onClick={() => navigate('/contact')}
+                    className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
+                    whileHover={{ x: 5 }}
+                  >
+                    Explore API Documentation
+                    <ArrowRight className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-1">Custom API Access</h4>
-              <p className="text-sm text-muted-foreground">
-                Need a custom integration? Our RESTful API allows you to connect any third-party service or build custom workflows tailored to your facility's needs.
-              </p>
-            </div>
-          </div>
-        </div>
+          </motion.div>
+        </ScrollReveal>
       </div>
     </section>
   );
