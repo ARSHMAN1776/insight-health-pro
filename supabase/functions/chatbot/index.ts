@@ -62,17 +62,18 @@ async function getPatientAppointments(supabase: ReturnType<typeof createClient>,
   const { data, error } = await supabase
     .from('appointments')
     .select(`
-      id, appointment_date, appointment_time, status, symptoms, appointment_type,
+      id, appointment_date, appointment_time, status, symptoms, type,
       doctors:doctor_id (first_name, last_name, specialization)
     `)
     .eq('patient_id', patientId)
     .gte('appointment_date', new Date().toISOString().split('T')[0])
+    .is('deleted_at', null)
     .order('appointment_date', { ascending: true })
     .order('appointment_time', { ascending: true })
     .limit(5);
 
   if (error) return { success: false, error: error.message };
-  return { success: true, data };
+  return { success: true, data: data || [] };
 }
 
 async function getPatientPrescriptions(supabase: ReturnType<typeof createClient>, patientId: string): Promise<QueryResult> {
@@ -422,12 +423,23 @@ RESPONSE STYLE:
       }
 
       // Add data context if we have it
-      if (intentData.data) {
-        systemPrompt += `\n\nDATABASE QUERY RESULT:
+      if (intentData.data !== null && intentData.data !== undefined) {
+        const dataArray = Array.isArray(intentData.data) ? intentData.data : [intentData.data];
+        const hasData = dataArray.length > 0 && !(dataArray.length === 1 && Object.keys(dataArray[0] || {}).length === 0);
+        
+        if (hasData) {
+          systemPrompt += `\n\nDATABASE QUERY RESULT:
 Intent: ${intentData.intent}
 Data: ${JSON.stringify(intentData.data, null, 2)}
 
-Use this data to answer the user's question naturally. If the data is empty, tell them no records were found.`;
+Use this data to answer the user's question naturally and helpfully.`;
+        } else {
+          systemPrompt += `\n\nDATABASE QUERY RESULT:
+Intent: ${intentData.intent}
+No records found.
+
+Politely inform the user that they don't have any ${intentData.intent.replace('patient_', '').replace('doctor_', '').replace('_', ' ')} at the moment. If they're asking about appointments, suggest they can book one through the patient portal or ask you for available slots.`;
+        }
       } else if (intentData.error) {
         systemPrompt += `\n\nDATABASE QUERY ERROR: ${intentData.error}
 Apologize and suggest they try again or contact support.`;
