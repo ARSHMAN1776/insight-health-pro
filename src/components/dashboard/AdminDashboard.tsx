@@ -14,7 +14,9 @@ import {
   CheckCircle,
   UserPlus,
   Scissors,
-  AlertCircle
+  AlertCircle,
+  Database,
+  Loader2
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -28,6 +30,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
 import PendingVerificationsWidget from './PendingVerificationsWidget';
+import { demoDataSeeder, SeedProgress } from '../../lib/demoDataSeeder';
 
 // HIPAA-compliant interface - only aggregate data, no PII
 interface BedStats {
@@ -87,6 +90,10 @@ const AdminDashboard: React.FC = () => {
   const [dailyPatients, setDailyPatients] = useState<DailyPatientData[]>([]);
   const [departmentData, setDepartmentData] = useState<DepartmentData[]>([]);
   const [revenueData, setRevenueData] = useState<MonthlyRevenueData[]>([]);
+  
+  // Demo data seeding state
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState<SeedProgress | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -367,6 +374,48 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Demo data seeding handler
+  const handleSeedDemoData = async () => {
+    if (isSeeding) return;
+    
+    setIsSeeding(true);
+    setSeedProgress(null);
+    
+    demoDataSeeder.setProgressCallback((progress) => {
+      setSeedProgress(progress);
+    });
+
+    try {
+      const result = await demoDataSeeder.seedAll();
+      
+      if (result.success) {
+        toast({
+          title: 'Demo Data Created!',
+          description: `Created: ${result.stats.departments || 0} departments, ${result.stats.doctors || 0} doctors, ${result.stats.patients || 0} patients, ${result.stats.appointments || 0} appointments`,
+        });
+        // Refresh dashboard data
+        loadDashboardData();
+        loadDepartmentData();
+        loadDailyPatientData();
+      } else {
+        toast({
+          title: 'Seeding Failed',
+          description: result.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to seed demo data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSeeding(false);
+      setSeedProgress(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -431,11 +480,30 @@ const AdminDashboard: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={handleSeedDemoData}
+              className="text-primary-foreground hover:bg-primary-foreground/10 flex items-center gap-2"
+              disabled={isSeeding}
+            >
+              {isSeeding ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {seedProgress?.step || 'Seeding...'}
+                </>
+              ) : (
+                <>
+                  <Database className="w-4 h-4" />
+                  Seed Demo Data
+                </>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate('/staff-management')}
               className="text-primary-foreground hover:bg-primary-foreground/10 flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
-              Manage Staff Accounts
+              Manage Staff
             </Button>
             <Button
               variant="ghost"
@@ -444,7 +512,7 @@ const AdminDashboard: React.FC = () => {
               className="text-primary-foreground hover:bg-primary-foreground/10"
               disabled={loading}
             >
-              {loading ? 'Loading...' : 'Refresh Data'}
+              {loading ? 'Loading...' : 'Refresh'}
             </Button>
             <div className="text-right">
               <p className="text-sm text-primary-foreground/80">Pakistan Time</p>

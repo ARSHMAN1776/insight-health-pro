@@ -507,6 +507,7 @@ const Login: React.FC = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           className="h-12 bg-muted/30 border-muted-foreground/20 focus:border-primary text-base"
+                          autoComplete="email"
                           required
                         />
                       </div>
@@ -532,6 +533,7 @@ const Login: React.FC = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             className="pl-10 pr-10 h-12 bg-muted/30 border-muted-foreground/20 focus:border-primary text-base"
+                            autoComplete="current-password"
                             required
                           />
                           <Button
@@ -591,6 +593,7 @@ const Login: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="h-12 bg-muted/30 border-muted-foreground/20 focus:border-primary text-base"
+                        autoComplete="email"
                         required
                       />
                     </div>
@@ -616,6 +619,7 @@ const Login: React.FC = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           className="pl-10 pr-10 h-12 bg-muted/30 border-muted-foreground/20 focus:border-primary text-base"
+                          autoComplete="current-password"
                           required
                         />
                         <Button
