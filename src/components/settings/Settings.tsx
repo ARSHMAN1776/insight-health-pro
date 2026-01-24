@@ -11,9 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/hooks/useSettings';
-import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Mail, Phone, Loader2, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Mail, Phone, Loader2, Globe, Palette } from 'lucide-react';
 import { TIMEZONES, getTimezoneLabel, getCurrentTimeInTimezone, clearTimezoneCache } from '@/lib/timezoneUtils';
 import { format } from 'date-fns';
+import HospitalBrandingSettings from './HospitalBrandingSettings';
 
 const Settings: React.FC = () => {
   const { toast } = useToast();
@@ -62,6 +63,22 @@ const Settings: React.FC = () => {
     encryptionEnabled: true,
     autoUpdates: false,
     maintenanceMode: false
+  });
+
+  // Hospital branding settings
+  const [brandingSettings, setBrandingSettings] = useState({
+    logoUrl: '',
+    hospitalName: '',
+    tagline: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    primaryColor: '#0066CC',
+    secondaryColor: '#004999',
+    accentColor: '#00AAFF',
+    headerBgColor: '#F5F5F5',
+    footerText: 'This is a computer-generated report. No signature required.'
   });
 
   // Doctor-specific settings
@@ -138,6 +155,9 @@ const Settings: React.FC = () => {
       }
       if (dbHospitalSettings.system_config) {
         setSystemConfig(dbHospitalSettings.system_config);
+      }
+      if (dbHospitalSettings.branding_settings) {
+        setBrandingSettings(prev => ({ ...prev, ...dbHospitalSettings.branding_settings }));
       }
 
       // Load user-specific settings
@@ -244,6 +264,14 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleSaveBrandingSettings = async () => {
+    const success = await saveHospitalSetting('branding_settings', brandingSettings, 'branding');
+    if (success) {
+      toast({ title: 'Success', description: 'Branding settings saved successfully' });
+      await refreshSettings();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -266,12 +294,16 @@ const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue={user?.role === 'admin' ? 'hospital' : user?.role === 'patient' ? 'personal' : 'preferences'} className="space-y-6">
-        <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-2'}`}>
+        <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-2'}`}>
           {user?.role === 'admin' && (
             <>
               <TabsTrigger value="hospital" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 Hospital
+              </TabsTrigger>
+              <TabsTrigger value="branding" className="flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                Branding
               </TabsTrigger>
               <TabsTrigger value="security" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -453,6 +485,15 @@ const Settings: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Branding Settings Tab - Admin Only */}
+        <TabsContent value="branding" className="space-y-6">
+          <HospitalBrandingSettings
+            settings={brandingSettings}
+            onSettingsChange={setBrandingSettings}
+            onSave={handleSaveBrandingSettings}
+          />
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">
