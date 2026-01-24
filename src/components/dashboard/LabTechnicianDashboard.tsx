@@ -19,7 +19,8 @@ import {
   X,
   Upload,
   Image as ImageIcon,
-  Trash2
+  Trash2,
+  FileOutput
 } from 'lucide-react';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +37,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
+import LabReportEditor from '../lab-tests/LabReportEditor';
 
 interface LabTest {
   id: string;
@@ -77,6 +79,8 @@ const LabTechnicianDashboard: React.FC = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [reportImageFile, setReportImageFile] = useState<File | null>(null);
   const [reportImagePreview, setReportImagePreview] = useState<string | null>(null);
+  const [reportEditorOpen, setReportEditorOpen] = useState(false);
+  const [selectedForReport, setSelectedForReport] = useState<LabTest | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resultForm, setResultForm] = useState({
     results: '',
@@ -678,6 +682,18 @@ const LabTechnicianDashboard: React.FC = () => {
                       </Button>
                       <Button 
                         size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedForReport(test);
+                          setReportEditorOpen(true);
+                        }}
+                        title="Generate Professional Report"
+                      >
+                        <FileOutput className="w-3 h-3 mr-1" />
+                        Report
+                      </Button>
+                      <Button 
+                        size="sm"
                         onClick={() => openResultDialog(test)}
                         disabled={updating === test.id}
                       >
@@ -933,6 +949,28 @@ const LabTechnicianDashboard: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Lab Report Editor */}
+      <LabReportEditor
+        open={reportEditorOpen}
+        onOpenChange={setReportEditorOpen}
+        labTest={selectedForReport as any}
+        patient={selectedForReport?.patients ? {
+          id: selectedForReport.patient_id,
+          first_name: selectedForReport.patients.first_name,
+          last_name: selectedForReport.patients.last_name,
+          date_of_birth: '',
+          gender: ''
+        } : null}
+        doctor={selectedForReport?.doctors ? {
+          id: selectedForReport.doctor_id,
+          first_name: selectedForReport.doctors.first_name,
+          last_name: selectedForReport.doctors.last_name
+        } : null}
+        onSave={() => {
+          loadLabTests();
+        }}
+      />
     </div>
   );
 };

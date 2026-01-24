@@ -10,11 +10,12 @@ import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { dataManager, LabTest, Patient, Doctor } from '../../lib/dataManager';
 import { supabase } from '@/integrations/supabase/client';
-import { TestTube, Plus, Clock, CheckCircle, AlertCircle, Upload, Image, X, Eye, QrCode, Printer } from 'lucide-react';
+import { TestTube, Plus, Clock, CheckCircle, AlertCircle, Upload, Image, X, Eye, QrCode, Printer, FileText } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useAuth } from '@/contexts/AuthContext';
 import QRCodeDisplay from '../shared/QRCodeDisplay';
+import LabReportEditor from './LabReportEditor';
 
 const LabTestManagement: React.FC = () => {
   const { user, isRole } = useAuth();
@@ -30,6 +31,8 @@ const LabTestManagement: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedForPrint, setSelectedForPrint] = useState<LabTest | null>(null);
+  const [reportEditorOpen, setReportEditorOpen] = useState(false);
+  const [selectedForReport, setSelectedForReport] = useState<LabTest | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -321,6 +324,19 @@ const LabTestManagement: React.FC = () => {
               View
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedForReport(test);
+              setReportEditorOpen(true);
+            }}
+            title="Generate Professional Report"
+          >
+            <FileText className="w-4 h-4 mr-1" />
+            Report
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -749,6 +765,18 @@ const LabTestManagement: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Lab Report Editor */}
+      <LabReportEditor
+        open={reportEditorOpen}
+        onOpenChange={setReportEditorOpen}
+        labTest={selectedForReport as any}
+        patient={selectedForReport ? patients.find(p => p.id === selectedForReport.patient_id) || null : null}
+        doctor={selectedForReport ? doctors.find(d => d.id === selectedForReport.doctor_id) || null : null}
+        onSave={() => {
+          loadData();
+        }}
+      />
     </div>
   );
 };
