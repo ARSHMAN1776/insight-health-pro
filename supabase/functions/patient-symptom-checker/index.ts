@@ -261,10 +261,9 @@ Map symptoms to these common hospital departments:
       );
     }
 
-    // Fetch available doctors from database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Fetch available doctors from database using service role for full access
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const serviceSupabase = createClient(supabaseUrl, serviceRoleKey);
 
     const departmentName = analysisResult.recommendedDepartment?.name || '';
     
@@ -289,7 +288,7 @@ Map symptoms to these common hospital departments:
 
     console.log('Fetching doctors for specializations:', specializations);
 
-    const { data: doctors, error: doctorsError } = await supabase
+    const { data: doctors, error: doctorsError } = await serviceSupabase
       .from('doctors')
       .select('id, first_name, last_name, specialization, department')
       .in('specialization', specializations)
