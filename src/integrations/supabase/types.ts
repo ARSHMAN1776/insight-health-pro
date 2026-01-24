@@ -904,61 +904,94 @@ export type Database = {
       }
       lab_tests: {
         Row: {
+          comments: string | null
           cost: number | null
           created_at: string | null
           deleted_at: string | null
           doctor_id: string
           id: string
+          is_report_finalized: boolean | null
           lab_technician: string | null
+          method_used: string | null
           normal_range: string | null
           notes: string | null
+          pathologist_signature: string | null
           patient_id: string
           priority: string | null
           report_image_url: string | null
+          report_number: string | null
+          reporting_time: string | null
           results: string | null
+          specimen_collection_time: string | null
+          specimen_type: string | null
           status: string | null
+          technician_signature: string | null
           test_date: string | null
           test_name: string
+          test_parameters: Json | null
           test_type: string | null
           updated_at: string | null
+          verified_by: string | null
         }
         Insert: {
+          comments?: string | null
           cost?: number | null
           created_at?: string | null
           deleted_at?: string | null
           doctor_id: string
           id?: string
+          is_report_finalized?: boolean | null
           lab_technician?: string | null
+          method_used?: string | null
           normal_range?: string | null
           notes?: string | null
+          pathologist_signature?: string | null
           patient_id: string
           priority?: string | null
           report_image_url?: string | null
+          report_number?: string | null
+          reporting_time?: string | null
           results?: string | null
+          specimen_collection_time?: string | null
+          specimen_type?: string | null
           status?: string | null
+          technician_signature?: string | null
           test_date?: string | null
           test_name: string
+          test_parameters?: Json | null
           test_type?: string | null
           updated_at?: string | null
+          verified_by?: string | null
         }
         Update: {
+          comments?: string | null
           cost?: number | null
           created_at?: string | null
           deleted_at?: string | null
           doctor_id?: string
           id?: string
+          is_report_finalized?: boolean | null
           lab_technician?: string | null
+          method_used?: string | null
           normal_range?: string | null
           notes?: string | null
+          pathologist_signature?: string | null
           patient_id?: string
           priority?: string | null
           report_image_url?: string | null
+          report_number?: string | null
+          reporting_time?: string | null
           results?: string | null
+          specimen_collection_time?: string | null
+          specimen_type?: string | null
           status?: string | null
+          technician_signature?: string | null
           test_date?: string | null
           test_name?: string
+          test_parameters?: Json | null
           test_type?: string | null
           updated_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
