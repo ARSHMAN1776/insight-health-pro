@@ -383,7 +383,7 @@ class DemoDataSeeder {
             department_id: departmentId,
             appointment_date: dateStr,
             appointment_time: time,
-            appointment_type: APPOINTMENT_TYPES[Math.floor(Math.random() * APPOINTMENT_TYPES.length)],
+            type: APPOINTMENT_TYPES[Math.floor(Math.random() * APPOINTMENT_TYPES.length)],
             status,
             symptoms: 'Demo appointment for testing',
             notes: 'Created by demo data seeder'
@@ -420,7 +420,7 @@ class DemoDataSeeder {
           patient_id: patientId,
           doctor_id: doctorId,
           test_name: test.name,
-          test_category: test.category,
+          test_type: test.category,
           test_date: testDate.toISOString().split('T')[0],
           status,
           results: status === 'completed' ? 'Normal values within reference range' : null,
@@ -488,7 +488,7 @@ class DemoDataSeeder {
       // Check if stock already exists
       const { data: existing } = await supabase
         .from('blood_stock')
-        .select('id')
+        .select('stock_id')
         .eq('blood_group_id', groupId)
         .single();
 
@@ -496,17 +496,12 @@ class DemoDataSeeder {
 
       // Add random stock units (5-30 units per group)
       const units = 5 + Math.floor(Math.random() * 26);
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30 + Math.floor(Math.random() * 10));
 
       const { error } = await supabase
         .from('blood_stock')
         .insert({
           blood_group_id: groupId,
-          units_available: units,
-          unit_type: 'whole_blood',
-          expiry_date: expiryDate.toISOString().split('T')[0],
-          status: 'available'
+          total_units: units
         });
 
       if (!error) created++;
