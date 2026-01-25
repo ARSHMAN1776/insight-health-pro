@@ -156,12 +156,12 @@ class DemoDataSeeder {
     let created = 0;
     
     for (const dept of DEPARTMENTS) {
-      // Check if department already exists
+      // Check if department already exists - use maybeSingle() to avoid 406 errors
       const { data: existing } = await supabase
         .from('departments')
         .select('department_id')
         .eq('department_name', dept.name)
-        .single();
+        .maybeSingle();
       
       if (existing) {
         this.departmentIds.set(dept.name, existing.department_id);
@@ -173,7 +173,7 @@ class DemoDataSeeder {
         .insert({
           department_name: dept.name,
           description: dept.description,
-          department_head: dept.head,
+          department_head: null, // Don't set head initially - avoids FK issues
           status: 'Active'
         })
         .select('department_id')
@@ -197,12 +197,12 @@ class DemoDataSeeder {
     for (const doc of DOCTORS) {
       const email = `${doc.firstName.toLowerCase()}.${doc.lastName.toLowerCase()}@hospital.pk`;
       
-      // Check if doctor already exists
+      // Check if doctor already exists - use maybeSingle() to avoid 406 errors
       const { data: existing } = await supabase
         .from('doctors')
         .select('id, department_id')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         this.doctorIds.push(existing.id);
