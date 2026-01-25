@@ -23,7 +23,7 @@ const DEPARTMENTS = [
   { name: 'ENT', description: 'Ear, nose, and throat care', head: 'Dr. Hassan Mahmood' },
 ];
 
-// Doctor configurations with specializations
+// Doctor configurations with specializations - department MUST match a DEPARTMENTS entry exactly
 const DOCTORS = [
   { firstName: 'Sarah', lastName: 'Ahmed', specialization: 'Interventional Cardiology', department: 'Cardiology', fee: 2500, experience: 12 },
   { firstName: 'Imran', lastName: 'Khan', specialization: 'Sports Medicine', department: 'Orthopedics', fee: 2000, experience: 15 },
@@ -195,19 +195,28 @@ class DemoDataSeeder {
     let created = 0;
 
     for (const doc of DOCTORS) {
+      const email = `${doc.firstName.toLowerCase()}.${doc.lastName.toLowerCase()}@hospital.pk`;
+      
       // Check if doctor already exists
       const { data: existing } = await supabase
         .from('doctors')
-        .select('id')
-        .eq('email', `${doc.firstName.toLowerCase()}.${doc.lastName.toLowerCase()}@hospital.pk`)
+        .select('id, department_id')
+        .eq('email', email)
         .single();
 
       if (existing) {
         this.doctorIds.push(existing.id);
+        // Update department_id if not set
+        const departmentId = this.departmentIds.get(doc.department);
+        if (!existing.department_id && departmentId) {
+          await supabase
+            .from('doctors')
+            .update({ department_id: departmentId, department: doc.department })
+            .eq('id', existing.id);
+        }
         continue;
       }
 
-      const email = `${doc.firstName.toLowerCase()}.${doc.lastName.toLowerCase()}@hospital.pk`;
       const departmentId = this.departmentIds.get(doc.department);
 
       const { data, error } = await supabase
@@ -219,11 +228,11 @@ class DemoDataSeeder {
           phone: `+92 3${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10)} ${Math.floor(1000000 + Math.random() * 9000000)}`,
           specialization: doc.specialization,
           department: doc.department,
+          department_id: departmentId || null,
           license_number: `PMC-${2020 + Math.floor(Math.random() * 5)}-${10000 + Math.floor(Math.random() * 90000)}`,
           consultation_fee: doc.fee,
-          experience: doc.experience,
-          status: 'active',
-          education: 'MBBS, FCPS'
+          years_of_experience: doc.experience,
+          status: 'active'
         })
         .select('id')
         .single();
@@ -235,12 +244,12 @@ class DemoDataSeeder {
 
       this.doctorIds.push(data.id);
 
-      // Link doctor to department
+      // Link doctor to department via junction table
       if (departmentId) {
         await supabase.from('department_doctors').insert({
           department_id: departmentId,
           doctor_id: data.id,
-          is_head: doc.firstName === 'Sarah' && doc.department === 'Cardiology'
+          role: doc.firstName === DEPARTMENTS.find(d => d.name === doc.department)?.head?.split(' ')[1] ? 'head' : 'member'
         });
       }
 
@@ -254,25 +263,21 @@ class DemoDataSeeder {
     let created = 0;
 
     for (const doctorId of this.doctorIds) {
-      // Get doctor's user_id if exists
-      const { data: doctor } = await supabase
-        .from('doctors')
-        .select('user_id')
-        .eq('id', doctorId)
-        .single();
+      // IMPORTANT: Use the doctor's table ID directly for staff_id
+      // The scheduleUtils.ts will try both doctor.id and doctor.user_id
+      const staffId = doctorId;
 
-      const staffId = doctor?.user_id || doctorId;
-
-      // Check if schedule already exists
+      // Check if schedule already exists for this doctor
       const { data: existing } = await supabase
         .from('staff_schedules')
         .select('id')
         .eq('staff_id', staffId)
+        .eq('staff_type', 'doctor')
         .limit(1);
 
       if (existing && existing.length > 0) continue;
 
-      // Create schedule for Monday to Friday
+      // Create schedule for Monday to Friday (day 1-5)
       for (let day = 1; day <= 5; day++) {
         const { error } = await supabase
           .from('staff_schedules')
@@ -282,10 +287,11 @@ class DemoDataSeeder {
             day_of_week: day,
             start_time: '09:00',
             end_time: '17:00',
-            slot_duration_mins: 20,
+            slot_duration: 30, // 30 min slots
             break_start: '13:00',
             break_end: '14:00',
-            is_active: true
+            is_available: true,
+            notes: 'Demo schedule'
           });
 
         if (!error) created++;
