@@ -91,7 +91,7 @@ export const getStaffScheduleForDay = async (
   // If not found and this is a doctor, try to find via user_id mapping
   if (!data && staffType === 'doctor') {
     const profileId = await getProfileIdFromDoctorId(staffId);
-    if (profileId) {
+    if (profileId && profileId !== staffId) {
       const result = await supabase
         .from('staff_schedules')
         .select('*')
@@ -103,6 +103,21 @@ export const getStaffScheduleForDay = async (
       
       data = result.data;
     }
+  }
+
+  // Also try looking up by doctors.id directly if user_id approach didn't work
+  // This handles demo data where schedules are stored with doctor table ID
+  if (!data && staffType === 'doctor') {
+    const { data: doctorSchedule } = await supabase
+      .from('staff_schedules')
+      .select('*')
+      .eq('staff_id', staffId)
+      .eq('staff_type', staffType)
+      .eq('day_of_week', dayOfWeek)
+      .eq('is_available', true)
+      .maybeSingle();
+    
+    data = doctorSchedule;
   }
 
   if (!data) return null;

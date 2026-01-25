@@ -36,6 +36,8 @@ const PatientDashboard: React.FC = () => {
     totalPending: number;
     estimatedWaitTime: string;
     submittedAt: string | null;
+    status: 'pending' | 'rejected';
+    rejectionReason?: string | null;
   } | null>(null);
 
   const fetchVerificationStatus = async (userId: string) => {
@@ -43,11 +45,29 @@ const PatientDashboard: React.FC = () => {
       // Get user's registration in queue
       const { data: userRegistration, error: userError } = await supabase
         .from('patient_registration_queue')
-        .select('id, created_at, status')
+        .select('id, created_at, status, rejection_reason')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (userError || !userRegistration || userRegistration.status !== 'pending') {
+      if (userError || !userRegistration) {
+        setVerificationInfo(null);
+        return;
+      }
+
+      // Handle rejected registrations
+      if (userRegistration.status === 'rejected') {
+        setVerificationInfo({
+          queuePosition: 0,
+          totalPending: 0,
+          estimatedWaitTime: '',
+          submittedAt: userRegistration.created_at,
+          status: 'rejected',
+          rejectionReason: userRegistration.rejection_reason
+        });
+        return;
+      }
+
+      if (userRegistration.status !== 'pending') {
         setVerificationInfo(null);
         return;
       }
@@ -91,6 +111,8 @@ const PatientDashboard: React.FC = () => {
         totalPending: total,
         estimatedWaitTime,
         submittedAt: userRegistration.created_at,
+        status: 'pending',
+        rejectionReason: null
       });
     } catch (error) {
       console.error('Failed to fetch verification status:', error);
@@ -236,8 +258,46 @@ const PatientDashboard: React.FC = () => {
 
   const renderDashboardOverview = () => (
     <div className="space-y-8 animate-fade-in">
-      {/* Verification Status Banner */}
-      {patientData && !isVerified && (
+      {/* Rejection Status Banner */}
+      {verificationInfo?.status === 'rejected' && (
+        <Card className="bg-destructive/5 border-destructive/30">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-destructive/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-destructive text-lg mb-2">Registration Not Approved</h3>
+                <p className="text-muted-foreground mb-4">
+                  Unfortunately, your registration could not be approved at this time.
+                </p>
+                {verificationInfo.rejectionReason && (
+                  <div className="bg-background/50 rounded-lg p-4 border border-destructive/20 mb-4">
+                    <p className="text-sm font-medium text-foreground mb-1">Reason provided:</p>
+                    <p className="text-sm text-muted-foreground">{verificationInfo.rejectionReason}</p>
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="bg-background/50 rounded-lg p-3 border border-border/50 flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">Call: <strong>+92 51 1234567</strong></span>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-3 border border-border/50 flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">Email: <strong>support@hospital.pk</strong></span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-4">
+                  Please contact our support team for assistance or to submit updated information.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pending Verification Status Banner */}
+      {patientData && !isVerified && verificationInfo?.status === 'pending' && (
         <Card className="bg-warning/5 border-warning/30">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
@@ -250,61 +310,77 @@ const PatientDashboard: React.FC = () => {
                   Your account is being reviewed by our staff. Once verified, you'll be able to book appointments 
                   and access all portal features.
                 </p>
-                {verificationInfo && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <Users className="w-4 h-4" />
-                          <span>Queue Position</span>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">
-                          #{verificationInfo.queuePosition}
-                          <span className="text-sm font-normal text-muted-foreground ml-1">
-                            of {verificationInfo.totalPending}
-                          </span>
-                        </p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-background/50 rounded-lg p-3 border border-border/50">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <Users className="w-4 h-4" />
+                        <span>Queue Position</span>
                       </div>
-                      <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <Clock className="w-4 h-4" />
-                          <span>Estimated Wait</span>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">
-                          {verificationInfo.estimatedWaitTime}
-                        </p>
-                      </div>
-                      <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>Submitted</span>
-                        </div>
-                        <p className="text-lg font-medium text-foreground">
-                          {verificationInfo.submittedAt 
-                            ? new Date(verificationInfo.submittedAt).toLocaleDateString()
-                            : 'Recently'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Verification Progress</span>
-                        <span className="text-muted-foreground">
-                          {Math.max(10, 100 - (verificationInfo.queuePosition * 20))}%
+                      <p className="text-2xl font-bold text-foreground">
+                        #{verificationInfo.queuePosition}
+                        <span className="text-sm font-normal text-muted-foreground ml-1">
+                          of {verificationInfo.totalPending}
                         </span>
+                      </p>
+                    </div>
+                    <div className="bg-background/50 rounded-lg p-3 border border-border/50">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <Clock className="w-4 h-4" />
+                        <span>Estimated Wait</span>
                       </div>
-                      <Progress 
-                        value={Math.max(10, 100 - (verificationInfo.queuePosition * 20))} 
-                        className="h-2"
-                      />
+                      <p className="text-2xl font-bold text-foreground">
+                        {verificationInfo.estimatedWaitTime}
+                      </p>
+                    </div>
+                    <div className="bg-background/50 rounded-lg p-3 border border-border/50">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>Submitted</span>
+                      </div>
+                      <p className="text-lg font-medium text-foreground">
+                        {verificationInfo.submittedAt 
+                          ? new Date(verificationInfo.submittedAt).toLocaleDateString()
+                          : 'Recently'}
+                      </p>
                     </div>
                   </div>
-                )}
-                {!verificationInfo && (
-                  <p className="text-sm text-muted-foreground">
-                    This usually takes 1-2 business days.
-                  </p>
-                )}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Verification Progress</span>
+                      <span className="text-muted-foreground">
+                        {Math.max(10, 100 - (verificationInfo.queuePosition * 20))}%
+                      </span>
+                    </div>
+                    <Progress 
+                      value={Math.max(10, 100 - (verificationInfo.queuePosition * 20))} 
+                      className="h-2"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pending without queue info fallback */}
+      {patientData && !isVerified && !verificationInfo && (
+        <Card className="bg-warning/5 border-warning/30">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-warning/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Clock className="h-6 w-6 text-warning" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-warning text-lg mb-2">Account Pending Verification</h3>
+                <p className="text-muted-foreground mb-2">
+                  Your account is being reviewed by our staff. Once verified, you'll be able to book appointments 
+                  and access all portal features.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  This usually takes 1-2 business days.
+                </p>
               </div>
             </div>
           </CardContent>
