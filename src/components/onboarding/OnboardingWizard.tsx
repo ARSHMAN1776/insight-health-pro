@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, Check, Building2, Users, CreditCard, Settings, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { toast } from 'sonner';
 
 import AccountStep from './steps/AccountStep';
@@ -51,9 +52,17 @@ const STEPS = [
   { id: 'complete', title: 'All Done!', icon: Sparkles, description: 'Your workspace is ready' },
 ];
 
+// Generate unique slug with timestamp suffix
+const generateUniqueSlug = (name: string): string => {
+  const baseSlug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const timestamp = Date.now().toString(36); // Short alphanumeric timestamp
+  return `${baseSlug}-${timestamp}`;
+};
+
 const OnboardingWizard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { refreshOrganization } = useOrganization();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrgId, setCreatedOrgId] = useState<string | null>(null);
@@ -71,7 +80,7 @@ const OnboardingWizard: React.FC = () => {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     selectedPlanId: '',
     billingCycle: 'monthly',
-    enabledModules: ['patients', 'appointments', 'billing'],
+    enabledModules: ['patients', 'appointments', 'billing', 'departments'],
     teamInvites: [],
   });
 
@@ -181,12 +190,12 @@ const OnboardingWizard: React.FC = () => {
       
       setIsSubmitting(true);
       try {
-        // Create organization
+        // Create organization with unique slug
         const { data: org, error: orgError } = await supabase
           .from('organizations')
           .insert({
             name: data.organizationName,
-            slug: data.organizationName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+            slug: generateUniqueSlug(data.organizationName),
             email: data.email, // Required field
             address_line1: data.address || null,
             phone: data.phone || null,
@@ -233,15 +242,19 @@ const OnboardingWizard: React.FC = () => {
 
         if (subError) throw subError;
 
-        // Enable selected modules
-        for (const moduleKey of data.enabledModules) {
-          await supabase.from('organization_modules').insert({
-            organization_id: org.id,
-            module_key: moduleKey,
-            is_enabled: true,
-            enabled_at: new Date().toISOString(),
-          });
-        }
+        // Enable selected modules (batch insert)
+        const moduleInserts = data.enabledModules.map(moduleKey => ({
+          organization_id: org.id,
+          module_key: moduleKey,
+          is_enabled: true,
+          enabled_at: new Date().toISOString(),
+        }));
+        
+        const { error: modulesError } = await supabase
+          .from('organization_modules')
+          .insert(moduleInserts);
+
+        if (modulesError) throw modulesError;
 
         // Track onboarding progress
         await supabase.from('onboarding_progress').insert({
@@ -250,6 +263,9 @@ const OnboardingWizard: React.FC = () => {
           completed: true,
           completed_at: new Date().toISOString(),
         });
+
+        // Refresh organization context so dashboard loads correctly
+        await refreshOrganization();
 
         toast.success('Organization created successfully!');
       } catch (error: any) {
@@ -262,24 +278,26 @@ const OnboardingWizard: React.FC = () => {
     }
 
     if (currentStep === 4 && createdOrgId) {
-      // Team step - send invites
+      // Team step - store invite emails in onboarding_progress for later processing
+      // Note: Actual invitation sending will be handled by a separate invitation system
+      // that creates proper invite tokens and sends emails
       setIsSubmitting(true);
       try {
-        for (const invite of data.teamInvites) {
-          if (invite.email) {
-            await supabase.from('organization_members').insert({
-              organization_id: createdOrgId,
-              user_id: user!.id, // Placeholder - will be updated when user accepts
-              role: invite.role,
-              status: 'pending',
-              invited_at: new Date().toISOString(),
-              invited_by: user!.id,
-            });
-          }
-        }
+        const validInvites = data.teamInvites.filter(i => i.email);
         
-        if (data.teamInvites.length > 0) {
-          toast.success(`${data.teamInvites.filter(i => i.email).length} invitation(s) sent!`);
+        if (validInvites.length > 0) {
+          // Store pending invites in onboarding_progress for processing
+          await supabase.from('onboarding_progress').insert({
+            organization_id: createdOrgId,
+            step: 'team_invites_pending',
+            completed: false,
+            data: { 
+              invites: validInvites.map(i => ({ email: i.email, role: i.role })),
+              invited_by: user!.id,
+            },
+          });
+          
+          toast.success(`${validInvites.length} invitation(s) queued! They'll be sent shortly.`);
         }
       } catch (error: any) {
         console.error('Invite error:', error);

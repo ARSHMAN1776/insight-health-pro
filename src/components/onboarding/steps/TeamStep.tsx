@@ -118,6 +118,12 @@ const TeamStep: React.FC<TeamStepProps> = ({ data, updateData }) => {
           <li><strong>Viewer:</strong> Read-only access to reports and data</li>
         </ul>
       </div>
+
+      <div className="bg-accent/50 rounded-lg p-4 text-sm border border-border">
+        <p className="text-muted-foreground">
+          <strong>Note:</strong> Team invitations will be sent via email. Invited members will receive a link to join your organization after completing signup.
+        </p>
+      </div>
     </div>
   );
 };

@@ -4,7 +4,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, Calendar, FileText, CreditCard, TestTube, Pill, 
-  Droplets, Building2, Bed, Heart, ClipboardList, Bell
+  Droplets, Building2, Bed, Heart, ClipboardList, Package,
+  Send, BarChart3, FileSearch, MessageSquare, Scissors
 } from 'lucide-react';
 import type { OnboardingData } from '../OnboardingWizard';
 
@@ -13,20 +14,27 @@ interface ModulesStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
 }
 
+// Aligned with MODULE_KEYS from src/types/organization.ts
 const MODULES = [
   { key: 'patients', name: 'Patient Management', icon: Users, description: 'Patient records and registration', required: true },
   { key: 'appointments', name: 'Appointments', icon: Calendar, description: 'Scheduling and calendar', required: true },
   { key: 'billing', name: 'Billing & Payments', icon: CreditCard, description: 'Invoices and payment tracking', required: true },
-  { key: 'medical_records', name: 'Medical Records', icon: FileText, description: 'Clinical documentation' },
+  { key: 'departments', name: 'Departments', icon: Building2, description: 'Department management', required: true },
   { key: 'prescriptions', name: 'Prescriptions', icon: Pill, description: 'E-prescribing and refills' },
   { key: 'lab_tests', name: 'Lab & Diagnostics', icon: TestTube, description: 'Test orders and results' },
   { key: 'pharmacy', name: 'Pharmacy', icon: Pill, description: 'Medication inventory' },
+  { key: 'inventory', name: 'Inventory', icon: Package, description: 'Stock and supplies management' },
+  { key: 'insurance', name: 'Insurance Claims', icon: FileText, description: 'Process insurance claims' },
   { key: 'blood_bank', name: 'Blood Bank', icon: Droplets, description: 'Blood inventory management' },
-  { key: 'departments', name: 'Departments', icon: Building2, description: 'Department management' },
-  { key: 'rooms', name: 'Room Management', icon: Bed, description: 'Beds and room assignments' },
+  { key: 'operation_dept', name: 'Operation Theatre', icon: Scissors, description: 'Surgery scheduling' },
+  { key: 'referrals', name: 'Referrals', icon: Send, description: 'Patient referral management' },
+  { key: 'rooms', name: 'Rooms & Beds', icon: Bed, description: 'Room and bed assignments' },
   { key: 'vitals', name: 'Vitals Tracking', icon: Heart, description: 'Patient vital signs' },
   { key: 'queue', name: 'Queue Management', icon: ClipboardList, description: 'Patient queue and tokens' },
-  { key: 'notifications', name: 'Notifications', icon: Bell, description: 'Alerts and reminders' },
+  { key: 'reports', name: 'Advanced Reports', icon: BarChart3, description: 'Analytics and reporting' },
+  { key: 'audit_logs', name: 'Audit Logs', icon: FileSearch, description: 'PHI access audit trail' },
+  { key: 'shift_handover', name: 'Shift Handover', icon: ClipboardList, description: 'Nursing shift handovers' },
+  { key: 'messages', name: 'Patient Messages', icon: MessageSquare, description: 'Patient-provider messaging' },
 ];
 
 const ModulesStep: React.FC<ModulesStepProps> = ({ data, updateData }) => {
@@ -48,7 +56,7 @@ const ModulesStep: React.FC<ModulesStepProps> = ({ data, updateData }) => {
 
   const enableRecommended = () => {
     updateData({ 
-      enabledModules: ['patients', 'appointments', 'billing', 'medical_records', 'prescriptions', 'queue', 'notifications'] 
+      enabledModules: ['patients', 'appointments', 'billing', 'departments', 'prescriptions', 'queue', 'messages'] 
     });
   };
 
