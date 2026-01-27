@@ -121,11 +121,35 @@ const HeroSection = () => {
           {/* Description */}
           <motion.p 
             variants={itemVariants}
-            className="text-lg text-muted-foreground leading-relaxed mb-10 max-w-xl"
+            className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-xl"
           >
             <span>Streamline your healthcare operations</span> with our comprehensive hospital management solution.
             <span className="font-semibold text-foreground"> Empowering healthcare providers and patients</span> with cutting-edge technology.
           </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div variants={itemVariants} className="flex flex-wrap gap-4 mb-10">
+            <MagneticButton strength={0.3}>
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/onboarding')}
+                className="text-lg px-8 shadow-lg shadow-primary/25 group"
+              >
+                Start Free Trial
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </MagneticButton>
+            <MagneticButton strength={0.2}>
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={() => navigate('/login')}
+                className="text-lg px-8"
+              >
+                Sign In
+              </Button>
+            </MagneticButton>
+          </motion.div>
 
           {/* Stats Grid */}
           <motion.div 

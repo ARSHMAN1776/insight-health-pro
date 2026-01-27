@@ -183,7 +183,13 @@ const PricingSection: React.FC = () => {
                               ? 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25' 
                               : ''
                           }`}
-                          onClick={() => navigate('/contact')}
+                          onClick={() => {
+                            if (plan.name === 'Enterprise') {
+                              navigate('/contact');
+                            } else {
+                              navigate('/onboarding');
+                            }
+                          }}
                         >
                           {plan.cta}
                         </Button>
