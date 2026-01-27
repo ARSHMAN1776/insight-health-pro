@@ -69,17 +69,28 @@ Unlike traditional HMS solutions that require page refreshes, MediCore uses **Su
 | Feature | Description |
 |---------|-------------|
 | ✅ **Prescription Management** | Drug interaction checker + QR verification |
+| ✅ **Prescription Refill System** | Patient requests + doctor/pharmacist review workflow |
 | ✅ **Laboratory Module** | Sample tracking, result entry, report verification |
 | ✅ **Pharmacy & Billing** | Inventory-linked dispensing with auto-deduction |
 | ✅ **Blood Bank** | Compatibility matrix + donation/transfusion tracking |
 | ✅ **Operation Theatre** | Surgery scheduling with team assignment |
+
+### 💬 Communication & Engagement
+
+| Feature | Description |
+|---------|-------------|
+| ✅ **Doctor-Patient Messaging** | Two-way secure communication with clinical context |
+| ✅ **Patient Context Panel** | View allergies, medications, and history alongside chat |
+| ✅ **Quick Reply Templates** | Standardized responses for common scenarios |
+| ✅ **Real-Time Notifications** | Instant alerts for appointments, results, refills |
+| ✅ **Patient Portal** | Self-service appointments, records, messaging, refills |
 
 ### 📊 Administration & Analytics
 
 | Feature | Description |
 |---------|-------------|
 | ✅ **Inventory Management** | Automated reorder alerts + supplier management |
-| ✅ **Insurance Claims** | Submission, tracking, and appeals workflow |
+| ✅ **Insurance Claims** | ICD-10/CPT coding, submission, tracking, appeals |
 | ✅ **Staff Management** | Scheduling, shift handovers, department assignment |
 | ✅ **Reports & Analytics** | Drill-down charts with export (PDF/Excel) |
 | ✅ **Audit Logging** | HIPAA-compliant PHI access tracking |
@@ -99,7 +110,7 @@ Unlike traditional HMS solutions that require page refreshes, MediCore uses **Su
 | Feature | Description |
 |---------|-------------|
 | ✅ **Progressive Web App (PWA)** | Install on any device |
-| ✅ **Multi-Language (i18n)** | English + Urdu (extensible) |
+| ✅ **Multi-Language (i18n)** | English, Urdu, Arabic, Hindi, Spanish, French |
 | ✅ **Dark/Light Mode** | System-aware theming |
 | ✅ **Responsive Design** | Mobile-first approach |
 | ✅ **Accessibility (a11y)** | WCAG 2.1 compliant |
@@ -223,9 +234,10 @@ VITE_SUPABASE_PROJECT_ID=your-project-id
 |------|--------|-------------|
 | 📁 **Source Code** | `/src` | Complete React + TypeScript codebase (no `node_modules`) |
 | 📚 **Documentation** | `/docs` | Full setup guides, user manual, API docs (Markdown) |
-| 🗄️ **Database Schema** | `docs/DATABASE_SCHEMA.sql` | Complete PostgreSQL schema (47+ tables) |
+| 🗄️ **Database Schema** | `docs/DATABASE_SCHEMA.sql` | Complete PostgreSQL schema (54+ tables) |
 | 🔌 **Supabase Guide** | `docs/SUPABASE_SETUP_GUIDE.md` | Step-by-step backend connection |
 | 📖 **User Guide** | `docs/USER_GUIDE.md` | End-user documentation |
+| 📋 **Enhancement Plan** | `.lovable/plan.md` | Future roadmap with Phase 1 complete |
 
 ---
 
@@ -233,13 +245,14 @@ VITE_SUPABASE_PROJECT_ID=your-project-id
 
 | Document | Description |
 |----------|-------------|
-| [Complete Project Guide](./docs/COMPLETE_PROJECT_GUIDE.md) | All features & workflows |
+| [Complete Project Guide](./docs/PROJECT_DOCUMENTATION.md) | All features & workflows |
 | [Supabase Setup Guide](./docs/SUPABASE_SETUP_GUIDE.md) | **How to connect Supabase** |
-| [Database Schema](./docs/DATABASE_SCHEMA.sql) | Complete SQL schema (47+ tables) |
+| [Database Schema](./docs/DATABASE_SCHEMA.sql) | Complete SQL schema (54+ tables) |
 | [Setup Guide](./docs/SETUP_GUIDE.md) | Installation & configuration |
 | [User Guide](./docs/USER_GUIDE.md) | End-user documentation |
 | [Disaster Recovery](./docs/DISASTER_RECOVERY_PLAYBOOK.md) | Backup & recovery |
 | [Notification System](./docs/NOTIFICATION_SYSTEM_DOCUMENTATION.md) | Notification architecture |
+| [Enhancement Plan](./.lovable/plan.md) | Future roadmap & completed phases |
 
 ---
 

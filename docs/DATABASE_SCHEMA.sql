@@ -1,12 +1,30 @@
 -- ============================================================================
 -- HOSPITAL MANAGEMENT SYSTEM - COMPLETE DATABASE SCHEMA
 -- ============================================================================
--- Version: 3.0.0
+-- Version: 4.0.0
 -- Database: PostgreSQL (Supabase)
 -- Last Updated: January 2026
 -- Description: Complete SQL schema for the Hospital Management System
--- Total Tables: 47+
+-- Total Tables: 54+
 -- 
+-- MODULES INCLUDED:
+-- - User Management & Authentication
+-- - Department & Staff Management
+-- - Patient Management & Registration Queue
+-- - Clinical Records (Appointments, Medical Records, Prescriptions, Lab Tests)
+-- - Prescription Refill System
+-- - Doctor-Patient Messaging
+-- - Blood Bank Management
+-- - Operation Theatre & Surgery
+-- - Room & Bed Management
+-- - Financial (Payments, Insurance Claims, Pharmacy Billing)
+-- - Inventory & Supply Chain
+-- - Queue Management System
+-- - Notifications & Reminders
+-- - HIPAA Audit Logging
+-- - Clinical Codes (ICD-10, CPT)
+-- - Shift Handover System
+--
 -- IMPORTANT: This schema is designed for fresh database setup.
 -- Execute in order: Extensions -> Types -> Functions -> Tables -> RLS -> FK
 -- ============================================================================

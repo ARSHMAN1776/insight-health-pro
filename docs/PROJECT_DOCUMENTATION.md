@@ -1,6 +1,10 @@
 # Hospital Management System (HMS)
 ## Complete Project Documentation
 
+**Version:** 4.0.0  
+**Last Updated:** January 2026  
+**Status:** Production Ready
+
 ---
 
 ## Table of Contents
@@ -16,17 +20,19 @@
 9. [Patient Portal Module](#9-patient-portal-module)
 10. [Department Management](#10-department-management)
 11. [Staff Management Module](#11-staff-management-module)
-12. [Notification & Reminder System](#12-notification--reminder-system)
-13. [Reports & Analytics](#13-reports--analytics)
-14. [Settings & Configuration](#14-settings--configuration)
-15. [Database Architecture](#15-database-architecture)
-16. [Security Features](#16-security-features)
-17. [Edge Functions & APIs](#17-edge-functions--apis)
-18. [Custom Hooks](#18-custom-hooks)
-19. [Utility Libraries](#19-utility-libraries)
-20. [UI Components Library](#20-ui-components-library)
-21. [System Requirements](#21-system-requirements)
-22. [File Structure](#22-file-structure)
+12. [Doctor-Patient Communication](#12-doctor-patient-communication)
+13. [Prescription Refill System](#13-prescription-refill-system)
+14. [Notification & Reminder System](#14-notification--reminder-system)
+15. [Reports & Analytics](#15-reports--analytics)
+16. [Settings & Configuration](#16-settings--configuration)
+17. [Database Architecture](#17-database-architecture)
+18. [Security Features](#18-security-features)
+19. [Edge Functions & APIs](#19-edge-functions--apis)
+20. [Custom Hooks](#20-custom-hooks)
+21. [Utility Libraries](#21-utility-libraries)
+22. [UI Components Library](#22-ui-components-library)
+23. [System Requirements](#23-system-requirements)
+24. [File Structure](#24-file-structure)
 
 ---
 
@@ -47,7 +53,12 @@ The Hospital Management System (HMS) is a comprehensive, web-based healthcare ma
 | **Blood Bank Management** | Complete blood inventory, donors, and transfusion tracking |
 | **Operation Theatre Management** | Surgery scheduling, team management, and post-op care |
 | **Patient Self-Service Portal** | Patients can book appointments, message doctors, request refills |
+| **Doctor-Patient Messaging** | Two-way secure communication with clinical context |
+| **Prescription Refill Workflow** | Complete refill request and approval system |
 | **Multi-Timezone Support** | Hospital timezone configuration for global operations |
+| **Insurance Claims Management** | ICD-10/CPT coding with claims tracking |
+| **AI-Powered Diagnosis Assistance** | AI suggestions for clinical decision support |
+| **Appointment Waitlist** | Smart waitlist with notification system |
 
 ---
 
@@ -70,11 +81,11 @@ The system provides **7 role-specific dashboards**:
 | Dashboard | Target User | Key Widgets |
 |-----------|-------------|-------------|
 | **Admin Dashboard** | Administrators | System statistics, pending verifications, recent activities, user management shortcuts |
-| **Doctor Dashboard** | Physicians | Today's appointments, patient queue, recent prescriptions, lab results pending |
-| **Nurse Dashboard** | Nursing Staff | Patient assignments, room status, task list, medication schedules |
-| **Patient Dashboard** | Patients | Upcoming appointments, prescriptions, medical history, doctor messaging |
-| **Receptionist Dashboard** | Front Desk | Appointment scheduling, patient registration queue, billing shortcuts |
-| **Pharmacist Dashboard** | Pharmacy Staff | Prescription queue, inventory alerts, drug dispensing |
+| **Doctor Dashboard** | Physicians | Today's appointments, patient queue, recent prescriptions, lab results pending, **refill requests**, **unread messages** |
+| **Nurse Dashboard** | Nursing Staff | Patient assignments, room status, task list, medication schedules, shift handover |
+| **Patient Dashboard** | Patients | Upcoming appointments, prescriptions, medical history, doctor messaging, queue status |
+| **Receptionist Dashboard** | Front Desk | Appointment scheduling, patient registration queue, billing shortcuts, queue management |
+| **Pharmacist Dashboard** | Pharmacy Staff | Prescription queue, inventory alerts, drug dispensing, **refill request review** |
 | **Lab Technician Dashboard** | Laboratory Staff | Pending tests, in-progress tests, urgent tests, test results entry |
 
 ---
@@ -1467,7 +1478,131 @@ The Staff Management module handles all aspects of hospital personnel including 
 
 ---
 
-## 12. Notification & Reminder System
+## 12. Doctor-Patient Communication
+
+### 12.1 Enhanced Messaging System
+
+The HMS provides a robust two-way communication system between doctors and patients with clinical context integration.
+
+**Files:**
+- `src/pages/PatientMessages.tsx` - Main messaging interface for doctors
+- `src/components/patient-portal/DoctorMessaging.tsx` - Patient-side messaging
+- `src/components/messages/PatientContextPanel.tsx` - Clinical context display
+- `src/components/messages/QuickReplyTemplates.tsx` - Standardized response templates
+- `src/components/dashboard/MessagesPreviewWidget.tsx` - Dashboard message preview
+
+### 12.2 Doctor Messaging Features
+
+| Feature | Description |
+|---------|-------------|
+| Conversation List | View all patient conversations with unread indicators |
+| Message Thread | Full conversation history with timestamps |
+| Patient Context Panel | View allergies, active medications, recent history alongside chat |
+| Quick Reply Templates | Pre-defined responses for common scenarios |
+| Read Receipts | Track when messages are read |
+| Real-time Updates | Live message delivery via Supabase subscriptions |
+| Message Search | Search across all conversations |
+
+### 12.3 Patient Context Panel
+
+**File:** `src/components/messages/PatientContextPanel.tsx`
+
+| Section | Description |
+|---------|-------------|
+| Patient Info | Name, date of birth, contact details |
+| Allergies | Known allergies with severity indicators |
+| Active Medications | Current prescriptions with dosages |
+| Recent Visits | Last 3 medical record entries |
+| Quick Actions | View full records, book appointment |
+
+### 12.4 Quick Reply Templates
+
+**File:** `src/components/messages/QuickReplyTemplates.tsx`
+
+| Template | Use Case |
+|----------|----------|
+| Schedule Visit | Recommend scheduling an appointment |
+| Test Results | Explain test results are available |
+| Medication Update | Confirm prescription changes |
+| General Follow-up | Standard follow-up response |
+| Emergency Referral | Direct to emergency services |
+
+### 12.5 Messages Preview Widget
+
+**File:** `src/components/dashboard/MessagesPreviewWidget.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Unread Count | Badge showing unread message count |
+| Recent Messages | Preview of latest patient messages |
+| Quick Access | Click to open full messaging interface |
+| Sender Info | Patient name and message preview |
+
+---
+
+## 13. Prescription Refill System
+
+### 13.1 Complete Refill Workflow
+
+The prescription refill system provides a complete workflow from patient request to doctor/pharmacist approval with automated notifications.
+
+```
+Patient Request → Pending Queue → Doctor/Pharmacist Review → 
+Approve/Deny → Patient Notification → (If Approved) Pharmacy Queue
+```
+
+### 13.2 Refill Request Review Interface
+
+**File:** `src/components/prescriptions/RefillRequestReview.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Pending Queue | List of all pending refill requests |
+| Request Details | Patient info, medication, dosage, original prescription |
+| Patient Allergies | Allergy warnings displayed prominently |
+| Prescription History | Original prescribing doctor info |
+| Approve Action | Approve refill with optional notes |
+| Deny Action | Deny refill with required reason |
+| Auto-Notification | Patient notified on status change |
+
+### 13.3 Dashboard Integration
+
+| Dashboard | Widget |
+|-----------|--------|
+| Doctor Dashboard | RefillRequestReview with pending count badge |
+| Pharmacist Dashboard | RefillRequestReview for medication-specific review |
+
+### 13.4 Refill Request Status Flow
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Awaiting review |
+| `approved` | Refill approved, ready for dispensing |
+| `denied` | Refill denied with reason |
+
+### 13.5 Refill Data Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| Prescription ID | UUID | ✅ | Link to original prescription |
+| Patient ID | UUID | ✅ | Requesting patient |
+| Reason | Text | ❌ | Patient's reason for refill |
+| Status | Select | ✅ | pending/approved/denied |
+| Notes | Text | ❌ | Review notes from staff |
+| Reviewed By | UUID | ❌ | Staff who reviewed |
+| Reviewed At | Timestamp | ❌ | When reviewed |
+
+### 13.6 Automatic Notifications
+
+When a refill request is reviewed, the system automatically:
+1. Creates a notification record in the `notifications` table
+2. Links to the prescription for easy access
+3. Includes approval/denial reason in message
+4. Sets appropriate priority level
+
+---
+
+## 14. Notification & Reminder System
 
 ### 12.1 Notification Center
 
