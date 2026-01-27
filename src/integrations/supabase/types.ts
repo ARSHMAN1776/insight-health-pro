@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          organization_id: string
+          rate_limit_per_hour: number | null
+          scopes: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          organization_id: string
+          rate_limit_per_hour?: number | null
+          scopes?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          organization_id?: string
+          rate_limit_per_hour?: number | null
+          scopes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_waitlist: {
         Row: {
           created_at: string
@@ -1195,6 +1248,50 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          data: Json | null
+          id: string
+          organization_id: string
+          started_at: string | null
+          step: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          organization_id: string
+          started_at?: string | null
+          step: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          organization_id?: string
+          started_at?: string | null
+          step?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_progress_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operation_theatres: {
         Row: {
           created_at: string | null
@@ -1225,6 +1322,355 @@ export type Database = {
           ot_name?: string
           status?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      organization_members: {
+        Row: {
+          can_export_data: boolean | null
+          can_invite_members: boolean | null
+          can_manage_billing: boolean | null
+          created_at: string | null
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          joined_at: string | null
+          last_active_at: string | null
+          organization_id: string
+          permissions: Json | null
+          role: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_export_data?: boolean | null
+          can_invite_members?: boolean | null
+          can_manage_billing?: boolean | null
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          last_active_at?: string | null
+          organization_id: string
+          permissions?: Json | null
+          role: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_export_data?: boolean | null
+          can_invite_members?: boolean | null
+          can_manage_billing?: boolean | null
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          last_active_at?: string | null
+          organization_id?: string
+          permissions?: Json | null
+          role?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_modules: {
+        Row: {
+          created_at: string | null
+          disabled_at: string | null
+          enabled_at: string | null
+          id: string
+          is_enabled: boolean | null
+          module_key: string
+          organization_id: string
+          settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          disabled_at?: string | null
+          enabled_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          module_key: string
+          organization_id: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          disabled_at?: string | null
+          enabled_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          module_key?: string
+          organization_id?: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_modules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_subscriptions: {
+        Row: {
+          billing_cycle: string | null
+          cancel_at_period_end: boolean | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string | null
+          current_api_calls: number | null
+          current_patient_count: number | null
+          current_period_end: string | null
+          current_period_start: string | null
+          current_staff_count: number | null
+          current_storage_gb: number | null
+          discount_code: string | null
+          discount_ends_at: string | null
+          discount_percentage: number | null
+          id: string
+          last_invoice_amount: number | null
+          last_invoice_date: string | null
+          next_invoice_amount: number | null
+          next_invoice_date: string | null
+          organization_id: string
+          plan_id: string | null
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+          stripe_subscription_id: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_cycle?: string | null
+          cancel_at_period_end?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          current_api_calls?: number | null
+          current_patient_count?: number | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          current_staff_count?: number | null
+          current_storage_gb?: number | null
+          discount_code?: string | null
+          discount_ends_at?: string | null
+          discount_percentage?: number | null
+          id?: string
+          last_invoice_amount?: number | null
+          last_invoice_date?: string | null
+          next_invoice_amount?: number | null
+          next_invoice_date?: string | null
+          organization_id: string
+          plan_id?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_cycle?: string | null
+          cancel_at_period_end?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          current_api_calls?: number | null
+          current_patient_count?: number | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          current_staff_count?: number | null
+          current_storage_gb?: number | null
+          discount_code?: string | null
+          discount_ends_at?: string | null
+          discount_percentage?: number | null
+          id?: string
+          last_invoice_amount?: number | null
+          last_invoice_date?: string | null
+          next_invoice_amount?: number | null
+          next_invoice_date?: string | null
+          organization_id?: string
+          plan_id?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          accreditation_body: string | null
+          accreditation_number: string | null
+          activated_at: string | null
+          address_line1: string | null
+          address_line2: string | null
+          allowed_ip_ranges: string[] | null
+          cancelled_at: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          date_format: string | null
+          email: string
+          id: string
+          legal_name: string | null
+          license_number: string | null
+          locale: string | null
+          logo_url: string | null
+          max_patients: number | null
+          max_staff: number | null
+          max_storage_gb: number | null
+          metadata: Json | null
+          name: string
+          npi_number: string | null
+          password_policy: Json | null
+          phone: string | null
+          postal_code: string | null
+          primary_color: string | null
+          require_2fa: boolean | null
+          secondary_color: string | null
+          session_timeout_minutes: number | null
+          settings: Json | null
+          slug: string
+          state_province: string | null
+          status: string | null
+          suspended_at: string | null
+          tax_id: string | null
+          timezone: string | null
+          trial_ends_at: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          accreditation_body?: string | null
+          accreditation_number?: string | null
+          activated_at?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          allowed_ip_ranges?: string[] | null
+          cancelled_at?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          date_format?: string | null
+          email: string
+          id?: string
+          legal_name?: string | null
+          license_number?: string | null
+          locale?: string | null
+          logo_url?: string | null
+          max_patients?: number | null
+          max_staff?: number | null
+          max_storage_gb?: number | null
+          metadata?: Json | null
+          name: string
+          npi_number?: string | null
+          password_policy?: Json | null
+          phone?: string | null
+          postal_code?: string | null
+          primary_color?: string | null
+          require_2fa?: boolean | null
+          secondary_color?: string | null
+          session_timeout_minutes?: number | null
+          settings?: Json | null
+          slug: string
+          state_province?: string | null
+          status?: string | null
+          suspended_at?: string | null
+          tax_id?: string | null
+          timezone?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          accreditation_body?: string | null
+          accreditation_number?: string | null
+          activated_at?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          allowed_ip_ranges?: string[] | null
+          cancelled_at?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          date_format?: string | null
+          email?: string
+          id?: string
+          legal_name?: string | null
+          license_number?: string | null
+          locale?: string | null
+          logo_url?: string | null
+          max_patients?: number | null
+          max_staff?: number | null
+          max_storage_gb?: number | null
+          metadata?: Json | null
+          name?: string
+          npi_number?: string | null
+          password_policy?: Json | null
+          phone?: string | null
+          postal_code?: string | null
+          primary_color?: string | null
+          require_2fa?: boolean | null
+          secondary_color?: string | null
+          session_timeout_minutes?: number | null
+          settings?: Json | null
+          slug?: string
+          state_province?: string | null
+          status?: string | null
+          suspended_at?: string | null
+          tax_id?: string | null
+          timezone?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -2547,6 +2993,62 @@ export type Database = {
         }
         Relationships: []
       }
+      saas_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          organization_id: string | null
+          request_id: string | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id?: string | null
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id?: string | null
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shift_handover_patients: {
         Row: {
           bed_number: number | null
@@ -2702,6 +3204,111 @@ export type Database = {
           staff_id?: string
           staff_type?: string
           start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          backup_frequency_hours: number | null
+          created_at: string | null
+          data_retention_days: number | null
+          description: string | null
+          display_order: number | null
+          features: Json
+          hipaa_compliant: boolean | null
+          id: string
+          integrations: Json | null
+          is_active: boolean | null
+          is_custom: boolean | null
+          is_public: boolean | null
+          max_api_calls_per_month: number | null
+          max_departments: number | null
+          max_patients: number | null
+          max_staff: number | null
+          max_storage_gb: number | null
+          metadata: Json | null
+          modules: Json
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          setup_fee: number | null
+          slug: string
+          soc2_compliant: boolean | null
+          stripe_price_id_monthly: string | null
+          stripe_price_id_yearly: string | null
+          stripe_product_id: string | null
+          support_level: string | null
+          support_response_sla_hours: number | null
+          tier: number
+          updated_at: string | null
+        }
+        Insert: {
+          backup_frequency_hours?: number | null
+          created_at?: string | null
+          data_retention_days?: number | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json
+          hipaa_compliant?: boolean | null
+          id?: string
+          integrations?: Json | null
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          is_public?: boolean | null
+          max_api_calls_per_month?: number | null
+          max_departments?: number | null
+          max_patients?: number | null
+          max_staff?: number | null
+          max_storage_gb?: number | null
+          metadata?: Json | null
+          modules?: Json
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          setup_fee?: number | null
+          slug: string
+          soc2_compliant?: boolean | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          stripe_product_id?: string | null
+          support_level?: string | null
+          support_response_sla_hours?: number | null
+          tier: number
+          updated_at?: string | null
+        }
+        Update: {
+          backup_frequency_hours?: number | null
+          created_at?: string | null
+          data_retention_days?: number | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json
+          hipaa_compliant?: boolean | null
+          id?: string
+          integrations?: Json | null
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          is_public?: boolean | null
+          max_api_calls_per_month?: number | null
+          max_departments?: number | null
+          max_patients?: number | null
+          max_staff?: number | null
+          max_storage_gb?: number | null
+          metadata?: Json | null
+          modules?: Json
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          setup_fee?: number | null
+          slug?: string
+          soc2_compliant?: boolean | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          stripe_product_id?: string | null
+          support_level?: string | null
+          support_response_sla_hours?: number | null
+          tier?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -2863,6 +3470,47 @@ export type Database = {
           },
         ]
       }
+      usage_metrics: {
+        Row: {
+          billing_period_end: string | null
+          billing_period_start: string | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number
+          organization_id: string
+          recorded_at: string | null
+        }
+        Insert: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value: number
+          organization_id: string
+          recorded_at?: string | null
+        }
+        Update: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number
+          organization_id?: string
+          recorded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_metrics_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2910,6 +3558,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      webhook_endpoints: {
+        Row: {
+          created_at: string | null
+          events: string[]
+          failure_count: number | null
+          id: string
+          is_active: boolean | null
+          last_failure_at: string | null
+          last_success_at: string | null
+          last_triggered_at: string | null
+          organization_id: string
+          retry_count: number | null
+          secret: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          events: string[]
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          last_triggered_at?: string | null
+          organization_id: string
+          retry_count?: number | null
+          secret: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          events?: string[]
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          last_triggered_at?: string | null
+          organization_id?: string
+          retry_count?: number | null
+          secret?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -2965,6 +3669,10 @@ export type Database = {
       calculate_queue_position:
         | { Args: { _queue_id: string }; Returns: number }
         | { Args: { _priority?: string; _queue_id: string }; Returns: number }
+      can_access_organization: {
+        Args: { resource_org_id: string }
+        Returns: boolean
+      }
       doctor_has_patient_relationship: {
         Args: { _doctor_id: string; _patient_id: string }
         Returns: boolean
@@ -2984,6 +3692,8 @@ export type Database = {
         Returns: string
       }
       get_patient_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_user_org_role: { Args: never; Returns: string }
+      get_user_organization_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -2999,6 +3709,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_module_enabled: { Args: { module_key: string }; Returns: boolean }
     }
     Enums: {
       app_role:
