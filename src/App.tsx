@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { OrganizationProvider } from "./contexts/OrganizationContext";
 import { ThemeProvider } from "./components/theme-provider";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import OfflineIndicator from "./components/shared/OfflineIndicator";
@@ -99,9 +100,10 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
+          <OrganizationProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
             <OfflineIndicator />
           <BrowserRouter>
           <Routes>
@@ -377,10 +379,11 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+            </TooltipProvider>
+          </OrganizationProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   </ErrorBoundary>
 );
 
