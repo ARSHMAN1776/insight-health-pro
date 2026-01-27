@@ -17,6 +17,23 @@ import ModulesStep from './steps/ModulesStep';
 import TeamStep from './steps/TeamStep';
 import CompleteStep from './steps/CompleteStep';
 
+export interface ModulePricing {
+  module_key: string;
+  name: string;
+  description: string | null;
+  price_monthly: number;
+  price_yearly: number;
+  min_plan_tier: number;
+  is_enterprise_only: boolean;
+}
+
+export interface SelectedPlanData {
+  id: string;
+  name: string;
+  tier: number; // 1=Starter, 2=Professional, 3=Enterprise
+  modules: string[];
+}
+
 export interface OnboardingData {
   // Account
   email: string;
@@ -35,9 +52,13 @@ export interface OnboardingData {
   // Plan
   selectedPlanId: string;
   billingCycle: 'monthly' | 'yearly';
+  selectedPlanData: SelectedPlanData | null;
   
   // Modules
   enabledModules: string[];
+  addonModules: string[]; // Modules selected beyond the plan
+  addonTotalMonthly: number;
+  addonTotalYearly: number;
   
   // Team
   teamInvites: Array<{ email: string; role: string }>;
@@ -80,7 +101,11 @@ const OnboardingWizard: React.FC = () => {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     selectedPlanId: '',
     billingCycle: 'monthly',
-    enabledModules: ['patients', 'appointments', 'billing', 'departments'],
+    selectedPlanData: null,
+    enabledModules: [],
+    addonModules: [],
+    addonTotalMonthly: 0,
+    addonTotalYearly: 0,
     teamInvites: [],
   });
 
@@ -179,14 +204,14 @@ const OnboardingWizard: React.FC = () => {
 
     if (currentStep === 3) {
       // Modules step - create organization
-      // Re-fetch the current session to ensure we have the latest auth state
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUser = sessionData?.session?.user;
-      
-      if (!currentUser) {
-        toast.error('Please sign in first. If you just created an account, please verify your email and sign in.');
+      // Refresh session to ensure auth state is current (fixes RLS timing issues)
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshData.session) {
+        toast.error('Session expired. Please sign in again.');
+        navigate('/login');
         return;
       }
+      const currentUser = refreshData.session.user;
       
       setIsSubmitting(true);
       try {
@@ -242,12 +267,16 @@ const OnboardingWizard: React.FC = () => {
 
         if (subError) throw subError;
 
-        // Enable selected modules (batch insert)
+        // Enable selected modules (batch insert) - mark add-ons for billing
+        const planModules = data.selectedPlanData?.modules || [];
         const moduleInserts = data.enabledModules.map(moduleKey => ({
           organization_id: org.id,
           module_key: moduleKey,
           is_enabled: true,
           enabled_at: new Date().toISOString(),
+          settings: data.addonModules.includes(moduleKey) 
+            ? { is_addon: true, added_at: new Date().toISOString() }
+            : null,
         }));
         
         const { error: modulesError } = await supabase
@@ -256,7 +285,7 @@ const OnboardingWizard: React.FC = () => {
 
         if (modulesError) throw modulesError;
 
-        // Track onboarding progress
+        // Track onboarding progress with add-on info
         await supabase.from('onboarding_progress').insert({
           organization_id: org.id,
           step: 'modules_configured',
@@ -343,6 +372,9 @@ const OnboardingWizard: React.FC = () => {
       case 2:
         return <PlanStep data={data} updateData={updateData} />;
       case 3:
+        if (!data.selectedPlanData) {
+          return <div className="text-center py-8 text-muted-foreground">Please select a plan first</div>;
+        }
         return <ModulesStep data={data} updateData={updateData} />;
       case 4:
         return <TeamStep data={data} updateData={updateData} />;
