@@ -249,11 +249,11 @@ const Navbar = () => {
           {/* Desktop CTA Buttons */}
           <div className="hidden xl:flex items-center gap-3">
             <Button 
-              variant="ghost"
-              onClick={() => navigate('/contact')}
-              className="h-10 px-5 text-sm font-medium text-primary hover:text-primary hover:bg-primary/10 rounded-full"
+              variant="outline"
+              onClick={() => navigate('/onboarding')}
+              className="h-10 px-5 text-sm font-medium rounded-full border-primary/30 text-primary hover:bg-primary/10"
             >
-              Request Demo
+              Start Free Trial
             </Button>
             
             <Button 
@@ -311,12 +311,12 @@ const Navbar = () => {
             <div className="w-px h-6 bg-border mx-1" />
             
             <Button 
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => navigate('/contact')}
-              className="text-sm font-medium text-primary hover:text-primary hover:bg-primary/10"
+              onClick={() => navigate('/onboarding')}
+              className="text-sm font-medium border-primary/30 text-primary hover:bg-primary/10"
             >
-              Demo
+              Free Trial
             </Button>
             
             <Button 
@@ -389,15 +389,15 @@ const Navbar = () => {
               {/* CTA Buttons */}
               <div className="pt-4 space-y-2 px-2">
                 <Button 
-                  variant="outline"
-                  onClick={() => { navigate('/contact'); setIsMobileMenuOpen(false); }}
-                  className="w-full h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 font-medium"
+                  onClick={() => { navigate('/onboarding'); setIsMobileMenuOpen(false); }}
+                  className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl font-medium"
                 >
-                  Request Demo
+                  Start Free Trial
                 </Button>
                 <Button 
+                  variant="outline"
                   onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}
-                  className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl font-medium"
+                  className="w-full h-12 rounded-xl border-border font-medium"
                 >
                   Login
                 </Button>

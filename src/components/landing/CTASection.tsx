@@ -35,14 +35,22 @@ const CTASection = () => {
             Join thousands of satisfied patients and healthcare professionals who trust our platform for their healthcare needs.
           </p>
           
-          <div className="flex justify-center pt-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
             <Button 
               size="lg" 
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/onboarding')}
               className="bg-white text-primary hover:bg-white/90 text-lg px-10 shadow-xl group"
             >
-              Get Started
+              Start Free Trial
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => navigate('/contact')}
+              className="border-white text-white hover:bg-white/10 text-lg px-10"
+            >
+              Contact Sales
             </Button>
           </div>
 
