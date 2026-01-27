@@ -24,6 +24,8 @@ import VerifyPatient from './pages/VerifyPatient';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Onboarding from './pages/Onboarding';
+import Security from './pages/Security';
+import Status from './pages/Status';
 
 // Feature pages
 import PatientManagementFeature from './pages/features/PatientManagement';
@@ -122,6 +124,8 @@ const App = () => (
               <Route path="/about" element={<AboutUs />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/security" element={<Security />} />
+              <Route path="/status" element={<Status />} />
               
               {/* Feature pages */}
               <Route path="/features/patient-management" element={<PatientManagementFeature />} />
