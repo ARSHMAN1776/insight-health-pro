@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Send, User, Search, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { MessageCircle, Send, User, Search, Check, CheckCheck, Trash2, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import PatientContextPanel from '@/components/messages/PatientContextPanel';
+import QuickReplyTemplates from '@/components/messages/QuickReplyTemplates';
 
 interface Message {
   id: string;
@@ -39,6 +41,7 @@ const PatientMessages: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showContextPanel, setShowContextPanel] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -267,6 +270,10 @@ const PatientMessages: React.FC = () => {
 
   const totalUnread = patients.reduce((sum, p) => sum + p.unread_count, 0);
 
+  const handleQuickReply = (message: string) => {
+    setNewMessage(message);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -276,14 +283,34 @@ const PatientMessages: React.FC = () => {
             Communicate with your patients securely
           </p>
         </div>
-        {totalUnread > 0 && (
-          <Badge variant="destructive" className="text-sm px-3 py-1">
-            {totalUnread} unread message{totalUnread > 1 ? 's' : ''}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {totalUnread > 0 && (
+            <Badge variant="destructive" className="text-sm px-3 py-1">
+              {totalUnread} unread message{totalUnread > 1 ? 's' : ''}
+            </Badge>
+          )}
+          {selectedPatient && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowContextPanel(!showContextPanel)}
+              title={showContextPanel ? 'Hide patient context' : 'Show patient context'}
+            >
+              {showContextPanel ? (
+                <PanelRightClose className="h-4 w-4" />
+              ) : (
+                <PanelRightOpen className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
+      <div className={`grid gap-6 h-[calc(100vh-250px)] ${
+        selectedPatient && showContextPanel 
+          ? 'grid-cols-1 lg:grid-cols-4' 
+          : 'grid-cols-1 lg:grid-cols-3'
+      }`}>
         {/* Patients List */}
         <Card className="lg:col-span-1 flex flex-col">
           <CardHeader className="pb-3">
@@ -409,7 +436,7 @@ const PatientMessages: React.FC = () => {
                               </span>
                               {msg.sender_type === 'doctor' && (
                                 msg.read ? (
-                                  <CheckCheck className="w-4 h-4 text-blue-400" />
+                                  <CheckCheck className="w-4 h-4 text-success" />
                                 ) : (
                                   <Check className="w-4 h-4 text-primary-foreground/50" />
                                 )
@@ -423,8 +450,14 @@ const PatientMessages: React.FC = () => {
                   )}
                 </div>
 
+                {/* Quick Reply Templates */}
+                <QuickReplyTemplates 
+                  patientName={`${selectedPatient.first_name} ${selectedPatient.last_name}`}
+                  onSelectTemplate={handleQuickReply}
+                />
+
                 {/* Message Input */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-3">
                   <Textarea
                     placeholder={`Reply to ${selectedPatient.first_name}...`}
                     value={newMessage}
@@ -452,6 +485,16 @@ const PatientMessages: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Patient Context Panel */}
+        {selectedPatient && showContextPanel && (
+          <div className="hidden lg:block">
+            <PatientContextPanel
+              patientId={selectedPatient.patient_id}
+              patientName={`${selectedPatient.first_name} ${selectedPatient.last_name}`}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
