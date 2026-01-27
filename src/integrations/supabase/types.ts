@@ -1146,6 +1146,42 @@ export type Database = {
           },
         ]
       }
+      module_pricing: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_enterprise_only: boolean | null
+          min_plan_tier: number | null
+          module_key: string
+          name: string
+          price_monthly: number
+          price_yearly: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_enterprise_only?: boolean | null
+          min_plan_tier?: number | null
+          module_key: string
+          name: string
+          price_monthly?: number
+          price_yearly?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_enterprise_only?: boolean | null
+          min_plan_tier?: number | null
+          module_key?: string
+          name?: string
+          price_monthly?: number
+          price_yearly?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null

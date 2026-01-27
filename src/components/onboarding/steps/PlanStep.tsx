@@ -21,6 +21,8 @@ interface Plan {
   max_staff: number | null;
   max_storage_gb: number | null;
   features: string[];
+  modules: string[];
+  tier: number;
   is_popular?: boolean;
 }
 
@@ -37,7 +39,7 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
         .order('price_monthly', { ascending: true, nullsFirst: false });
 
       if (!error && plansData) {
-        setPlans(plansData.map(p => ({
+        const mappedPlans = plansData.map((p, index) => ({
           id: p.id,
           name: p.name,
           description: p.description || '',
@@ -47,8 +49,27 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
           max_staff: p.max_staff,
           max_storage_gb: p.max_storage_gb,
           features: Array.isArray(p.features) ? (p.features as string[]) : [],
+          modules: Array.isArray(p.modules) ? (p.modules as string[]) : [],
+          tier: index + 1, // 1=Starter, 2=Professional, 3=Enterprise
           is_popular: p.name === 'Professional',
-        })));
+        }));
+        setPlans(mappedPlans);
+        
+        // If a plan was previously selected, update its data
+        if (data.selectedPlanId) {
+          const selectedPlan = mappedPlans.find(p => p.id === data.selectedPlanId);
+          if (selectedPlan && !data.selectedPlanData) {
+            updateData({
+              selectedPlanData: {
+                id: selectedPlan.id,
+                name: selectedPlan.name,
+                tier: selectedPlan.tier,
+                modules: selectedPlan.modules,
+              },
+              enabledModules: selectedPlan.modules,
+            });
+          }
+        }
       }
       setLoading(false);
     };
@@ -100,7 +121,19 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
             <button
               key={plan.id}
               type="button"
-              onClick={() => updateData({ selectedPlanId: plan.id })}
+              onClick={() => updateData({ 
+                selectedPlanId: plan.id,
+                selectedPlanData: {
+                  id: plan.id,
+                  name: plan.name,
+                  tier: plan.tier,
+                  modules: plan.modules,
+                },
+                enabledModules: plan.modules,
+                addonModules: [],
+                addonTotalMonthly: 0,
+                addonTotalYearly: 0,
+              })}
               className={`
                 relative p-6 rounded-xl border-2 text-left transition-all
                 ${isSelected 
