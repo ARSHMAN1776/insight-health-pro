@@ -1,5 +1,8 @@
 # 🏥 Hospital Management System - Complete User Guide
 
+**Version:** 4.0.0  
+**Last Updated:** January 2026
+
 ## Table of Contents
 1. [Getting Started](#getting-started)
 2. [Admin Guide](#admin-guide)
@@ -10,8 +13,10 @@
 7. [Patient Guide](#patient-guide)
 8. [Blood Bank Module](#blood-bank-module)
 9. [Operation Department](#operation-department)
-10. [Common Features](#common-features)
-11. [Troubleshooting](#troubleshooting)
+10. [Doctor-Patient Messaging](#doctor-patient-messaging)
+11. [Prescription Refill System](#prescription-refill-system)
+12. [Common Features](#common-features)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -173,6 +178,8 @@ Your dashboard shows:
 - **Total Patients**: Patients under your care
 - **Medical Records**: Records you've created
 - **Prescriptions**: Active prescriptions issued
+- **Refill Requests**: Pending prescription refill requests requiring review
+- **Unread Messages**: Patient messages awaiting response
 - **Quick Actions**: Create records, prescriptions, order tests
 
 ### Daily Workflow
@@ -232,6 +239,30 @@ Your dashboard shows:
 | Update Records | Medical Records → Select Patient → Update |
 | View Patient History | Patients → Select Patient → View History |
 | Surgeries | Operation Department → Surgery List |
+| **Review Refill Requests** | Dashboard → Refill Requests Widget |
+| **Reply to Messages** | Patient Messages → Select Conversation |
+
+### Reviewing Prescription Refill Requests
+
+**How to Review Refill Requests:**
+1. Check the **Refill Requests** widget on your dashboard
+2. View pending requests with patient details and medication info
+3. Review patient allergies (displayed in warning box)
+4. Click **✓ (Approve)** or **✗ (Deny)**
+5. Add notes if denying (required) or optional notes if approving
+6. Patient will be automatically notified of the decision
+
+### Responding to Patient Messages
+
+**How to Reply to Patients:**
+1. Click **"Patient Messages"** in the sidebar
+2. Select a conversation from the list
+3. View the **Patient Context Panel** for clinical information:
+   - Allergies
+   - Active medications
+   - Recent visits
+4. Use **Quick Reply Templates** for common responses
+5. Type your message and click **Send**
 
 ---
 
@@ -372,6 +403,7 @@ As a **Pharmacist**, you manage medication dispensing, inventory control, and pr
 ### Dashboard Features
 Your dashboard displays:
 - **Pending Prescriptions**: Awaiting dispensing
+- **Refill Requests**: Patient refill requests requiring review
 - **Inventory Items**: Total medication count
 - **Low Stock Alerts**: Items below minimum level
 - **Expiring Soon**: Items nearing expiration
@@ -417,9 +449,20 @@ Your dashboard displays:
 |------|------------|
 | View Prescriptions | Prescriptions → Filter by Status |
 | Dispense Medication | Prescriptions → Select → Dispense |
+| **Review Refill Requests** | Dashboard → Refill Requests Widget |
 | Check Inventory | Inventory → View All |
 | Add Stock | Inventory → Add Item |
 | Low Stock Report | Inventory → Filter: Low Stock |
+
+### Reviewing Refill Requests
+
+**How to Process Refill Requests:**
+1. View the **Refill Requests** widget on your dashboard
+2. See pending requests with medication and patient details
+3. Check patient allergies displayed in warning box
+4. Click **✓ (Approve)** to approve the refill
+5. Click **✗ (Deny)** and provide a reason to deny
+6. System automatically notifies the patient
 
 ---
 
@@ -447,6 +490,8 @@ Your dashboard shows:
 - **Medical Records**: Your health history
 - **Prescriptions**: Active medications
 - **Lab Results**: Test results
+- **Messages**: Communication with your doctor
+- **Queue Status**: Your position in today's queue
 
 ### Using the Patient Portal
 
@@ -470,6 +515,13 @@ Your dashboard shows:
    - Department
    - Status
 
+**Booking New Appointments:**
+1. Click **"Book Appointment"**
+2. Select department and doctor
+3. Choose preferred date and time
+4. Add symptoms description
+5. Confirm booking
+
 #### 3. Medical Records
 **Accessing Your Records:**
 1. Navigate to **"Medical Records"** tab
@@ -480,6 +532,23 @@ Your dashboard shows:
    - Lab Results
    - Doctor Notes
 
+#### 4. Messaging Your Doctor
+**How to Send a Message:**
+1. Go to **"Messages"** tab
+2. Select your doctor from the list
+3. Type your message
+4. Click **Send**
+5. View replies in the same conversation
+
+#### 5. Requesting Prescription Refills
+**How to Request a Refill:**
+1. Navigate to **"Prescriptions"** tab
+2. Find the prescription you need refilled
+3. Click **"Request Refill"**
+4. Add a reason for the refill (optional)
+5. Submit the request
+6. Check back for approval status (you'll be notified)
+
 ### Patient Quick Reference
 | What You Want | Where to Find It |
 |---------------|------------------|
@@ -488,6 +557,73 @@ Your dashboard shows:
 | Lab Results | Medical Records → Lab Tests |
 | Prescriptions | Medical Records → Prescriptions |
 | Update Info | Personal Info → Edit |
+| **Message Doctor** | Messages Tab → Select Doctor |
+| **Request Refill** | Prescriptions → Request Refill |
+| **Check Queue Position** | Queue Status Tab |
+
+---
+
+## 💬 Doctor-Patient Messaging
+
+### Overview
+The messaging system enables secure two-way communication between patients and their healthcare providers.
+
+### For Patients
+1. Access messaging from the **Patient Portal**
+2. Select your assigned doctor
+3. Send questions about medications, symptoms, or follow-up care
+4. Receive responses directly in the portal
+5. Get notified when doctor replies
+
+### For Doctors
+1. View messages in the **Patient Messages** section
+2. See patient context panel with:
+   - Allergies and medications
+   - Recent visits and diagnoses
+   - Quick access to full records
+3. Use **Quick Reply Templates** for common responses
+4. All conversations are logged for audit purposes
+
+### Best Practices
+- Use messaging for non-urgent questions
+- For emergencies, call the hospital directly
+- Include relevant details in your message
+- Check for responses within 24-48 hours
+
+---
+
+## 💊 Prescription Refill System
+
+### Overview
+The refill system allows patients to request medication refills electronically, with review by doctors or pharmacists.
+
+### Workflow
+```
+Patient Request → Review Queue → Doctor/Pharmacist Review → 
+Approve or Deny → Patient Notified → Pharmacy Dispensing (if approved)
+```
+
+### For Patients
+1. Find your prescription in the portal
+2. Click **"Request Refill"**
+3. Add a reason if needed
+4. Track status: Pending → Approved/Denied
+5. Receive notification of decision
+
+### For Doctors/Pharmacists
+1. View pending requests on dashboard
+2. Review patient information and allergies
+3. Check prescription history
+4. Approve with optional notes
+5. Deny with required reason
+6. System auto-notifies patient
+
+### Status Definitions
+| Status | Meaning |
+|--------|---------|
+| **Pending** | Awaiting review |
+| **Approved** | Refill granted, proceed to pharmacy |
+| **Denied** | Refill rejected (reason provided) |
 
 ---
 

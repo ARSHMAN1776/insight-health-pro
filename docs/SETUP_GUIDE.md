@@ -1,6 +1,28 @@
 # 🏥 MediCore HMS - Complete Setup Guide
 
+**Version:** 4.0.0  
+**Last Updated:** January 2026
+
 This guide provides step-by-step instructions for setting up the Hospital Management System locally and in production environments.
+
+---
+
+## System Modules Included
+
+| Module | Description |
+|--------|-------------|
+| Patient Management | Registration, records, verification queue |
+| Appointment System | Scheduling, queue management, waitlist |
+| Clinical Records | Medical records, prescriptions, lab tests |
+| Doctor-Patient Messaging | Two-way secure communication |
+| Prescription Refill System | Request, review, and approval workflow |
+| Blood Bank | Inventory, donors, transfusions |
+| Operation Theatre | Surgery scheduling, teams, post-op |
+| Pharmacy & Inventory | Stock management, dispensing |
+| Billing & Insurance | Payments, claims, ICD/CPT coding |
+| Staff Management | Schedules, departments, credentials |
+| Reports & Analytics | Comprehensive reporting |
+| Notifications | Real-time alerts and reminders |
 
 ---
 
