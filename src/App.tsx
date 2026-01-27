@@ -63,6 +63,7 @@ const Queue = React.lazy(() => import('./pages/Queue'));
 const WaitingRoomDisplay = React.lazy(() => import('./components/queue/WaitingRoomDisplay'));
 const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
+const ModuleProtectedRoute = React.lazy(() => import('./components/shared/ModuleProtectedRoute'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -169,7 +170,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <PrescriptionManagement />
+                      <ModuleProtectedRoute module="prescriptions">
+                        <PrescriptionManagement />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -178,7 +181,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <LabTestManagement />
+                      <ModuleProtectedRoute module="lab_tests">
+                        <LabTestManagement />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -232,7 +237,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <Billing />
+                      <ModuleProtectedRoute module="billing">
+                        <Billing />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -241,7 +248,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <Pharmacy />
+                      <ModuleProtectedRoute module="pharmacy">
+                        <Pharmacy />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -284,7 +293,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <BloodBank />
+                      <ModuleProtectedRoute module="blood_bank">
+                        <BloodBank />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -320,7 +331,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <Referrals />
+                      <ModuleProtectedRoute module="referrals">
+                        <Referrals />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -329,7 +342,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <InsuranceClaims />
+                      <ModuleProtectedRoute module="insurance">
+                        <InsuranceClaims />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
