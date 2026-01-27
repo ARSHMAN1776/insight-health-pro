@@ -15,8 +15,8 @@ interface Plan {
   id: string;
   name: string;
   description: string;
-  price_monthly: number;
-  price_yearly: number;
+  price_monthly: number | null;
+  price_yearly: number | null;
   max_patients: number | null;
   max_staff: number | null;
   max_storage_gb: number | null;
@@ -34,7 +34,7 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
-        .order('price_monthly', { ascending: true });
+        .order('price_monthly', { ascending: true, nullsFirst: false });
 
       if (!error && plansData) {
         setPlans(plansData.map(p => ({
@@ -66,6 +66,9 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
     );
   }
 
+  // Check if plan has null pricing (Enterprise/Custom)
+  const isCustomPricing = (plan: Plan) => plan.price_monthly === null || plan.price_yearly === null;
+
   return (
     <div className="space-y-6">
       {/* Billing cycle toggle */}
@@ -87,8 +90,11 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {plans.map((plan) => {
           const isSelected = data.selectedPlanId === plan.id;
+          const isCustom = isCustomPricing(plan);
           const price = isYearly ? plan.price_yearly : plan.price_monthly;
-          const monthlyEquivalent = isYearly ? Math.round(plan.price_yearly / 12) : plan.price_monthly;
+          const monthlyEquivalent = isYearly && plan.price_yearly !== null 
+            ? Math.round(plan.price_yearly / 12) 
+            : plan.price_monthly;
           
           return (
             <button
@@ -114,12 +120,23 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
               <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
               
               <div className="mb-4">
-                <span className="text-3xl font-bold">${monthlyEquivalent}</span>
-                <span className="text-muted-foreground">/month</span>
-                {isYearly && (
-                  <p className="text-sm text-muted-foreground">
-                    ${price} billed yearly
-                  </p>
+                {isCustom ? (
+                  <>
+                    <span className="text-2xl font-bold">Contact Sales</span>
+                    <p className="text-sm text-muted-foreground">
+                      Custom pricing for your needs
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold">${monthlyEquivalent}</span>
+                    <span className="text-muted-foreground">/month</span>
+                    {isYearly && price !== null && (
+                      <p className="text-sm text-muted-foreground">
+                        ${price} billed yearly
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 

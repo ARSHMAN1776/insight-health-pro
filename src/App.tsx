@@ -161,7 +161,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <InventoryManagement />
+                      <ModuleProtectedRoute module="inventory">
+                        <InventoryManagement />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -192,7 +194,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <RoomManagement />
+                      <ModuleProtectedRoute module="rooms">
+                        <RoomManagement />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -219,7 +223,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <Reports />
+                      <ModuleProtectedRoute module="reports">
+                        <Reports />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -268,7 +274,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <OperationDepartment />
+                      <ModuleProtectedRoute module="operation_dept">
+                        <OperationDepartment />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -304,7 +312,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <PatientMessages />
+                      <ModuleProtectedRoute module="messages">
+                        <PatientMessages />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -313,7 +323,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <Vitals />
+                      <ModuleProtectedRoute module="vitals">
+                        <Vitals />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -322,7 +334,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <ShiftHandovers />
+                      <ModuleProtectedRoute module="shift_handover">
+                        <ShiftHandovers />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -362,7 +376,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <Queue />
+                      <ModuleProtectedRoute module="queue">
+                        <Queue />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
@@ -381,7 +397,9 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                      <AuditLogs />
+                      <ModuleProtectedRoute module="audit_logs">
+                        <AuditLogs />
+                      </ModuleProtectedRoute>
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
