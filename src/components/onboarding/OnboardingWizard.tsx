@@ -170,8 +170,12 @@ const OnboardingWizard: React.FC = () => {
 
     if (currentStep === 3) {
       // Modules step - create organization
-      if (!user) {
-        toast.error('Please sign in first');
+      // Re-fetch the current session to ensure we have the latest auth state
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUser = sessionData?.session?.user;
+      
+      if (!currentUser) {
+        toast.error('Please sign in first. If you just created an account, please verify your email and sign in.');
         return;
       }
       
@@ -189,7 +193,7 @@ const OnboardingWizard: React.FC = () => {
             website: data.website || null,
             timezone: data.timezone,
             status: 'trialing',
-            created_by: user.id,
+            created_by: currentUser.id,
             // Store organization type in metadata since there's no dedicated column
             metadata: { type: data.organizationType },
           })
@@ -205,7 +209,7 @@ const OnboardingWizard: React.FC = () => {
           .from('organization_members')
           .insert({
             organization_id: org.id,
-            user_id: user.id,
+            user_id: currentUser.id,
             role: 'owner',
             status: 'active',
             joined_at: new Date().toISOString(),
