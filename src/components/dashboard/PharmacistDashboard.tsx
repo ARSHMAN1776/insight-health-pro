@@ -30,6 +30,7 @@ import {
 import { Textarea } from '../ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Separator } from '../ui/separator';
+import RefillRequestReview from '../prescriptions/RefillRequestReview';
 
 interface Prescription {
   id: string;
@@ -412,6 +413,9 @@ const PharmacistDashboard: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Refill Requests */}
+      <RefillRequestReview showAll maxItems={5} />
 
       {/* Quick Actions */}
       <Card className="card-gradient">

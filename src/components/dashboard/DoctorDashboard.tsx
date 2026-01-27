@@ -30,6 +30,8 @@ import { useToast } from '../../hooks/use-toast';
 import BloodAvailabilityWidget from '../blood-bank/BloodAvailabilityWidget';
 import DoctorQueueWidget from '../queue/DoctorQueueWidget';
 import { useTimezone } from '@/hooks/useTimezone';
+import RefillRequestReview from '../prescriptions/RefillRequestReview';
+import MessagesPreviewWidget from './MessagesPreviewWidget';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -409,6 +411,12 @@ const DoctorDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Messages & Refill Requests Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MessagesPreviewWidget doctorId={doctorId} />
+        <RefillRequestReview doctorId={doctorId || undefined} maxItems={3} compact />
+      </div>
 
       {/* Operation Department Widget */}
       <Card className="card-gradient">
