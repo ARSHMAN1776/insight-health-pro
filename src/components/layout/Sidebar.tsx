@@ -29,20 +29,25 @@ import {
   FileCheck,
   ListPlus,
   TicketCheck,
-  CreditCard
+  CreditCard,
+  Lock
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
+import { useModules } from '@/hooks/useModules';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
+import type { ModuleKey } from '@/types/organization';
 
 interface SidebarItem {
   label: string;
   icon: React.ElementType;
   path: string;
   roles: UserRole[];
+  moduleKey?: ModuleKey; // Maps sidebar item to module for gating
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -50,158 +55,184 @@ const sidebarItems: SidebarItem[] = [
     label: 'Dashboard',
     icon: Home,
     path: '/dashboard',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist', 'lab_technician']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist', 'lab_technician'],
+    moduleKey: 'dashboard',
   },
   {
     label: 'Patients',
     icon: Users,
     path: '/patients',
-    roles: ['admin', 'doctor', 'nurse', 'receptionist']
+    roles: ['admin', 'doctor', 'nurse', 'receptionist'],
+    moduleKey: 'patients',
   },
   {
     label: 'Patient Registry',
     icon: ClipboardList,
     path: '/patient-registry',
-    roles: ['admin']
+    roles: ['admin'],
+    moduleKey: 'patients',
   },
   {
     label: 'Appointments',
     icon: Calendar,
     path: '/appointments',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist'],
+    moduleKey: 'appointments',
   },
   {
     label: 'Waitlist',
     icon: ListPlus,
     path: '/waitlist',
-    roles: ['admin', 'receptionist']
+    roles: ['admin', 'receptionist'],
+    moduleKey: 'appointments',
   },
   {
     label: 'Queue',
     icon: TicketCheck,
     path: '/queue',
-    roles: ['admin', 'doctor', 'nurse', 'receptionist']
+    roles: ['admin', 'doctor', 'nurse', 'receptionist'],
+    moduleKey: 'queue',
   },
   {
     label: 'Departments',
     icon: Building,
     path: '/departments',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist'],
+    moduleKey: 'departments',
   },
   {
     label: 'Medical Records',
     icon: FileText,
     path: '/medical-records',
-    roles: ['admin', 'doctor', 'nurse', 'patient']
+    roles: ['admin', 'doctor', 'nurse', 'patient'],
+    moduleKey: 'patients', // Part of patient management
   },
   {
     label: 'Prescriptions',
     icon: Pill,
     path: '/prescriptions',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'pharmacist']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'pharmacist'],
+    moduleKey: 'prescriptions',
   },
   {
     label: 'Lab Tests',
     icon: TestTube,
     path: '/lab-tests',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'lab_technician']
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'lab_technician'],
+    moduleKey: 'lab_tests',
   },
   {
     label: 'Referrals',
     icon: GitPullRequest,
     path: '/referrals',
-    roles: ['admin', 'doctor', 'nurse', 'receptionist']
+    roles: ['admin', 'doctor', 'nurse', 'receptionist'],
+    moduleKey: 'referrals',
   },
   {
     label: 'Blood Bank',
     icon: Droplets,
     path: '/blood-bank',
-    roles: ['admin', 'doctor', 'nurse']
+    roles: ['admin', 'doctor', 'nurse'],
+    moduleKey: 'blood_bank',
   },
   {
     label: 'Vitals',
     icon: Thermometer,
     path: '/vitals',
-    roles: ['admin', 'nurse', 'doctor']
+    roles: ['admin', 'nurse', 'doctor'],
+    moduleKey: 'vitals',
   },
   {
     label: 'Shift Handover',
     icon: ArrowRightLeft,
     path: '/shift-handovers',
-    roles: ['admin', 'nurse']
+    roles: ['admin', 'nurse'],
+    moduleKey: 'shift_handover',
   },
   {
     label: 'Rooms & Beds',
     icon: Bed,
     path: '/rooms',
-    roles: ['admin', 'nurse', 'receptionist']
+    roles: ['admin', 'nurse', 'receptionist'],
+    moduleKey: 'rooms',
   },
   {
     label: 'Billing',
     icon: DollarSign,
     path: '/billing',
-    roles: ['admin', 'receptionist']
+    roles: ['admin', 'receptionist'],
+    moduleKey: 'billing',
   },
   {
     label: 'Insurance Claims',
     icon: FileCheck,
     path: '/insurance-claims',
-    roles: ['admin', 'receptionist']
+    roles: ['admin', 'receptionist'],
+    moduleKey: 'insurance',
   },
   {
     label: 'Pharmacy',
     icon: Pill,
     path: '/pharmacy',
-    roles: ['admin', 'pharmacist']
+    roles: ['admin', 'pharmacist'],
+    moduleKey: 'pharmacy',
   },
   {
     label: 'Inventory',
     icon: ClipboardList,
     path: '/inventory',
-    roles: ['admin', 'pharmacist']
+    roles: ['admin', 'pharmacist'],
+    moduleKey: 'inventory',
   },
   {
     label: 'Staff',
     icon: Stethoscope,
     path: '/staff',
-    roles: ['admin']
+    roles: ['admin'],
+    // No moduleKey - always available
   },
   {
     label: 'Operation Department',
     icon: Scissors,
     path: '/operation-department',
-    roles: ['admin', 'doctor', 'nurse', 'receptionist']
+    roles: ['admin', 'doctor', 'nurse', 'receptionist'],
+    moduleKey: 'operation_dept',
   },
   {
     label: 'Reports',
     icon: BarChart,
     path: '/reports',
-    roles: ['admin']
+    roles: ['admin'],
+    moduleKey: 'reports',
   },
   {
     label: 'PHI Audit Logs',
     icon: Shield,
     path: '/audit-logs',
-    roles: ['admin']
+    roles: ['admin'],
+    moduleKey: 'audit_logs',
   },
   {
     label: 'Payment Settings',
     icon: CreditCard,
     path: '/payment-settings',
-    roles: ['admin']
+    roles: ['admin'],
+    moduleKey: 'billing',
   },
   {
     label: 'Patient Messages',
     icon: MessageCircle,
     path: '/patient-messages',
-    roles: ['doctor']
+    roles: ['doctor'],
+    moduleKey: 'messages',
   },
   {
     label: 'Settings',
     icon: Settings,
     path: '/settings',
-    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist', 'lab_technician']
-  }
+    roles: ['admin', 'doctor', 'nurse', 'patient', 'receptionist', 'pharmacist', 'lab_technician'],
+    // No moduleKey - always available
+  },
 ];
 
 interface SidebarProps {
@@ -211,6 +242,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
   const { user, logout } = useAuth();
+  const { isEnabled, isMultiTenantMode, requiresUpgrade, getRequiredPlanName } = useModules();
   const location = useLocation();
   const navigate = useNavigate();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -278,9 +310,26 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
 
   if (!user) return null;
 
-  const filteredItems = sidebarItems.filter(item => 
+  // Filter by role first
+  const roleFilteredItems = sidebarItems.filter(item => 
     item.roles.includes(user.role)
   );
+
+  // Check module enablement for each item
+  const getItemModuleStatus = (item: SidebarItem) => {
+    if (!item.moduleKey) return { enabled: true, locked: false };
+    if (!isMultiTenantMode) return { enabled: true, locked: false };
+    
+    const moduleEnabled = isEnabled(item.moduleKey);
+    const needsUpgrade = requiresUpgrade(item.moduleKey);
+    
+    return {
+      enabled: moduleEnabled,
+      locked: !moduleEnabled,
+      needsUpgrade,
+      requiredPlan: needsUpgrade ? getRequiredPlanName(item.moduleKey) : undefined,
+    };
+  };
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -332,42 +381,81 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        <ul className="space-y-1 px-2">
-          {filteredItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            const showBadge = item.path === '/patient-messages' && unreadMessageCount > 0;
-            
-            return (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={`sidebar-item ${isActive ? 'active' : ''} relative`}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <div className="relative">
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    {showBadge && collapsed && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-                        {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
-                      </span>
-                    )}
-                  </div>
-                  {!collapsed && (
-                    <div className="flex items-center justify-between flex-1">
-                      <span className="text-sm font-medium">{item.label}</span>
-                      {showBadge && (
-                        <Badge variant="destructive" className="h-5 min-w-5 text-xs flex items-center justify-center">
-                          {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                        </Badge>
+        <TooltipProvider delayDuration={100}>
+          <ul className="space-y-1 px-2">
+            {roleFilteredItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              const showBadge = item.path === '/patient-messages' && unreadMessageCount > 0;
+              const moduleStatus = getItemModuleStatus(item);
+              
+              // If module is locked, show disabled state
+              if (moduleStatus.locked) {
+                const tooltipText = moduleStatus.needsUpgrade 
+                  ? `Upgrade to ${moduleStatus.requiredPlan} to unlock`
+                  : 'Enable this module in settings';
+                
+                return (
+                  <li key={item.path}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="sidebar-item opacity-50 cursor-not-allowed"
+                          title={collapsed ? item.label : undefined}
+                        >
+                          <div className="relative">
+                            <Icon className="w-5 h-5 flex-shrink-0" />
+                            {collapsed && (
+                              <Lock className="absolute -top-1 -right-1 w-3 h-3 text-muted-foreground" />
+                            )}
+                          </div>
+                          {!collapsed && (
+                            <div className="flex items-center justify-between flex-1">
+                              <span className="text-sm font-medium">{item.label}</span>
+                              <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>{tooltipText}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </li>
+                );
+              }
+              
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    className={`sidebar-item ${isActive ? 'active' : ''} relative`}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <div className="relative">
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {showBadge && collapsed && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                        </span>
                       )}
                     </div>
-                  )}
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
+                    {!collapsed && (
+                      <div className="flex items-center justify-between flex-1">
+                        <span className="text-sm font-medium">{item.label}</span>
+                        {showBadge && (
+                          <Badge variant="destructive" className="h-5 min-w-5 text-xs flex items-center justify-center">
+                            {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </TooltipProvider>
       </nav>
 
       {/* Footer */}
