@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, ArrowRight, BookOpen, Users, Settings } from 'lucide-react';
+import { CheckCircle2, BookOpen, Users, Settings, Globe, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import type { OnboardingData } from '../OnboardingWizard';
 
 interface CompleteStepProps {
@@ -8,6 +10,29 @@ interface CompleteStepProps {
 }
 
 const CompleteStep: React.FC<CompleteStepProps> = ({ data }) => {
+  const { toast } = useToast();
+  
+  // Generate the subdomain URL from organization name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 30);
+  };
+  
+  const orgSlug = generateSlug(data.organizationName);
+  const portalUrl = `${orgSlug}.insight-health-pro.lovable.app`;
+  
+  const copyPortalUrl = () => {
+    navigator.clipboard.writeText(`https://${portalUrl}`);
+    toast({
+      title: 'URL Copied!',
+      description: 'Portal URL copied to clipboard',
+    });
+  };
+
   const nextSteps = [
     {
       icon: Settings,
@@ -43,8 +68,30 @@ const CompleteStep: React.FC<CompleteStepProps> = ({ data }) => {
         transition={{ delay: 0.2 }}
       >
         <h2 className="text-2xl font-bold mb-2">Welcome to HealthCare HMS!</h2>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-muted-foreground mb-6">
           Your organization <strong className="text-foreground">{data.organizationName}</strong> is ready to go.
+        </p>
+      </motion.div>
+
+      {/* Portal URL Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.3 }}
+        className="bg-primary/5 border border-primary/20 rounded-lg p-6 mb-6"
+      >
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <Globe className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Your Hospital Portal</h3>
+        </div>
+        <div className="flex items-center justify-center gap-2 bg-background rounded-md border p-3">
+          <code className="text-sm font-mono text-primary">{portalUrl}</code>
+          <Button variant="ghost" size="sm" onClick={copyPortalUrl}>
+            <Copy className="w-4 h-4" />
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Share this URL with your staff and patients. They can access your branded portal directly.
         </p>
       </motion.div>
 
