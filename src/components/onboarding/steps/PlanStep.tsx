@@ -49,7 +49,14 @@ const PlanStep: React.FC<PlanStepProps> = ({ data, updateData }) => {
           max_staff: p.max_staff,
           max_storage_gb: p.max_storage_gb,
           features: Array.isArray(p.features) ? (p.features as string[]) : [],
-          modules: Array.isArray(p.modules) ? (p.modules as string[]) : [],
+          // modules can be an object like {appointments: true, patients: true} or an array
+          modules: Array.isArray(p.modules) 
+            ? (p.modules as string[]) 
+            : (p.modules && typeof p.modules === 'object' 
+                ? Object.entries(p.modules as Record<string, boolean>)
+                    .filter(([, enabled]) => enabled)
+                    .map(([key]) => key)
+                : []),
           tier: index + 1, // 1=Starter, 2=Professional, 3=Enterprise
           is_popular: p.name === 'Professional',
         }));

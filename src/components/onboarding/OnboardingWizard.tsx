@@ -214,20 +214,26 @@ const OnboardingWizard: React.FC = () => {
 
     if (currentStep === 3) {
       // Modules step - create organization
-      // Refresh session to ensure auth state is current (fixes RLS timing issues)
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        toast.error('Session expired. Please sign in again.');
-        navigate('/login');
-        return;
+      // Get session - more reliable than getUser after recent signup
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const currentUser = sessionData?.session?.user;
+      
+      if (sessionError || !currentUser) {
+        // Try refreshing session first
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData?.session?.user) {
+          toast.error('Session expired. Please sign in again.');
+          navigate('/login');
+          return;
+        }
       }
-
-      // Always derive the user from the currently active access token.
-      // This prevents mismatches where UI thinks you're signed in but DB requests are effectively anon.
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      const currentUser = userData?.user;
-      if (userError || !currentUser) {
-        toast.error('Please sign in again to continue.');
+      
+      // Re-fetch after potential refresh
+      const { data: finalSession } = await supabase.auth.getSession();
+      const userForInsert = finalSession?.session?.user;
+      
+      if (!userForInsert) {
+        toast.error('You must be signed in to create an organization. Please log in and try again.');
         navigate('/login');
         return;
       }
@@ -246,7 +252,7 @@ const OnboardingWizard: React.FC = () => {
             website: data.website || null,
             timezone: data.timezone,
             status: 'trialing',
-            created_by: currentUser.id,
+            created_by: userForInsert.id,
             // Store organization type in metadata since there's no dedicated column
             metadata: { type: data.organizationType },
           })
