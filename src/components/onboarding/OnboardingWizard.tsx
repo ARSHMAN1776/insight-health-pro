@@ -183,6 +183,7 @@ const OnboardingWizard: React.FC = () => {
         if (!signUpData?.session) {
           toast.success('Account created! Please verify your email, then sign in to continue.');
           setIsSubmitting(false);
+          navigate('/login');
           return;
         }
 
@@ -317,7 +318,12 @@ const OnboardingWizard: React.FC = () => {
         toast.success('Organization created successfully!');
       } catch (error: any) {
         console.error('Onboarding error:', error);
-        toast.error(error.message || 'Failed to create organization');
+        const msg = (error?.message || '').toString();
+        if (msg.toLowerCase().includes('row-level security') || msg.toLowerCase().includes('violates row-level security')) {
+          toast.error('You must be signed in (verified email) before creating an organization. Please log in and try again.');
+        } else {
+          toast.error(msg || 'Failed to create organization');
+        }
         setIsSubmitting(false);
         return;
       }
