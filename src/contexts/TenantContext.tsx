@@ -44,6 +44,7 @@ const MAIN_DOMAINS = [
   'lovable.app',
   'lovableproject.com', // Lovable project preview domain
   '127.0.0.1',
+  'hms.fastamsolutions.com', // Custom domain - main site
 ];
 
 // Patterns that indicate this is NOT a tenant subdomain
