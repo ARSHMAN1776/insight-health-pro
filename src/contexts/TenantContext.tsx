@@ -42,42 +42,56 @@ const MAIN_DOMAINS = [
   'localhost',
   'insight-health-pro.lovable.app',
   'lovable.app',
+  'lovableproject.com', // Lovable project preview domain
   '127.0.0.1',
 ];
 
-// Preview domains pattern
-const PREVIEW_DOMAIN_PATTERN = /^[a-z0-9-]+--[a-z0-9-]+\.lovable\.app$/;
+// Patterns that indicate this is NOT a tenant subdomain
+const EXCLUDED_PATTERNS = [
+  /^[a-z0-9-]+--[a-z0-9-]+\.lovable\.app$/, // Preview domains like id-preview--ff8919f2.lovable.app
+  /^[a-f0-9-]{36}\.lovableproject\.com$/, // Project IDs like ff8919f2-0cd7-496d-8baa-817aa80a763a.lovableproject.com
+  /^id-preview--/, // Preview prefix
+];
 
 /**
  * Extract subdomain from hostname
- * Returns null if on main domain or preview domain
+ * Returns null if on main domain, preview domain, or excluded pattern
  */
 function extractSubdomain(hostname: string): string | null {
   // Remove port if present
   const host = hostname.split(':')[0];
   
-  // Check if it's a preview domain (e.g., id-preview--ff8919f2.lovable.app)
-  if (PREVIEW_DOMAIN_PATTERN.test(host)) {
+  // Check if it matches any excluded pattern
+  if (EXCLUDED_PATTERNS.some(pattern => pattern.test(host))) {
     return null;
   }
   
-  // Check if it's a known main domain
-  if (MAIN_DOMAINS.some(domain => host === domain || host.endsWith(`.${domain}`))) {
-    // Check for subdomain on main domain (e.g., citygeneral.insight-health-pro.lovable.app)
-    const baseDomain = MAIN_DOMAINS.find(d => host.endsWith(`.${d}`) || host === d);
-    if (baseDomain && host !== baseDomain) {
-      const subdomain = host.replace(`.${baseDomain}`, '').split('.').pop();
-      // Exclude preview patterns
-      if (subdomain && !subdomain.includes('--') && !subdomain.includes('preview')) {
-        return subdomain;
-      }
+  // Check if it's a lovableproject.com domain (always main domain)
+  if (host.endsWith('.lovableproject.com') || host === 'lovableproject.com') {
+    return null;
+  }
+  
+  // Check if it's a known main domain without subdomain
+  if (MAIN_DOMAINS.includes(host)) {
+    return null;
+  }
+  
+  // Check for subdomain on insight-health-pro.lovable.app
+  // e.g., citygeneral.insight-health-pro.lovable.app
+  const insightHealthMatch = host.match(/^([a-z0-9-]+)\.insight-health-pro\.lovable\.app$/);
+  if (insightHealthMatch) {
+    const subdomain = insightHealthMatch[1];
+    // Exclude preview-related subdomains
+    if (!subdomain.includes('preview') && !subdomain.includes('--')) {
+      return subdomain;
     }
     return null;
   }
   
   // For custom domains like citygeneral.example.com
+  // Only extract if it's clearly a subdomain (3+ parts)
   const parts = host.split('.');
-  if (parts.length >= 3) {
+  if (parts.length >= 3 && !host.includes('lovable')) {
     return parts[0];
   }
   
