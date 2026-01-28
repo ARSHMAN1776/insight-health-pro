@@ -268,7 +268,7 @@ const OnboardingWizard: React.FC = () => {
           .from('organization_members')
           .insert({
             organization_id: org.id,
-            user_id: currentUser.id,
+            user_id: userForInsert.id,
             role: 'owner',
             status: 'active',
             joined_at: new Date().toISOString(),
