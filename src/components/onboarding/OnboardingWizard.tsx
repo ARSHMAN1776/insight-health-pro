@@ -164,7 +164,7 @@ const OnboardingWizard: React.FC = () => {
       
       setIsSubmitting(true);
       try {
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
           options: {
@@ -177,7 +177,16 @@ const OnboardingWizard: React.FC = () => {
         });
         
         if (error) throw error;
-        toast.success('Account created! Please check your email to verify.');
+
+        // If email confirmation is enabled, Supabase won't return a session yet.
+        // In that case, block onboarding progression to avoid RLS failures when creating the organization.
+        if (!signUpData?.session) {
+          toast.success('Account created! Please verify your email, then sign in to continue.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        toast.success('Account created!');
       } catch (error: any) {
         toast.error(error.message || 'Failed to create account');
         setIsSubmitting(false);
@@ -205,13 +214,22 @@ const OnboardingWizard: React.FC = () => {
     if (currentStep === 3) {
       // Modules step - create organization
       // Refresh session to ensure auth state is current (fixes RLS timing issues)
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError || !refreshData.session) {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
         toast.error('Session expired. Please sign in again.');
         navigate('/login');
         return;
       }
-      const currentUser = refreshData.session.user;
+
+      // Always derive the user from the currently active access token.
+      // This prevents mismatches where UI thinks you're signed in but DB requests are effectively anon.
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const currentUser = userData?.user;
+      if (userError || !currentUser) {
+        toast.error('Please sign in again to continue.');
+        navigate('/login');
+        return;
+      }
       
       setIsSubmitting(true);
       try {
