@@ -1,9 +1,8 @@
 import React from 'react';
-import { Menu, Search, Sun, Moon, Monitor, Heart } from 'lucide-react';
+import { Menu, Search, Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useTheme } from '../theme-provider';
-import { useTenant } from '@/contexts/TenantContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,47 +17,9 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { theme, setTheme } = useTheme();
-  const { tenant, isTenantMode } = useTenant();
 
   return (
     <header className="bg-card border-b border-border h-16 flex items-center justify-between px-4">
-      {/* Left side */}
-      <div className="flex items-center space-x-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleSidebar}
-          className="hover:bg-accent"
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
-        
-        {/* Show tenant branding in header if in tenant mode */}
-        {isTenantMode && tenant && (
-          <div className="flex items-center gap-2 mr-4">
-            {tenant.branding.logoUrl ? (
-              <img 
-                src={tenant.branding.logoUrl} 
-                alt={tenant.name}
-                className="h-8 w-8 object-contain rounded"
-              />
-            ) : (
-              <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
-                <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
-              </div>
-            )}
-            <span className="font-semibold text-sm hidden sm:inline">{tenant.name}</span>
-          </div>
-        )}
-        
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search patients, appointments..."
-            className="pl-10 w-64 bg-background"
-          />
-        </div>
-      </div>
       {/* Left side */}
       <div className="flex items-center space-x-4">
         <Button

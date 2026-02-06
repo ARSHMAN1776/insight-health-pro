@@ -1,247 +1,292 @@
 
-# Plan: Subdomain-Based Multi-Tenant Hospital Portal
 
-## Overview
+# Hospital Management System Enhancement Plan
 
-Transform the system so each hospital organization gets their own branded subdomain URL (e.g., `citygeneral.insight-health-pro.com`). When staff or patients visit their hospital's subdomain, they see only their hospital's branded portal - not the main marketing website.
+**Version:** 4.0.0  
+**Last Updated:** January 2026  
+**Status:** Phase 1 Complete
 
-## How It Works
+## Executive Summary
 
-### User Experience Flow
+This plan outlines strategic improvements to transform the HMS from a solid clinical system into an enterprise-grade healthcare platform. The enhancements are prioritized based on user impact and implementation complexity.
 
-**Main Domain (`insight-health-pro.com`):**
-- Shows marketing landing page
-- "Start Free Trial" leads to onboarding
-- General login available
+---
 
-**Hospital Subdomain (`citygeneral.insight-health-pro.com`):**
-- Shows hospital-branded login page
-- Hospital logo, name, colors
-- Direct access - no marketing content
-- Only that hospital's staff/patients can use it
+## ✅ Phase 1: Critical Missing Features (COMPLETED)
 
-### Architecture
+### ✅ 1.1 Doctor/Pharmacist Prescription Refill Review Interface
 
-```text
-Request: citygeneral.insight-health-pro.com
-              │
-              ▼
-    ┌─────────────────────┐
-    │   TenantProvider    │
-    │  Extract subdomain  │
-    │  "citygeneral"      │
-    └─────────────────────┘
-              │
-              ▼
-    ┌─────────────────────┐
-    │   Database Lookup   │
-    │  organizations      │
-    │  WHERE slug =       │
-    │  'citygeneral'      │
-    └─────────────────────┘
-              │
-              ▼
-    ┌─────────────────────┐
-    │   TenantContext     │
-    │  - org data         │
-    │  - branding         │
-    │  - theme colors     │
-    └─────────────────────┘
-              │
-              ▼
-    ┌─────────────────────┐
-    │  Branded Login Page │
-    │  "City General      │
-    │   Hospital"         │
-    │  [Hospital Logo]    │
-    └─────────────────────┘
-```
+**Status:** ✅ COMPLETED
 
-## Technical Implementation
+**Problem:** Patients can request prescription refills, but staff have no interface to review and approve them.
 
-### Phase 1: Tenant Context Layer
+**Solution Implemented:**
+- Created `RefillRequestReview.tsx` component for Doctor and Pharmacist dashboards
+- Displays pending requests with patient info, medication details, and request reason
+- Added approve/deny actions with notes field
+- Creates notification to patient on status change
 
-**Create TenantContext** (`src/contexts/TenantContext.tsx`)
+**Files Created/Modified:**
+- ✅ `src/components/prescriptions/RefillRequestReview.tsx` (new)
+- ✅ `src/components/dashboard/DoctorDashboard.tsx` (added widget)
+- ✅ `src/components/dashboard/PharmacistDashboard.tsx` (added widget)
 
-This context extracts the subdomain from the URL and loads the organization data:
+---
 
-- Detects if request is from subdomain or main domain
-- If subdomain: loads organization by slug
-- Provides tenant data (branding, settings) to all components
-- Sets `isTenantMode` flag to control page rendering
+### ✅ 1.2 Doctor Message Reply Interface
 
-Key logic:
-```text
-hostname: citygeneral.insight-health-pro.com
-  └── subdomain: "citygeneral"
-        └── lookup: organizations WHERE slug = 'citygeneral'
-              └── result: City General Hospital data
-```
+**Status:** ✅ COMPLETED
 
-### Phase 2: Conditional Routing
+**Problem:** Doctors receive patient messages in sidebar but need a dedicated interface to manage and reply.
 
-**Update App.tsx routing logic:**
+**Solution Implemented:**
+- Enhanced `PatientMessages.tsx` page with full conversation management
+- Added quick-reply templates for common responses
+- Show patient context (allergies, medications, recent visits) alongside messages
+- Added messages preview widget to dashboard
 
-- If `isTenantMode = true`:
-  - "/" redirects to tenant login page
-  - Marketing pages (/about, /services) hidden
-  - Only show: login, dashboard, app routes
-  
-- If `isTenantMode = false`:
-  - Normal behavior (marketing site + onboarding)
+**Files Created/Modified:**
+- ✅ `src/pages/PatientMessages.tsx` (enhanced with context panel and quick replies)
+- ✅ `src/components/messages/PatientContextPanel.tsx` (new)
+- ✅ `src/components/messages/QuickReplyTemplates.tsx` (new)
+- ✅ `src/components/dashboard/MessagesPreviewWidget.tsx` (new)
+- ✅ `src/components/dashboard/DoctorDashboard.tsx` (added message preview widget)
 
-### Phase 3: Tenant-Branded Login Page
+---
 
-**Create TenantLogin component** (`src/pages/TenantLogin.tsx`)
 
-Custom login page showing:
-- Organization logo (from `organizations.logo_url`)
-- Organization name (from `organizations.name`)
-- Custom primary color (from `organizations.primary_color`)
-- Hospital tagline/address if configured
-- Login form (staff and patient tabs)
+### 2.2 Patient Feedback System
 
-### Phase 4: Update Organization Context Integration
+**Implementation:**
+- Create `patient_feedback` table (appointment_id, rating, comments, categories)
+- Show feedback form after appointment completion
+- Aggregate ratings on doctor profiles
+- Display satisfaction trends in admin reports
 
-**Modify OrganizationContext:**
+**Files to create:**
+- `src/components/patient-portal/AppointmentFeedback.tsx`
+- `src/components/reports/SatisfactionAnalytics.tsx`
 
-When user logs in on tenant subdomain:
-- Verify user belongs to that organization
-- If not: show error "You don't have access to this hospital"
-- If yes: load organization context normally
+---
 
-Security check:
-```text
-User logs in on citygeneral.insight-health-pro.com
-  └── Check: organization_members
-        └── WHERE user_id = user.id
-        └── AND organization_id = citygeneral.id
-              └── PASS: Allow access
-              └── FAIL: "Access denied - not a member"
-```
+### 2.3 Family/Dependent Portal
 
-### Phase 5: Dynamic Theme Provider
+**Use Case:** Parents managing children's healthcare, caregivers for elderly
 
-**Enhance theme system:**
+**Implementation:**
+- Create `patient_dependents` table (primary_patient_id, dependent_patient_id, relationship)
+- Add "Manage Family Members" in patient settings
+- Allow switching between profiles when booking appointments
 
-Apply organization's branding colors:
-- Primary color from `organizations.primary_color`
-- Secondary color from `organizations.secondary_color`
-- Logo in header
-- Custom favicon (optional)
+---
 
-### Phase 6: Subdomain Generator in Onboarding
+## Phase 3: Financial Enhancements (Medium Priority)
 
-**Update onboarding completion:**
+### 3.1 Patient-Facing Payment Portal
 
-After organization is created, show:
-- "Your hospital portal is ready!"
-- Display: `yourhospitalslug.insight-health-pro.com`
-- Option to customize slug (if available)
+**Current State:** Stripe is configured for backend, but patients pay at reception only
 
-## Files to Create/Modify
+**Enhancement:**
+- Add "Pay Online" button to billing section in patient portal
+- Integrate Stripe Elements for secure card input
+- Support partial payments and payment plans
+- Generate digital receipts
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/contexts/TenantContext.tsx` | CREATE | Extract subdomain, load tenant data |
-| `src/pages/TenantLogin.tsx` | CREATE | Branded login for tenants |
-| `src/components/tenant/TenantBranding.tsx` | CREATE | Apply tenant colors/logo |
-| `src/App.tsx` | MODIFY | Wrap with TenantProvider, conditional routing |
-| `src/components/layout/Header.tsx` | MODIFY | Show tenant logo if in tenant mode |
-| `src/pages/Login.tsx` | MODIFY | Redirect to tenant login if on subdomain |
-| `src/components/onboarding/steps/CompleteStep.tsx` | MODIFY | Show subdomain URL |
+**Files to create:**
+- `src/components/patient-portal/OnlinePayment.tsx`
+- `supabase/functions/create-payment-intent/index.ts`
+- `supabase/functions/payment-webhook/index.ts`
 
-## Database Changes
+---
 
-No schema changes needed - we already have:
-- `organizations.slug` - used as subdomain identifier
-- `organizations.logo_url` - tenant logo
-- `organizations.primary_color` - theme color
-- `organizations.secondary_color` - accent color
-- `organizations.name` - display name
+### 3.2 Insurance Pre-Authorization
 
-## Subdomain Management
+**Workflow:**
+1. Staff selects procedures for pre-auth
+2. System generates pre-auth request with ICD/CPT codes
+3. Track approval status
+4. Link to billing on approval
 
-### Automatic Subdomain Assignment
-- Generated from organization name during onboarding
-- Example: "City General Hospital" becomes `city-general-hospital`
-- Timestamp suffix ensures uniqueness (already implemented)
+**Files to create:**
+- `src/components/insurance/PreAuthorizationRequest.tsx`
+- `src/components/insurance/PreAuthTracking.tsx`
 
-### Custom Domain Support (Future)
-For enterprise customers who want:
-- `portal.citygeneral.com` instead of `citygeneral.insight-health-pro.com`
-- Requires DNS configuration by customer
-- Add `custom_domain` column to organizations table
+---
 
-## Security Considerations
+## Phase 4: Clinical Intelligence (Lower Priority, High Value)
 
-1. **Cross-tenant access prevention:**
-   - Validate user's organization matches subdomain
-   - Show clear error if mismatch
+### 4.1 AI Diagnosis Assistant Integration
 
-2. **Subdomain spoofing protection:**
-   - Verify slug exists in database
-   - Show 404 for invalid subdomains
+**Current State:** `ai-diagnosis` Edge Function exists but not integrated into UI
 
-3. **Session isolation:**
-   - Cookie scoped to subdomain
-   - Cannot access other tenant data
+**Enhancement:**
+- Add "AI Assist" button in doctor's appointment view
+- Pass patient symptoms, vitals, and history to AI
+- Display suggested diagnoses with confidence scores
+- Doctor can accept/modify suggestions
+- Log all AI interactions for audit
 
-## Local Development
+**Files to create:**
+- `src/components/ai/DiagnosisAssistPanel.tsx`
+- Modify `src/pages/Appointments.tsx` to include AI panel
 
-For testing subdomains locally:
-- Use hosts file: `127.0.0.1 citygeneral.localhost`
-- Or use service like `lvh.me` (resolves to localhost)
-- Configure Vite to accept subdomain hosts
+---
 
-## User Experience Summary
+### 4.2 Lab Result Trending
 
-### For Main Domain Visitors
-```text
-insight-health-pro.com
-├── / (landing page with pricing)
-├── /onboarding (new hospital signup)
-├── /login (for legacy/demo users)
-├── /about, /services, /contact (marketing)
-└── /dashboard (after login)
-```
+**Enhancement:**
+- Show historical values for each lab parameter as mini-charts
+- Highlight out-of-range values with red indicators
+- Allow comparison across date ranges
+- Alert on significant changes from baseline
 
-### For Tenant Subdomain Visitors
-```text
-citygeneral.insight-health-pro.com
-├── / (redirects to login)
-├── /login (branded hospital login)
-└── /dashboard (after login)
-    └── All app routes with hospital branding
-```
+**Files to modify:**
+- `src/components/lab-tests/LabReportPreview.tsx` (add trending charts)
 
-## Rollout Strategy
+---
 
-1. **Phase 1 - Core Implementation:**
-   - TenantContext with subdomain detection
-   - TenantLogin page with branding
-   - Conditional routing
+### 4.3 Drug Interaction Alerts Enhancement
 
-2. **Phase 2 - Branding:**
-   - Dynamic theme colors
-   - Logo in header/login
-   - Custom favicon
+**Current State:** `drug_interactions` table exists but integration is limited
 
-3. **Phase 3 - Onboarding Integration:**
-   - Show subdomain URL on completion
-   - Slug customization option
-   - Email with portal URL
+**Enhancement:**
+- Real-time check when adding medications to prescription
+- Cross-reference with patient's current medications AND allergies
+- Show severity levels (minor, moderate, major, contraindicated)
+- Require override reason for major interactions
 
-4. **Phase 4 - Testing:**
-   - Test with existing demo organization
-   - Verify cross-tenant protection
-   - Mobile responsive check
+---
 
-## Pricing Tier Consideration
+## Phase 5: Operational Tools (Medium Priority)
 
-Subdomain access could be:
-- **Included in all plans** - standard feature
-- **Professional+ only** - premium feature
-- **Add-on module** - pay extra for branded portal
+### 5.1 Smart Scheduling System
 
-Recommendation: Include in Professional tier, make it an add-on for Starter.
+**Features:**
+- Analyze historical appointment patterns
+- Suggest optimal appointment times to reduce wait
+- Auto-balance doctor workloads
+- Predict no-shows and overbook strategically
+
+**Implementation:**
+- Create scheduling analytics Edge Function
+- Add "Smart Schedule" mode in appointment booking
+
+---
+
+### 5.2 Automated SMS/Email Reminders
+
+**Current State:** `send-appointment-reminders` Edge Function exists
+
+**Enhancement:**
+- Connect to Twilio for SMS delivery
+- Add Resend/SendGrid for email delivery
+- Patient preference settings (SMS vs Email vs Both)
+- Customizable reminder timing (24h, 2h before)
+
+**Files to modify:**
+- `supabase/functions/send-appointment-reminders/index.ts`
+- Add secrets: `TWILIO_SID`, `TWILIO_AUTH_TOKEN`, `RESEND_API_KEY`
+
+---
+
+### 5.3 Staff Performance Dashboard
+
+**Metrics:**
+- Appointments per doctor (daily/weekly/monthly)
+- Average patient wait time
+- Patient satisfaction ratings
+- Revenue generated per provider
+- No-show rates by provider
+
+**Files to create:**
+- `src/components/reports/StaffPerformance.tsx`
+
+---
+
+## Phase 6: Technical Improvements
+
+### 6.1 Enhanced PWA Offline Support
+
+**Current:** Basic PWA configured
+
+**Enhancement:**
+- Cache critical patient lookup data
+- Queue appointment bookings when offline
+- Sync when connection restored
+- Show offline indicator in header
+
+---
+
+### 6.2 API Rate Limiting
+
+**Implementation:**
+- Add rate limiting to Edge Functions
+- Track requests per user/IP
+- Return 429 on limit exceeded
+- Log potential abuse
+
+---
+
+### 6.3 Automated Backup Verification
+
+**Implementation:**
+- Supabase Edge Function to verify backup integrity
+- Weekly restoration test to staging
+- Alert admin on backup failures
+
+---
+
+## Implementation Priority Matrix
+
+| Feature | Impact | Effort | Priority | Status |
+|---------|--------|--------|----------|--------|
+| Refill Request Review | High | Low | 1 | ✅ Complete |
+| Doctor Message Reply | High | Low | 1 | ✅ Complete |
+| Online Patient Payment | High | Medium | 2 | 🔲 Pending |
+| Video Consultation | High | High | 3 | 🔲 Pending |
+| AI Diagnosis Integration | Medium | Medium | 3 | 🔲 Pending |
+| Lab Result Trending | Medium | Low | 2 | 🔲 Pending |
+| Staff Performance Dashboard | Medium | Medium | 3 | 🔲 Pending |
+| SMS Reminder Integration | High | Low | 2 | 🔲 Pending |
+| Patient Feedback System | Medium | Low | 2 | 🔲 Pending |
+| Smart Scheduling | Medium | High | 4 | 🔲 Pending |
+
+---
+
+## Completed Work Summary
+
+### Phase 1 Deliverables (January 2026)
+
+| Component | Description |
+|-----------|-------------|
+| `RefillRequestReview.tsx` | Complete refill request review interface with approve/deny actions |
+| `PatientContextPanel.tsx` | Clinical context display for messaging (allergies, meds, visits) |
+| `QuickReplyTemplates.tsx` | Standardized response templates for doctors |
+| `MessagesPreviewWidget.tsx` | Dashboard widget showing unread message count |
+| Updated DoctorDashboard | Integrated refill requests and message preview widgets |
+| Updated PharmacistDashboard | Integrated refill request review widget |
+| Enhanced PatientMessages | Full conversation management with clinical context |
+
+---
+
+## Next Recommended Steps
+
+Based on impact and effort analysis, recommended next implementations:
+
+1. **SMS Reminder Integration** - Reduces no-shows significantly (3-4 hours)
+2. **Lab Result Trending** - Improves clinical decision-making (3-4 hours)
+3. **Patient Feedback System** - Enables quality tracking (2-3 hours)
+4. **Online Patient Payment** - Revenue improvement (4-6 hours)
+
+---
+
+## Technical Notes
+
+All implementations will:
+- Follow existing code patterns and component structure
+- Use TanStack Query for data fetching
+- Maintain RLS security policies
+- Support multi-language (i18n ready)
+- Include proper loading states and error handling
+- Be responsive for mobile devices
+

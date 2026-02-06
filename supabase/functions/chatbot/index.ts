@@ -352,17 +352,9 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const messages = body.messages || [];
+    const { messages } = await req.json();
     
-    if (!Array.isArray(messages)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request: 'messages' must be an array" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    
-    console.log("Chatbot request received with", messages.length, "messages");
+    console.log("Chatbot request received with", messages?.length || 0, "messages");
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
