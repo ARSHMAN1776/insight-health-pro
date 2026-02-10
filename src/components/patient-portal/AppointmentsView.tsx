@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '../ui/card';
-import { Calendar, Clock, X, RefreshCw, AlertCircle, MapPin, User, ChevronRight, TicketCheck } from 'lucide-react';
+import { Calendar, Clock, X, RefreshCw, AlertCircle, MapPin, User, ChevronRight, TicketCheck, Star } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
@@ -9,6 +9,7 @@ import { Appointment, Patient } from '../../lib/dataManager';
 import PatientAppointmentBooking from './PatientAppointmentBooking';
 import WaitlistSignup from '../appointments/WaitlistSignup';
 import QueueStatusView from './QueueStatusView';
+import AppointmentFeedback from './AppointmentFeedback';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueue } from '@/hooks/useQueue';
@@ -34,6 +35,8 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   const [cancelReason, setCancelReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackAppointment, setFeedbackAppointment] = useState<Appointment | null>(null);
 
   const getStatusConfig = (status: string) => {
     switch (status.toLowerCase()) {
@@ -440,18 +443,34 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                           </p>
                         </div>
                         
-                        {/* Status Badge */}
-                        <Badge 
-                          variant={isCancelled ? 'destructive' : 'secondary'}
-                          className={`text-[10px] px-2 py-0.5 flex-shrink-0 ${
-                            isCancelled 
-                              ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 border-0' 
-                              : 'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-300 border-0'
-                          }`}
-                        >
-                          {isCancelled && <X className="w-3 h-3 mr-1" />}
-                          {isCancelled ? 'Cancelled' : 'Completed'}
-                        </Badge>
+                        {/* Status Badge + Feedback */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {!isCancelled && appointment.status === 'completed' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setFeedbackAppointment(appointment);
+                                setFeedbackOpen(true);
+                              }}
+                              title="Rate this visit"
+                            >
+                              <Star className="h-4 w-4 text-yellow-500" />
+                            </Button>
+                          )}
+                          <Badge 
+                            variant={isCancelled ? 'destructive' : 'secondary'}
+                            className={`text-[10px] px-2 py-0.5 ${
+                              isCancelled 
+                                ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 border-0' 
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-300 border-0'
+                            }`}
+                          >
+                            {isCancelled && <X className="w-3 h-3 mr-1" />}
+                            {isCancelled ? 'Cancelled' : 'Completed'}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -531,6 +550,18 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Feedback Dialog */}
+      {feedbackAppointment && patientData && (
+        <AppointmentFeedback
+          open={feedbackOpen}
+          onOpenChange={setFeedbackOpen}
+          appointmentId={feedbackAppointment.id}
+          patientId={patientData.id}
+          doctorId={(feedbackAppointment as any).doctor_id || ''}
+          onSubmitted={onAppointmentBooked}
+        />
+      )}
     </div>
   );
 };

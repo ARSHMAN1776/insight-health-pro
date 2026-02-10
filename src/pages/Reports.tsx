@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -31,6 +31,8 @@ import { dataManager } from '@/lib/dataManager';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+const StaffPerformance = lazy(() => import('@/components/reports/StaffPerformance'));
+const SatisfactionAnalytics = lazy(() => import('@/components/reports/SatisfactionAnalytics'));
 
 interface CensusData {
   currentInpatients: number;
@@ -621,11 +623,13 @@ const Reports: React.FC = () => {
       </div>
 
       <Tabs defaultValue="census" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="census">Daily Census</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="census">Census</TabsTrigger>
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="workload">Staff Workload</TabsTrigger>
+          <TabsTrigger value="workload">Workload</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="satisfaction">Satisfaction</TabsTrigger>
         </TabsList>
 
         {/* Daily Census Tab */}
@@ -1026,6 +1030,20 @@ const Reports: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Staff Performance Tab */}
+        <TabsContent value="performance">
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+            <StaffPerformance />
+          </Suspense>
+        </TabsContent>
+
+        {/* Patient Satisfaction Tab */}
+        <TabsContent value="satisfaction">
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+            <SatisfactionAnalytics />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
