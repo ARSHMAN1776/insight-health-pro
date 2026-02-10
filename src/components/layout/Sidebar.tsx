@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity,
   Calendar,
+  ClipboardPlus,
   Users,
   FileText,
   Pill,
@@ -135,6 +136,12 @@ const sidebarItems: SidebarItem[] = [
     icon: Bed,
     path: '/rooms',
     roles: ['admin', 'nurse', 'receptionist']
+  },
+  {
+    label: 'IPD Management',
+    icon: ClipboardPlus,
+    path: '/ipd',
+    roles: ['admin', 'doctor', 'nurse', 'receptionist']
   },
   {
     label: 'Billing',

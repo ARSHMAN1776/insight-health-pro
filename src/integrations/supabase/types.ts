@@ -566,6 +566,92 @@ export type Database = {
         }
         Relationships: []
       }
+      discharge_summaries: {
+        Row: {
+          activity_restrictions: string | null
+          admission_id: string
+          approved_by: string | null
+          condition_at_discharge: string
+          course_in_hospital: string | null
+          created_at: string
+          diagnosis_at_discharge: string
+          diagnosis_codes: string[] | null
+          diet_advice: string | null
+          discharge_date: string
+          discharge_type: string
+          follow_up_date: string | null
+          follow_up_instructions: string | null
+          id: string
+          medications_at_discharge: Json | null
+          prepared_by: string
+          procedure_codes: string[] | null
+          procedures_performed: string | null
+          referrals: string | null
+          status: string
+          treatment_summary: string
+          updated_at: string
+          warning_signs: string | null
+        }
+        Insert: {
+          activity_restrictions?: string | null
+          admission_id: string
+          approved_by?: string | null
+          condition_at_discharge?: string
+          course_in_hospital?: string | null
+          created_at?: string
+          diagnosis_at_discharge: string
+          diagnosis_codes?: string[] | null
+          diet_advice?: string | null
+          discharge_date?: string
+          discharge_type?: string
+          follow_up_date?: string | null
+          follow_up_instructions?: string | null
+          id?: string
+          medications_at_discharge?: Json | null
+          prepared_by: string
+          procedure_codes?: string[] | null
+          procedures_performed?: string | null
+          referrals?: string | null
+          status?: string
+          treatment_summary: string
+          updated_at?: string
+          warning_signs?: string | null
+        }
+        Update: {
+          activity_restrictions?: string | null
+          admission_id?: string
+          approved_by?: string | null
+          condition_at_discharge?: string
+          course_in_hospital?: string | null
+          created_at?: string
+          diagnosis_at_discharge?: string
+          diagnosis_codes?: string[] | null
+          diet_advice?: string | null
+          discharge_date?: string
+          discharge_type?: string
+          follow_up_date?: string | null
+          follow_up_instructions?: string | null
+          id?: string
+          medications_at_discharge?: Json | null
+          prepared_by?: string
+          procedure_codes?: string[] | null
+          procedures_performed?: string | null
+          referrals?: string | null
+          status?: string
+          treatment_summary?: string
+          updated_at?: string
+          warning_signs?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discharge_summaries_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: true
+            referencedRelation: "ipd_admissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctors: {
         Row: {
           availability_schedule: Json | null
@@ -951,6 +1037,126 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ipd_admissions: {
+        Row: {
+          actual_discharge_date: string | null
+          admission_date: string
+          admission_number: string
+          admission_reason: string
+          admission_type: string
+          allergies: string | null
+          attending_nurse_id: string | null
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          diagnosis_at_admission: string | null
+          diagnosis_code: string | null
+          diet_instructions: string | null
+          doctor_id: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relation: string | null
+          expected_discharge_date: string | null
+          id: string
+          insurance_info: Json | null
+          patient_id: string
+          room_assignment_id: string | null
+          special_instructions: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_discharge_date?: string | null
+          admission_date?: string
+          admission_number: string
+          admission_reason: string
+          admission_type?: string
+          allergies?: string | null
+          attending_nurse_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          diagnosis_at_admission?: string | null
+          diagnosis_code?: string | null
+          diet_instructions?: string | null
+          doctor_id: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relation?: string | null
+          expected_discharge_date?: string | null
+          id?: string
+          insurance_info?: Json | null
+          patient_id: string
+          room_assignment_id?: string | null
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_discharge_date?: string | null
+          admission_date?: string
+          admission_number?: string
+          admission_reason?: string
+          admission_type?: string
+          allergies?: string | null
+          attending_nurse_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          diagnosis_at_admission?: string | null
+          diagnosis_code?: string | null
+          diet_instructions?: string | null
+          doctor_id?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relation?: string | null
+          expected_discharge_date?: string | null
+          id?: string
+          insurance_info?: Json | null
+          patient_id?: string
+          room_assignment_id?: string | null
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ipd_admissions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "ipd_admissions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ipd_admissions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ipd_admissions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ipd_admissions_room_assignment_id_fkey"
+            columns: ["room_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "room_assignments"
             referencedColumns: ["id"]
           },
         ]
@@ -3662,6 +3868,88 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ward_rounds: {
+        Row: {
+          admission_id: string
+          assessment: string | null
+          created_at: string
+          diet_changes: string | null
+          doctor_id: string
+          id: string
+          investigation_orders: string | null
+          medication_changes: string | null
+          next_review_date: string | null
+          nurse_id: string | null
+          objective_notes: string | null
+          patient_condition: string
+          plan: string | null
+          round_date: string
+          round_type: string
+          subjective_notes: string | null
+          vitals: Json | null
+        }
+        Insert: {
+          admission_id: string
+          assessment?: string | null
+          created_at?: string
+          diet_changes?: string | null
+          doctor_id: string
+          id?: string
+          investigation_orders?: string | null
+          medication_changes?: string | null
+          next_review_date?: string | null
+          nurse_id?: string | null
+          objective_notes?: string | null
+          patient_condition?: string
+          plan?: string | null
+          round_date?: string
+          round_type?: string
+          subjective_notes?: string | null
+          vitals?: Json | null
+        }
+        Update: {
+          admission_id?: string
+          assessment?: string | null
+          created_at?: string
+          diet_changes?: string | null
+          doctor_id?: string
+          id?: string
+          investigation_orders?: string | null
+          medication_changes?: string | null
+          next_review_date?: string | null
+          nurse_id?: string | null
+          objective_notes?: string | null
+          patient_condition?: string
+          plan?: string | null
+          round_date?: string
+          round_type?: string
+          subjective_notes?: string | null
+          vitals?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ward_rounds_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: false
+            referencedRelation: "ipd_admissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ward_rounds_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ward_rounds_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhook_endpoints: {
         Row: {

@@ -61,6 +61,7 @@ const Queue = React.lazy(() => import('./pages/Queue'));
 const WaitingRoomDisplay = React.lazy(() => import('./components/queue/WaitingRoomDisplay'));
 const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
+const IPDManagement = React.lazy(() => import('./pages/IPDManagement'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -372,6 +373,15 @@ const App = () => (
                   <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                     <PaymentSettings />
                   </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/ipd" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <IPDManagement />
+                    </Suspense>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
