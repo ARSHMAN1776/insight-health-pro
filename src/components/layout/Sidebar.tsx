@@ -30,7 +30,8 @@ import {
   FileCheck,
   ListPlus,
   TicketCheck,
-  CreditCard
+  CreditCard,
+  BrainCircuit
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -178,6 +179,12 @@ const sidebarItems: SidebarItem[] = [
     icon: Scissors,
     path: '/operation-department',
     roles: ['admin', 'doctor', 'nurse', 'receptionist']
+  },
+  {
+    label: 'Smart Scheduling',
+    icon: BrainCircuit,
+    path: '/smart-scheduling',
+    roles: ['admin', 'doctor']
   },
   {
     label: 'Reports',

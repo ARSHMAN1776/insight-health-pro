@@ -3359,6 +3359,132 @@ export type Database = {
           },
         ]
       }
+      scheduling_analytics: {
+        Row: {
+          avg_daily_appointments: number | null
+          avg_wait_time_mins: number | null
+          busiest_day: number | null
+          cancelled_appointments: number | null
+          completed_appointments: number | null
+          computed_at: string
+          created_at: string
+          doctor_id: string
+          id: string
+          no_show_appointments: number | null
+          no_show_rate: number | null
+          peak_hour: number | null
+          period_end: string
+          period_start: string
+          total_appointments: number | null
+          utilization_rate: number | null
+        }
+        Insert: {
+          avg_daily_appointments?: number | null
+          avg_wait_time_mins?: number | null
+          busiest_day?: number | null
+          cancelled_appointments?: number | null
+          completed_appointments?: number | null
+          computed_at?: string
+          created_at?: string
+          doctor_id: string
+          id?: string
+          no_show_appointments?: number | null
+          no_show_rate?: number | null
+          peak_hour?: number | null
+          period_end: string
+          period_start: string
+          total_appointments?: number | null
+          utilization_rate?: number | null
+        }
+        Update: {
+          avg_daily_appointments?: number | null
+          avg_wait_time_mins?: number | null
+          busiest_day?: number | null
+          cancelled_appointments?: number | null
+          completed_appointments?: number | null
+          computed_at?: string
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          no_show_appointments?: number | null
+          no_show_rate?: number | null
+          peak_hour?: number | null
+          period_end?: string
+          period_start?: string
+          total_appointments?: number | null
+          utilization_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_analytics_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_analytics_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduling_recommendations: {
+        Row: {
+          created_at: string
+          description: string
+          doctor_id: string | null
+          expires_at: string | null
+          id: string
+          is_dismissed: boolean | null
+          metadata: Json | null
+          priority: string
+          recommendation_type: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          doctor_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          metadata?: Json | null
+          priority?: string
+          recommendation_type: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          doctor_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          metadata?: Json | null
+          priority?: string
+          recommendation_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_recommendations_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_recommendations_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shift_handover_patients: {
         Row: {
           bed_number: number | null

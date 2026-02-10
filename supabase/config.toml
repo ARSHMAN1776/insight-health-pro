@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.clinical-copilot]
 verify_jwt = false
+
+[functions.smart-scheduling]
+verify_jwt = false
