@@ -25,6 +25,7 @@
 -- - Clinical Codes (ICD-10, CPT)
 -- - Shift Handover System
 -- - Patient Feedback & Satisfaction
+-- - AI Clinical Copilot (SOAP notes, Rx drafts, DDx, Treatment Plans)
 -- IMPORTANT: This schema is designed for fresh database setup.
 -- Execute in order: Extensions -> Types -> Functions -> Tables -> RLS -> FK
 -- ============================================================================

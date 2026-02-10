@@ -32,6 +32,7 @@ import DoctorQueueWidget from '../queue/DoctorQueueWidget';
 import { useTimezone } from '@/hooks/useTimezone';
 import RefillRequestReview from '../prescriptions/RefillRequestReview';
 import MessagesPreviewWidget from './MessagesPreviewWidget';
+import ClinicalCopilot from '../ai/ClinicalCopilot';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -560,6 +561,9 @@ const DoctorDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Clinical Copilot */}
+      <ClinicalCopilot compact />
     </div>
   );
 };

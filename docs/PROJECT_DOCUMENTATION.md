@@ -21,9 +21,10 @@
 10. [Department Management](#10-department-management)
 11. [Staff Management Module](#11-staff-management-module)
 12. [Doctor-Patient Communication](#12-doctor-patient-communication)
-13. [Prescription Refill System](#13-prescription-refill-system)
-14. [Notification & Reminder System](#14-notification--reminder-system)
-15. [Reports & Analytics](#15-reports--analytics)
+13. [AI Clinical Copilot](#13-ai-clinical-copilot)
+14. [Prescription Refill System](#14-prescription-refill-system)
+15. [Notification & Reminder System](#15-notification--reminder-system)
+16. [Reports & Analytics](#16-reports--analytics)
 16. [Settings & Configuration](#16-settings--configuration)
 17. [Database Architecture](#17-database-architecture)
 18. [Security Features](#18-security-features)
@@ -1574,7 +1575,55 @@ The HMS provides a robust two-way communication system between doctors and patie
 
 ---
 
-## 13. Prescription Refill System
+## 13. AI Clinical Copilot (NEW v4.0)
+
+### 13.1 Overview
+
+The AI Clinical Copilot is an enterprise-grade, AI-powered clinical decision support system that assists doctors in generating clinical documentation, treatment plans, and diagnostic analysis in real-time.
+
+**Edge Function:** `supabase/functions/clinical-copilot/index.ts`
+**UI Component:** `src/components/ai/ClinicalCopilot.tsx`
+
+### 13.2 Copilot Actions
+
+| Action | Description | Output |
+|--------|-------------|--------|
+| **SOAP Note** | Generates structured Subjective/Objective/Assessment/Plan note | Complete clinical note with ICD-10 codes |
+| **Treatment Plan** | Comprehensive treatment with medications, monitoring, follow-up | Drug dosages, lifestyle modifications, red flags |
+| **Rx Draft** | Prescription draft with drug interactions check | Medications with strength, route, frequency, duration |
+| **Differential Dx** | 5-7 differential diagnoses ranked by probability | ICD-10 codes, supporting evidence, confirmatory tests |
+| **Clinical Summary** | Concise summary for handoff or referral | One-line summary, active problems, pending items |
+
+### 13.3 Features
+
+| Feature | Description |
+|---------|-------------|
+| Streaming Response | Real-time token-by-token AI output via SSE |
+| Patient Context | Automatically considers allergies, medications, history |
+| Drug Interaction Check | Cross-references current medications for contraindications |
+| ICD-10 Auto-Coding | Suggests diagnosis codes with each assessment |
+| Copy / Insert | Copy output to clipboard or insert directly into medical record |
+| Role-Gated | Only doctors and admins can access (JWT + role check) |
+| Abort Support | Stop generation mid-stream |
+
+### 13.4 Integration Points
+
+| Location | How It's Used |
+|----------|---------------|
+| **Doctor Dashboard** | Standalone copilot widget for quick clinical queries |
+| **Medical Records Dialog** | Side-by-side panel alongside the record form; "Insert" button populates notes |
+| **AI Diagnosis** | Existing `AIDiagnosisSuggestions.tsx` for differential diagnosis |
+
+### 13.5 Security
+
+- JWT authentication required
+- Role check: only `doctor` and `admin` roles
+- LOVABLE_API_KEY auto-provisioned (never exposed to client)
+- All requests logged with user ID for audit trail
+
+---
+
+## 14. Prescription Refill System
 
 ### 13.1 Complete Refill Workflow
 
@@ -2960,7 +3009,7 @@ All text meets WCAG AA contrast requirements:
 **System Version:** HMS v4.0  
 **Total Components:** 130+  
 **Total Database Tables:** 55+  
-**Total Edge Functions:** 8  
+**Total Edge Functions:** 9  
 **Total Custom Hooks:** 18  
 **Total Utility Libraries:** 14  
 

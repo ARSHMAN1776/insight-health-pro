@@ -19,6 +19,7 @@ import {
   getUserContextFromAuth 
 } from '../../lib/auditLogger';
 import AIDiagnosisSuggestions from '../ai/AIDiagnosisSuggestions';
+import ClinicalCopilot from '../ai/ClinicalCopilot';
 
 const MedicalRecords: React.FC = () => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
@@ -325,144 +326,152 @@ const MedicalRecords: React.FC = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedRecord ? 'Edit Medical Record' : 'Add New Medical Record'}
             </DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Patient *</Label>
-                <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select patient" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[200] max-h-[200px] overflow-y-auto bg-background">
-                    {patients.map(patient => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.first_name} {patient.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            {/* Form - Left Side */}
+            <div className="lg:col-span-3">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Patient *</Label>
+                    <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select patient" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200] max-h-[200px] overflow-y-auto bg-background">
+                        {patients.map(patient => (
+                          <SelectItem key={patient.id} value={patient.id}>
+                            {patient.first_name} {patient.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Doctor *</Label>
-                <Select value={formData.doctor_id} onValueChange={(value) => setFormData({...formData, doctor_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select doctor" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[200] max-h-[200px] overflow-y-auto bg-background">
-                    {doctors.map(doctor => (
-                      <SelectItem key={doctor.id} value={doctor.id}>
-                        Dr. {doctor.first_name} {doctor.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                  <div className="space-y-2">
+                    <Label>Doctor *</Label>
+                    <Select value={formData.doctor_id} onValueChange={(value) => setFormData({...formData, doctor_id: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select doctor" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200] max-h-[200px] overflow-y-auto bg-background">
+                        {doctors.map(doctor => (
+                          <SelectItem key={doctor.id} value={doctor.id}>
+                            Dr. {doctor.first_name} {doctor.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Visit Date *</Label>
-                <Input
-                  type="date"
-                  value={formData.visit_date}
-                  onChange={(e) => setFormData({...formData, visit_date: e.target.value})}
-                />
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Visit Date *</Label>
+                    <Input
+                      type="date"
+                      value={formData.visit_date}
+                      onChange={(e) => setFormData({...formData, visit_date: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Follow-up Date</Label>
+                    <Input
+                      type="date"
+                      value={formData.follow_up_date}
+                      onChange={(e) => setFormData({...formData, follow_up_date: e.target.value})}
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label>Follow-up Date</Label>
-                <Input
-                  type="date"
-                  value={formData.follow_up_date}
-                  onChange={(e) => setFormData({...formData, follow_up_date: e.target.value})}
-                />
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label>Symptoms</Label>
+                  <Textarea
+                    value={formData.symptoms}
+                    onChange={(e) => setFormData({...formData, symptoms: e.target.value})}
+                    placeholder="Patient's symptoms..."
+                    rows={2}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Symptoms</Label>
-                {formData.symptoms && formData.patient_id && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedPatientForAI({ id: formData.patient_id, symptoms: formData.symptoms });
-                      setShowAIDiagnosis(true);
-                    }}
-                    className="flex items-center gap-1"
-                  >
-                    <Brain className="h-3 w-3" />
-                    AI Diagnosis
+                <div className="space-y-2">
+                  <Label>Diagnosis</Label>
+                  <Textarea
+                    value={formData.diagnosis}
+                    onChange={(e) => setFormData({...formData, diagnosis: e.target.value})}
+                    placeholder="Medical diagnosis..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Treatment</Label>
+                  <Textarea
+                    value={formData.treatment}
+                    onChange={(e) => setFormData({...formData, treatment: e.target.value})}
+                    placeholder="Treatment plan..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Medications</Label>
+                  <Textarea
+                    value={formData.medications}
+                    onChange={(e) => setFormData({...formData, medications: e.target.value})}
+                    placeholder="Prescribed medications..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    placeholder="Additional notes..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" className="flex-1">
+                    {selectedRecord ? 'Update Record' : 'Add Record'}
                   </Button>
-                )}
-              </div>
-              <Textarea
-                value={formData.symptoms}
-                onChange={(e) => setFormData({...formData, symptoms: e.target.value})}
-                placeholder="Patient's symptoms..."
-                rows={3}
-              />
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
             </div>
 
-            <div className="space-y-2">
-              <Label>Diagnosis</Label>
-              <Textarea
-                value={formData.diagnosis}
-                onChange={(e) => setFormData({...formData, diagnosis: e.target.value})}
-                placeholder="Medical diagnosis..."
-                rows={3}
+            {/* AI Copilot - Right Side */}
+            <div className="lg:col-span-2">
+              <ClinicalCopilot
+                compact
+                patientData={{
+                  allergies: patients.find(p => p.id === formData.patient_id)?.allergies || undefined,
+                  medicalHistory: patients.find(p => p.id === formData.patient_id)?.medical_history || undefined,
+                }}
+                clinicalData={{
+                  symptoms: formData.symptoms,
+                  previousDiagnosis: formData.diagnosis,
+                }}
+                onInsertText={(text) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    notes: prev.notes ? `${prev.notes}\n\n--- AI Copilot ---\n${text}` : text,
+                  }));
+                }}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label>Treatment</Label>
-              <Textarea
-                value={formData.treatment}
-                onChange={(e) => setFormData({...formData, treatment: e.target.value})}
-                placeholder="Treatment plan..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Medications</Label>
-              <Textarea
-                value={formData.medications}
-                onChange={(e) => setFormData({...formData, medications: e.target.value})}
-                placeholder="Prescribed medications..."
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                placeholder="Additional notes..."
-                rows={2}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1">
-                {selectedRecord ? 'Update Record' : 'Add Record'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
 
