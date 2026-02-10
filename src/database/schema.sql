@@ -5,7 +5,7 @@
 -- Database: PostgreSQL (Supabase)
 -- Last Updated: January 2026
 -- Description: Complete SQL schema for the Hospital Management System
--- Total Tables: 54+
+-- Total Tables: 55+
 -- 
 -- MODULES INCLUDED:
 -- - User Management & Authentication
@@ -24,7 +24,7 @@
 -- - HIPAA Audit Logging
 -- - Clinical Codes (ICD-10, CPT)
 -- - Shift Handover System
---
+-- - Patient Feedback & Satisfaction
 -- IMPORTANT: This schema is designed for fresh database setup.
 -- Execute in order: Extensions -> Types -> Functions -> Tables -> RLS -> FK
 -- ============================================================================
@@ -985,6 +985,20 @@ CREATE TABLE IF NOT EXISTS public.purchase_order_items (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- TABLE: patient_feedback
+CREATE TABLE IF NOT EXISTS public.patient_feedback (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    appointment_id UUID,
+    patient_id UUID NOT NULL,
+    doctor_id UUID NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    categories TEXT[] DEFAULT '{}',
+    comments TEXT,
+    is_anonymous BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
 -- ============================================================================
 -- STEP 4B: TABLE-DEPENDENT HELPER FUNCTIONS
 -- (Defined after tables so fresh setup doesn't fail on missing relations)
@@ -1099,6 +1113,7 @@ ALTER TABLE public.drug_interactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.patient_feedback ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- STEP 6: DROP EXISTING RLS POLICIES (for clean re-runs)
@@ -1513,6 +1528,12 @@ CREATE POLICY "purchase_orders_admin" ON public.purchase_orders FOR ALL USING (p
 CREATE POLICY "purchase_order_items_pharmacist" ON public.purchase_order_items FOR ALL USING (public.has_role(auth.uid(), 'pharmacist')) WITH CHECK (public.has_role(auth.uid(), 'pharmacist'));
 CREATE POLICY "purchase_order_items_admin" ON public.purchase_order_items FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+-- Patient Feedback policies
+CREATE POLICY "patient_feedback_patient_insert" ON public.patient_feedback FOR INSERT WITH CHECK (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "patient_feedback_patient_select" ON public.patient_feedback FOR SELECT USING (patient_id = public.get_patient_id_for_user(auth.uid()));
+CREATE POLICY "patient_feedback_doctor_select" ON public.patient_feedback FOR SELECT USING (doctor_id = public.get_doctor_id_for_user(auth.uid()));
+CREATE POLICY "patient_feedback_admin" ON public.patient_feedback FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
 -- ============================================================================
 -- STEP 8: CREATE INDEXES
 -- ============================================================================
@@ -1591,6 +1612,9 @@ CREATE INDEX IF NOT EXISTS idx_suppliers_status ON public.suppliers(status);
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier ON public.purchase_orders(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON public.purchase_orders(status);
 CREATE INDEX IF NOT EXISTS idx_purchase_order_items_order ON public.purchase_order_items(purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_patient_feedback_patient ON public.patient_feedback(patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_feedback_doctor ON public.patient_feedback(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_patient_feedback_appointment ON public.patient_feedback(appointment_id);
 
 -- ============================================================================
 -- STEP 9: CREATE TRIGGERS (with DROP IF EXISTS for idempotency)
@@ -2069,14 +2093,21 @@ TABLES (47+ Tables):
 - Audit: phi_audit_log
 - Clinical Codes: diagnosis_codes, procedure_codes, drug_interactions
 - Supply Chain: suppliers, purchase_orders, purchase_order_items
+- Patient Experience: patient_feedback
 
-NEW IN v3.0:
+NEW IN v4.0:
 ============
-✓ Queue Management System (daily_queues, queue_entries)
-✓ Real-time patient queue tracking
-✓ Token-based patient flow management
-✓ Enhanced surgery table security (role-based RLS)
-✓ Pharmacy billing tables
+✓ Patient Feedback System (patient_feedback table with 5-star ratings, categories, comments)
+✓ Staff Performance Analytics (doctor workload, completion/no-show rates)
+✓ Patient Satisfaction Analytics (rating distribution, top-rated providers)
+✓ Lab Result Historical Trending (parameter trending with reference ranges)
+✓ Prescription Refill Review Interface (approve/deny workflow)
+✓ Doctor-Patient Messaging Enhancement (clinical context panels, quick replies)
+
+PREVIOUS VERSIONS:
+==================
+v3.0: Queue Management System, Pharmacy billing, Enhanced surgery RLS
+v2.0: Blood Bank, Operation Theatre, Shift Handover, Insurance Claims
 
 USER ROLES (7):
 ===============
@@ -2092,6 +2123,7 @@ FEATURES:
 ✓ Comprehensive foreign key constraints
 ✓ Performance indexes on all key columns
 ✓ Queue Management with real-time updates
+✓ Patient Feedback & Satisfaction tracking
 ✓ FULLY IDEMPOTENT - Safe to run multiple times
 
 EXECUTION ORDER (12 Steps):
@@ -2120,6 +2152,6 @@ IDEMPOTENCY FEATURES:
 - Seed Data: ON CONFLICT DO NOTHING
 
 ================================================================================
-                              END OF SCHEMA v3.0
+                              END OF SCHEMA v4.0
 ================================================================================
 */
