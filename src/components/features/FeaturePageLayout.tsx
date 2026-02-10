@@ -132,7 +132,7 @@ const FeaturePageLayout: React.FC<FeaturePageLayoutProps> = ({
                     size="lg"
                     className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 rounded-full shadow-lg shadow-primary/25"
                   >
-                    Get Started Free
+                    Get Started
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                   <Button 
@@ -306,14 +306,14 @@ const FeaturePageLayout: React.FC<FeaturePageLayoutProps> = ({
                 <p className="text-lg lg:text-xl text-primary-foreground/80 mb-10 leading-relaxed">
                   {ctaDescription}
                 </p>
-                <div className="flex flex-wrap justify-center gap-4">
+                  <div className="flex flex-wrap justify-center gap-4">
                   <Button 
                     onClick={() => navigate('/login')}
                     size="lg"
                     variant="secondary"
                     className="px-10 rounded-full shadow-lg text-base font-semibold"
                   >
-                    Start Free Trial
+                    Get Started
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                   <Button 
@@ -322,7 +322,7 @@ const FeaturePageLayout: React.FC<FeaturePageLayoutProps> = ({
                     variant="outline"
                     className="px-10 rounded-full border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 text-base font-semibold"
                   >
-                    Contact Sales
+                    Request Demo
                   </Button>
                 </div>
               </div>

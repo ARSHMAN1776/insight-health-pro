@@ -50,7 +50,7 @@ const HowItWorksSection: React.FC = () => {
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             <Rocket className="w-4 h-4" />
-            Simple Onboarding
+            Quick Setup
           </span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Get Started in <span className="text-primary">4 Easy Steps</span>
@@ -112,11 +112,11 @@ const HowItWorksSection: React.FC = () => {
             className="rounded-full px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
             onClick={() => navigate('/contact')}
           >
-            Start Your Free Trial
+            Request a Demo
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            No credit card required • 14-day free trial
+            Full installation support • Lifetime updates included
           </p>
         </div>
       </div>
