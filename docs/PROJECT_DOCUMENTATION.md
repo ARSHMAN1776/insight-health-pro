@@ -1200,6 +1200,40 @@ The Blood Bank module is a comprehensive system for managing all aspects of bloo
 | Reviewed By | UUID | ❌ |
 | Notes | Text | ❌ |
 
+### 9.8 Appointment Feedback
+
+**File:** `src/components/patient-portal/AppointmentFeedback.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| 5-Star Rating | Interactive star rating (1-5) with hover effects |
+| Category Tags | Select from: Wait Time, Communication, Examination, Care Quality, Staff Behavior |
+| Comments | Optional free-text feedback |
+| Anonymous Option | Submit feedback anonymously |
+| Auto-Prompt | "Rate this visit" button appears on completed appointments |
+
+#### Feedback Data Fields:
+
+| Field | Type | Required |
+|-------|------|----------|
+| Appointment | UUID | ❌ |
+| Patient | UUID | ✅ |
+| Doctor | UUID | ✅ |
+| Rating | Integer (1-5) | ✅ |
+| Categories | Text[] | ❌ |
+| Comments | Text | ❌ |
+| Is Anonymous | Boolean | ❌ |
+
+### 9.9 Patient Symptom Checker
+
+**File:** `src/components/patient-portal/PatientSymptomChecker.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| AI-Powered | Symptom analysis using AI |
+| Triage Suggestion | Urgency level recommendation |
+| Doctor Recommendation | Suggest appropriate specialist |
+
 ---
 
 ## 10. Department Management
@@ -1702,8 +1736,49 @@ When a refill request is reviewed, the system automatically:
 | Lab Test Analytics | Tests by type, turnaround time |
 | Inventory Reports | Stock levels, expiring items |
 | Blood Bank Reports | Donations, issues, stock |
+| **Staff Performance** | Doctor workload, completion/no-show rates, unique patients |
+| **Patient Satisfaction** | Rating distribution, top-rated doctors, recent comments |
 
-### 13.3 Time Range Filters:
+### 13.3 Staff Performance Analytics (NEW v4.0)
+
+**File:** `src/components/reports/StaffPerformance.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Doctor Workload Chart | Bar chart comparing total vs completed appointments per doctor |
+| Completion Rate | Percentage of appointments completed by each doctor |
+| No-Show Rate | No-show percentage with red highlight for >15% |
+| Unique Patients | Count of distinct patients per doctor |
+| Time Range Filter | 7 / 30 / 90 day periods |
+| Sort Options | By appointments, rating, revenue, completion % |
+| Summary Cards | Total appointments, avg completion, avg no-show, active doctors |
+
+### 13.4 Patient Satisfaction Analytics (NEW v4.0)
+
+**File:** `src/components/reports/SatisfactionAnalytics.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Average Rating | Overall average star rating |
+| Satisfaction % | Percentage of 4+ star ratings |
+| Rating Distribution | Horizontal bar chart (1-5 stars) |
+| Top Rated Doctors | Ranked list with review count |
+| Category Breakdown | Most selected feedback categories |
+| Recent Comments | Latest patient comments with ratings |
+
+### 13.5 Lab Result Trending (NEW v4.0)
+
+**File:** `src/components/lab-tests/LabResultTrending.tsx`
+
+| Feature | Description |
+|---------|-------------|
+| Historical Line Chart | Parameter values over time using Recharts |
+| Reference Range Lines | Green (low) / Red (high) reference lines |
+| Parameter Selector | Switch between different lab parameters |
+| Trend Indicator | Up / Down / Stable arrow based on last two values |
+| Minimum Data | Requires 2+ completed tests to display |
+
+### 13.6 Time Range Filters:
 
 - Last 7 days
 - Last 30 days
@@ -1711,12 +1786,12 @@ When a refill request is reviewed, the system automatically:
 - Last 1 year
 - Custom range
 
-### 13.4 Visualization Types:
+### 13.7 Visualization Types:
 
 | Chart Type | Use Case |
 |------------|----------|
-| Line Chart | Trends over time |
-| Bar Chart | Comparisons |
+| Line Chart | Trends over time, lab result trending |
+| Bar Chart | Comparisons, workload, rating distribution |
 | Pie Chart | Distribution |
 | Area Chart | Volume over time |
 | Data Grid | Detailed data |
@@ -2880,14 +2955,14 @@ All text meets WCAG AA contrast requirements:
 
 ---
 
-**Document Version:** 3.0  
-**Last Updated:** January 2026  
-**System Version:** HMS v3.0  
-**Total Components:** 120+  
-**Total Database Tables:** 47+  
-**Total Edge Functions:** 5  
-**Total Custom Hooks:** 15  
-**Total Utility Libraries:** 12  
+**Document Version:** 4.0  
+**Last Updated:** February 2026  
+**System Version:** HMS v4.0  
+**Total Components:** 130+  
+**Total Database Tables:** 55+  
+**Total Edge Functions:** 8  
+**Total Custom Hooks:** 18  
+**Total Utility Libraries:** 14  
 
 ---
 

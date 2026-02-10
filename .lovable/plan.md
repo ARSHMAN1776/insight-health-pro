@@ -3,8 +3,8 @@
 # Hospital Management System Enhancement Plan
 
 **Version:** 4.0.0  
-**Last Updated:** January 2026  
-**Status:** Phase 1 Complete
+**Last Updated:** February 2026  
+**Status:** Phase 2 Complete
 
 ## Executive Summary
 
@@ -54,29 +54,81 @@ This plan outlines strategic improvements to transform the HMS from a solid clin
 
 ---
 
+## ✅ Phase 2: Revenue & Analytics (COMPLETED)
 
-### 2.2 Patient Feedback System
+### ✅ 2.1 Patient Feedback System
 
-**Implementation:**
-- Create `patient_feedback` table (appointment_id, rating, comments, categories)
-- Show feedback form after appointment completion
-- Aggregate ratings on doctor profiles
-- Display satisfaction trends in admin reports
+**Status:** ✅ COMPLETED
 
-**Files to create:**
-- `src/components/patient-portal/AppointmentFeedback.tsx`
-- `src/components/reports/SatisfactionAnalytics.tsx`
+**Solution Implemented:**
+- Created `patient_feedback` table with RLS policies (rating, categories, comments, anonymous option)
+- Built `AppointmentFeedback.tsx` dialog with 5-star rating, category tags, and comments
+- "Rate this visit" button on completed appointments in `AppointmentsView.tsx`
+- Feedback data feeds into satisfaction analytics
+
+**Files Created/Modified:**
+- ✅ `src/components/patient-portal/AppointmentFeedback.tsx` (new)
+- ✅ `src/components/patient-portal/AppointmentsView.tsx` (added feedback trigger)
+- ✅ Database migration: `patient_feedback` table with indexes and RLS
 
 ---
 
-### 2.3 Family/Dependent Portal
+### ✅ 2.2 Staff Performance Analytics
 
-**Use Case:** Parents managing children's healthcare, caregivers for elderly
+**Status:** ✅ COMPLETED
 
-**Implementation:**
-- Create `patient_dependents` table (primary_patient_id, dependent_patient_id, relationship)
-- Add "Manage Family Members" in patient settings
-- Allow switching between profiles when booking appointments
+**Solution Implemented:**
+- `StaffPerformance.tsx` component with doctor workload chart (Recharts BarChart)
+- Tracks: total/completed appointments, no-show rate, unique patients, completion rate
+- Summary cards for total appointments, avg completion, avg no-show, active doctors
+- Time range filter (7/30/90 days) and sort options
+- Integrated as "Performance" tab in Reports page (lazy loaded)
+
+**Files Created/Modified:**
+- ✅ `src/components/reports/StaffPerformance.tsx` (new)
+- ✅ `src/pages/Reports.tsx` (added Performance tab)
+
+---
+
+### ✅ 2.3 Patient Satisfaction Analytics
+
+**Status:** ✅ COMPLETED
+
+**Solution Implemented:**
+- `SatisfactionAnalytics.tsx` with rating distribution bar chart, top-rated doctors list
+- Summary cards: avg rating, total reviews, satisfaction %, 5-star rate
+- Recent comments section with star display
+- Category breakdown from feedback tags
+- Integrated as "Satisfaction" tab in Reports page (lazy loaded)
+
+**Files Created/Modified:**
+- ✅ `src/components/reports/SatisfactionAnalytics.tsx` (new)
+- ✅ `src/pages/Reports.tsx` (added Satisfaction tab)
+
+---
+
+### ✅ 2.4 Lab Result Historical Trending
+
+**Status:** ✅ COMPLETED
+
+**Solution Implemented:**
+- `LabResultTrending.tsx` with Recharts LineChart showing parameter values over time
+- Reference range lines (green for low, red for high)
+- Parameter selector badges to switch between lab parameters
+- Trend indicator (up/down/stable) based on last two values
+- Integrated into `LabReportPreview.tsx` for completed/verified tests
+
+**Files Created/Modified:**
+- ✅ `src/components/lab-tests/LabResultTrending.tsx` (new)
+- ✅ `src/components/lab-tests/LabReportPreview.tsx` (added trending component)
+
+---
+
+### ✅ 2.5 Infrastructure Fix: Chatbot URL
+
+**Status:** ✅ COMPLETED
+
+- Fixed hardcoded Supabase URL in `useChatbot.ts` to use `import.meta.env.VITE_SUPABASE_URL`
 
 ---
 
@@ -132,20 +184,7 @@ This plan outlines strategic improvements to transform the HMS from a solid clin
 
 ---
 
-### 4.2 Lab Result Trending
-
-**Enhancement:**
-- Show historical values for each lab parameter as mini-charts
-- Highlight out-of-range values with red indicators
-- Allow comparison across date ranges
-- Alert on significant changes from baseline
-
-**Files to modify:**
-- `src/components/lab-tests/LabReportPreview.tsx` (add trending charts)
-
----
-
-### 4.3 Drug Interaction Alerts Enhancement
+### 4.2 Drug Interaction Alerts Enhancement
 
 **Current State:** `drug_interactions` table exists but integration is limited
 
@@ -167,10 +206,6 @@ This plan outlines strategic improvements to transform the HMS from a solid clin
 - Auto-balance doctor workloads
 - Predict no-shows and overbook strategically
 
-**Implementation:**
-- Create scheduling analytics Edge Function
-- Add "Smart Schedule" mode in appointment booking
-
 ---
 
 ### 5.2 Automated SMS/Email Reminders
@@ -189,50 +224,13 @@ This plan outlines strategic improvements to transform the HMS from a solid clin
 
 ---
 
-### 5.3 Staff Performance Dashboard
+### 5.3 Telemedicine / Video Consultation
 
-**Metrics:**
-- Appointments per doctor (daily/weekly/monthly)
-- Average patient wait time
-- Patient satisfaction ratings
-- Revenue generated per provider
-- No-show rates by provider
-
-**Files to create:**
-- `src/components/reports/StaffPerformance.tsx`
-
----
-
-## Phase 6: Technical Improvements
-
-### 6.1 Enhanced PWA Offline Support
-
-**Current:** Basic PWA configured
-
-**Enhancement:**
-- Cache critical patient lookup data
-- Queue appointment bookings when offline
-- Sync when connection restored
-- Show offline indicator in header
-
----
-
-### 6.2 API Rate Limiting
-
-**Implementation:**
-- Add rate limiting to Edge Functions
-- Track requests per user/IP
-- Return 429 on limit exceeded
-- Log potential abuse
-
----
-
-### 6.3 Automated Backup Verification
-
-**Implementation:**
-- Supabase Edge Function to verify backup integrity
-- Weekly restoration test to staging
-- Alert admin on backup failures
+**Features:**
+- WebRTC-based video calling
+- Appointment type: "Video Consultation"
+- Screen sharing for lab results review
+- Recording with patient consent
 
 ---
 
@@ -242,14 +240,17 @@ This plan outlines strategic improvements to transform the HMS from a solid clin
 |---------|--------|--------|----------|--------|
 | Refill Request Review | High | Low | 1 | ✅ Complete |
 | Doctor Message Reply | High | Low | 1 | ✅ Complete |
-| Online Patient Payment | High | Medium | 2 | 🔲 Pending |
+| Patient Feedback System | Medium | Low | 2 | ✅ Complete |
+| Staff Performance Analytics | Medium | Medium | 2 | ✅ Complete |
+| Satisfaction Analytics | Medium | Low | 2 | ✅ Complete |
+| Lab Result Trending | Medium | Low | 2 | ✅ Complete |
+| Chatbot URL Fix | Low | Low | 2 | ✅ Complete |
+| Online Patient Payment | High | Medium | 3 | 🔲 Pending |
 | Video Consultation | High | High | 3 | 🔲 Pending |
 | AI Diagnosis Integration | Medium | Medium | 3 | 🔲 Pending |
-| Lab Result Trending | Medium | Low | 2 | 🔲 Pending |
-| Staff Performance Dashboard | Medium | Medium | 3 | 🔲 Pending |
-| SMS Reminder Integration | High | Low | 2 | 🔲 Pending |
-| Patient Feedback System | Medium | Low | 2 | 🔲 Pending |
+| SMS Reminder Integration | High | Low | 3 | 🔲 Pending |
 | Smart Scheduling | Medium | High | 4 | 🔲 Pending |
+| Insurance Pre-Auth | Medium | Medium | 4 | 🔲 Pending |
 
 ---
 
@@ -267,6 +268,20 @@ This plan outlines strategic improvements to transform the HMS from a solid clin
 | Updated PharmacistDashboard | Integrated refill request review widget |
 | Enhanced PatientMessages | Full conversation management with clinical context |
 
+### Phase 2 Deliverables (February 2026)
+
+| Component | Description |
+|-----------|-------------|
+| `AppointmentFeedback.tsx` | 5-star feedback dialog with categories and anonymous option |
+| `StaffPerformance.tsx` | Doctor workload analytics with charts and tables |
+| `SatisfactionAnalytics.tsx` | Patient satisfaction metrics and top-rated providers |
+| `LabResultTrending.tsx` | Historical lab parameter trending with reference ranges |
+| `patient_feedback` table | Database table with RLS for feedback storage |
+| Updated Reports page | Added Performance and Satisfaction tabs (lazy loaded) |
+| Updated AppointmentsView | Added "Rate this visit" for completed appointments |
+| Updated LabReportPreview | Integrated historical trending component |
+| Fixed useChatbot.ts | Environment variable for Supabase URL |
+
 ---
 
 ## Next Recommended Steps
@@ -274,19 +289,19 @@ This plan outlines strategic improvements to transform the HMS from a solid clin
 Based on impact and effort analysis, recommended next implementations:
 
 1. **SMS Reminder Integration** - Reduces no-shows significantly (3-4 hours)
-2. **Lab Result Trending** - Improves clinical decision-making (3-4 hours)
-3. **Patient Feedback System** - Enables quality tracking (2-3 hours)
-4. **Online Patient Payment** - Revenue improvement (4-6 hours)
+2. **Online Patient Payment** - Revenue improvement (4-6 hours)
+3. **AI Diagnosis Integration** - Clinical decision support (3-4 hours)
+4. **Telemedicine / Video Consultation** - Competitive advantage (8-12 hours)
 
 ---
 
 ## Technical Notes
 
-All implementations will:
+All implementations:
 - Follow existing code patterns and component structure
 - Use TanStack Query for data fetching
 - Maintain RLS security policies
 - Support multi-language (i18n ready)
 - Include proper loading states and error handling
 - Be responsive for mobile devices
-
+- Use lazy loading for analytics components (Recharts)
