@@ -18,7 +18,7 @@ const getWelcomeMessage = (role: string | null, name: string | null): string => 
   if (role === 'patient') {
     return `Hi${name ? ` ${name}` : ''}! 👋 I'm your healthcare assistant. I can help you check appointments, view prescriptions, or find doctor schedules. How can I help you today?`;
   }
-  return "Hi! 👋 I'm your HealthCare HMS assistant. How can I help you today? I can answer questions about our features, pricing, or help you get started.";
+  return "Hi! 👋 I'm your HealthCare HMS assistant. How can I help you today? I can answer questions about our features or help you get started.";
 };
 
 export const useChatbot = ({ userRole, userName }: UseChatbotOptions) => {

@@ -21,7 +21,7 @@ const doctorActions = [
 
 const guestActions = [
   { label: 'Features', message: 'What features does this HMS offer?', icon: Stethoscope },
-  { label: 'Pricing', message: 'Tell me about pricing plans', icon: FileText },
+  { label: 'Get a Demo', message: 'How can I get a demo of this HMS?', icon: FileText },
 ];
 
 const QuickActions: React.FC<QuickActionsProps> = ({ userRole, onActionClick }) => {
