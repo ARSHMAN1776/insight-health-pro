@@ -62,6 +62,7 @@ const WaitingRoomDisplay = React.lazy(() => import('./components/queue/WaitingRo
 const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
 const IPDManagement = React.lazy(() => import('./pages/IPDManagement'));
+const SmartScheduling = React.lazy(() => import('./pages/SmartScheduling'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -380,6 +381,15 @@ const App = () => (
                   <MainLayout>
                     <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
                       <IPDManagement />
+                    </Suspense>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/smart-scheduling" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <SmartScheduling />
                     </Suspense>
                   </MainLayout>
                 </ProtectedRoute>
