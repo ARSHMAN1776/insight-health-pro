@@ -50,13 +50,16 @@ export const useChatbot = ({ userRole, userName }: UseChatbotOptions) => {
       // Get the current session for auth token
       const { data: { session } } = await supabase.auth.getSession();
       
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
       const response = await fetch(
-        `https://fdllddffiihycbtgawbr.supabase.co/functions/v1/chatbot`,
+        `${supabaseUrl}/functions/v1/chatbot`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkbGxkZGZmaWloeWNidGdhd2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2OTIwNzEsImV4cCI6MjA3MTI2ODA3MX0.Mvq3hlEWx-e9I6J0Xhrd4piPzVJalJf-Ppm6dgQfO7I'}`,
+            'Authorization': `Bearer ${session?.access_token || supabaseAnonKey}`,
           },
           body: JSON.stringify({ 
             messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content }))

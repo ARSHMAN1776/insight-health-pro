@@ -1710,6 +1710,74 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_feedback: {
+        Row: {
+          appointment_id: string | null
+          categories: string[] | null
+          comments: string | null
+          created_at: string
+          doctor_id: string
+          id: string
+          is_anonymous: boolean | null
+          patient_id: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          categories?: string[] | null
+          comments?: string | null
+          created_at?: string
+          doctor_id: string
+          id?: string
+          is_anonymous?: boolean | null
+          patient_id: string
+          rating: number
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          categories?: string[] | null
+          comments?: string | null
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          is_anonymous?: boolean | null
+          patient_id?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_feedback_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_feedback_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_feedback_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_feedback_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_messages: {
         Row: {
           created_at: string | null

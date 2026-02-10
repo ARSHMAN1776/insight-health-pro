@@ -37,7 +37,7 @@ import {
   printLabReport,
   type LabReportData 
 } from '@/lib/labReportGenerator';
-
+import LabResultTrending from './LabResultTrending';
 interface LabReportPreviewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -193,6 +193,13 @@ const LabReportPreview: React.FC<LabReportPreviewProps> = ({
               <p className="text-sm whitespace-pre-wrap">{reportData.comments}</p>
             </div>
           )}
+
+          {/* Historical Trending */}
+          <LabResultTrending
+            patientId={reportData.patient.id}
+            testName={reportData.testName}
+            currentParameters={reportData.parameters}
+          />
 
           <Separator />
 
