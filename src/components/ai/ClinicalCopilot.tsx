@@ -193,16 +193,22 @@ const ClinicalCopilot: React.FC<ClinicalCopilotProps> = ({
       if (line.startsWith('## ')) return <h3 key={i} className="font-bold text-sm mt-4 mb-1">{line.slice(3)}</h3>;
       if (line.startsWith('# ')) return <h2 key={i} className="font-bold mt-4 mb-2">{line.slice(2)}</h2>;
       // Bold markers
-      const boldProcessed = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+      // Sanitize: strip all HTML tags to prevent XSS
+      const sanitize = (str: string) => str.replace(/<[^>]*>/g, '');
+      // Bold markers → React elements
+      const renderBold = (text: string) => {
+        const parts = text.split(/\*\*(.*?)\*\*/g);
+        return parts.map((part, j) => j % 2 === 1 ? <b key={j}>{sanitize(part)}</b> : sanitize(part));
+      };
       // List items
       if (line.startsWith('- ') || line.startsWith('* ')) {
-        return <li key={i} className="ml-4 text-sm list-disc" dangerouslySetInnerHTML={{ __html: boldProcessed.slice(2) }} />;
+        return <li key={i} className="ml-4 text-sm list-disc">{renderBold(line.slice(2))}</li>;
       }
       if (/^\d+\.\s/.test(line)) {
-        return <li key={i} className="ml-4 text-sm list-decimal" dangerouslySetInnerHTML={{ __html: boldProcessed.replace(/^\d+\.\s/, '') }} />;
+        return <li key={i} className="ml-4 text-sm list-decimal">{renderBold(line.replace(/^\d+\.\s/, ''))}</li>;
       }
       if (line.trim() === '') return <br key={i} />;
-      return <p key={i} className="text-sm" dangerouslySetInnerHTML={{ __html: boldProcessed }} />;
+      return <p key={i} className="text-sm">{renderBold(line)}</p>;
     });
   };
 
