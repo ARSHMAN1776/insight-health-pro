@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insight Health Pro – Installation & Documentation Guide</title>
+<style>
+  :root {
+    --primary: #0F766E;
+    --primary-light: #14B8A6;
+    --dark: #1E293B;
+    --gray: #64748B;
+    --light: #F8FAFC;
+    --border: #E2E8F0;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: var(--dark); line-height: 1.7; background: #fff; }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+  
+  /* Cover */
+  .cover { text-align: center; padding: 80px 24px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; border-radius: 12px; margin-bottom: 48px; }
+  .cover h1 { font-size: 2.4rem; margin-bottom: 8px; }
+  .cover .version { font-size: 1.1rem; opacity: 0.9; margin-bottom: 4px; }
+  .cover .subtitle { font-size: 1rem; opacity: 0.8; }
+  
+  /* TOC */
+  .toc { background: var(--light); border: 1px solid var(--border); border-radius: 8px; padding: 28px 32px; margin-bottom: 48px; }
+  .toc h2 { font-size: 1.3rem; margin-bottom: 16px; color: var(--primary); }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--primary); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  
+  /* Sections */
+  h2 { font-size: 1.5rem; color: var(--primary); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 1.15rem; color: var(--dark); margin: 24px 0 10px; }
+  p { margin-bottom: 12px; color: var(--gray); }
+  
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  th, td { text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  th { background: var(--light); font-weight: 600; color: var(--dark); }
+  td { color: var(--gray); }
+  
+  /* Code */
+  pre { background: #1E293B; color: #E2E8F0; padding: 16px 20px; border-radius: 8px; overflow-x: auto; margin: 12px 0 20px; font-size: 0.9rem; line-height: 1.6; }
+  code { font-family: 'Fira Code', 'Consolas', monospace; }
+  p code, li code { background: #F1F5F9; color: var(--primary); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  
+  /* Lists */
+  ul, ol { margin: 8px 0 16px 20px; color: var(--gray); }
+  li { margin-bottom: 6px; }
+  
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+  .badge-required { background: #FEE2E2; color: var(--danger); }
+  .badge-optional { background: #FEF3C7; color: #92400E; }
+  .badge-yes { background: #DCFCE7; color: #166534; }
+  
+  /* Alert boxes */
+  .alert { padding: 16px 20px; border-radius: 8px; margin: 16px 0; border-left: 4px solid; }
+  .alert-info { background: #F0F9FF; border-color: #0EA5E9; }
+  .alert-warning { background: #FFFBEB; border-color: var(--warning); }
+  .alert-success { background: #F0FDF4; border-color: var(--success); }
+  .alert strong { display: block; margin-bottom: 4px; color: var(--dark); }
+  .alert p { margin: 0; font-size: 0.95rem; }
+  
+  /* Steps */
+  .step { display: flex; gap: 16px; margin: 16px 0; }
+  .step-num { flex-shrink: 0; width: 32px; height: 32px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; margin-top: 2px; }
+  .step-content { flex: 1; }
+  .step-content h4 { margin-bottom: 4px; color: var(--dark); }
+  .step-content p { font-size: 0.95rem; }
+  
+  /* Features grid */
+  .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 24px; }
+  .feature-item { background: var(--light); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .feature-item strong { color: var(--dark); display: block; margin-bottom: 2px; }
+  .feature-item span { font-size: 0.9rem; color: var(--gray); }
+  
+  /* Footer */
+  .footer { text-align: center; padding: 40px 24px; margin-top: 48px; border-top: 2px solid var(--border); color: var(--gray); }
+  .footer a { color: var(--primary); }
+  
+  @media (max-width: 640px) {
+    .features-grid { grid-template-columns: 1fr; }
+    .cover h1 { font-size: 1.8rem; }
+  }
+  @media print {
+    .cover { break-after: page; }
+    h2 { break-before: page; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- COVER -->
+<div class="cover">
+  <h1>🏥 Insight Health Pro</h1>
+  <p class="version">Version 4.0.0 — Hospital Management System</p>
+  <p class="subtitle">Installation &amp; Documentation Guide</p>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <h2>📑 Table of Contents</h2>
+  <ol>
+    <li><a href="#server-requirements">Server Requirements</a></li>
+    <li><a href="#installation">Installation Steps</a></li>
+    <li><a href="#database-setup">Database Setup</a></li>
+    <li><a href="#environment-config">Environment Configuration</a></li>
+    <li><a href="#edge-functions">Edge Functions Deployment</a></li>
+    <li><a href="#admin-credentials">Admin Login Credentials</a></li>
+    <li><a href="#demo-accounts">Demo Accounts</a></li>
+    <li><a href="#features">Complete Features List</a></li>
+    <li><a href="#tech-stack">Technology Stack</a></li>
+    <li><a href="#deployment">Production Deployment</a></li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#security">Security &amp; Compliance</a></li>
+    <li><a href="#support">Contact &amp; Support</a></li>
+  </ol>
+</div>
+
+<!-- 1. SERVER REQUIREMENTS -->
+<h2 id="server-requirements">1. Server Requirements</h2>
+
+<div class="alert alert-info">
+  <strong>ℹ️ Architecture Note</strong>
+  <p>Insight Health Pro is a <strong>modern single-page application (SPA)</strong> built with React. It does NOT require PHP, Apache, or MySQL. The backend is powered by <strong>Supabase</strong> (PostgreSQL + Auth + Edge Functions).</p>
+</div>
+
+<h3>Minimum Requirements</h3>
+<table>
+  <tr><th>Requirement</th><th>Minimum Version</th><th>Status</th></tr>
+  <tr><td><strong>Node.js</strong></td><td>18.0 or higher</td><td><span class="badge badge-required">Required</span></td></tr>
+  <tr><td><strong>npm</strong> or <strong>yarn</strong></td><td>Latest stable</td><td><span class="badge badge-required">Required</span></td></tr>
+  <tr><td><strong>Git</strong></td><td>Latest</td><td><span class="badge badge-required">Required</span></td></tr>
+  <tr><td><strong>Supabase Account</strong></td><td>Free tier or higher</td><td><span class="badge badge-required">Required</span></td></tr>
+  <tr><td><strong>Modern Browser</strong></td><td>Chrome 90+, Firefox 88+, Safari 14+, Edge 90+</td><td><span class="badge badge-required">Required</span></td></tr>
+</table>
+
+<h3>Backend (Supabase – Hosted)</h3>
+<table>
+  <tr><th>Service</th><th>Details</th><th>Provided By</th></tr>
+  <tr><td><strong>Database</strong></td><td>PostgreSQL 15+ (55+ tables with RLS)</td><td>Supabase</td></tr>
+  <tr><td><strong>Authentication</strong></td><td>JWT-based auth with email verification</td><td>Supabase Auth</td></tr>
+  <tr><td><strong>Edge Functions</strong></td><td>10+ serverless functions (Deno runtime)</td><td>Supabase Functions</td></tr>
+  <tr><td><strong>Real-time</strong></td><td>WebSocket subscriptions for live updates</td><td>Supabase Realtime</td></tr>
+  <tr><td><strong>Storage</strong></td><td>File uploads (reports, images)</td><td>Supabase Storage</td></tr>
+</table>
+
+<h3>Hosting Requirements (Frontend)</h3>
+<table>
+  <tr><th>Option</th><th>Details</th></tr>
+  <tr><td><strong>Static Hosting</strong></td><td>Any static file server (Vercel, Netlify, Cloudflare Pages, Nginx, Apache)</td></tr>
+  <tr><td><strong>Disk Space</strong></td><td>~50MB for built files</td></tr>
+  <tr><td><strong>SSL Certificate</strong></td><td>Required (HTTPS mandatory for auth cookies)</td></tr>
+  <tr><td><strong>PHP / MySQL</strong></td><td>❌ Not required</td></tr>
+</table>
+
+<h3>Optional Tools</h3>
+<table>
+  <tr><th>Tool</th><th>Purpose</th></tr>
+  <tr><td>Supabase CLI</td><td>Local development &amp; migrations</td></tr>
+  <tr><td>VS Code</td><td>Recommended IDE</td></tr>
+  <tr><td>Resend Account</td><td>Email notifications (free tier available)</td></tr>
+</table>
+
+<!-- 2. INSTALLATION -->
+<h2 id="installation">2. Installation Steps</h2>
+
+<h3>Quick Start (5 Minutes)</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <h4>Extract Source Code</h4>
+    <p>Extract the <code>source-code</code> folder from the ZIP archive to your desired location.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <h4>Install Dependencies</h4>
+    <pre><code>cd insight-health-pro
+npm install</code></pre>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <h4>Create Environment File</h4>
+    <pre><code>cp .env.example .env</code></pre>
+    <p>Edit <code>.env</code> and fill in your Supabase credentials (see Section 4).</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <h4>Set Up Database</h4>
+    <p>Execute the SQL schema file in your Supabase SQL Editor (see Section 3).</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <h4>Start Development Server</h4>
+    <pre><code>npm run dev</code></pre>
+    <p>Open <code>http://localhost:5173</code> in your browser.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-content">
+    <h4>Login &amp; Seed Demo Data</h4>
+    <p>Use the demo credentials (Section 7) to log in, then click <strong>"Seed Demo Data"</strong> on the Admin Dashboard.</p>
+  </div>
+</div>
+
+<div class="alert alert-success">
+  <strong>✅ Done!</strong>
+  <p>Your hospital management system is now running locally with full functionality.</p>
+</div>
+
+<!-- 3. DATABASE SETUP -->
+<h2 id="database-setup">3. Database Setup</h2>
+
+<h3>Step 1: Create a Supabase Project</h3>
+<ol>
+  <li>Go to <a href="https://supabase.com">supabase.com</a> and sign in</li>
+  <li>Click <strong>"New Project"</strong></li>
+  <li>Set a project name (e.g., <code>insight-health-pro</code>) and generate a strong database password</li>
+  <li>Select the region closest to your users</li>
+  <li>Wait ~2 minutes for provisioning</li>
+</ol>
+
+<h3>Step 2: Get API Credentials</h3>
+<ol>
+  <li>Go to <strong>Project Settings → API</strong></li>
+  <li>Copy the <strong>Project URL</strong> (e.g., <code>https://xxxxx.supabase.co</code>)</li>
+  <li>Copy the <strong>anon public key</strong> (starts with <code>eyJ...</code>)</li>
+</ol>
+
+<h3>Step 3: Execute Schema</h3>
+<ol>
+  <li>Go to <strong>SQL Editor</strong> in Supabase dashboard</li>
+  <li>Click <strong>"New Query"</strong></li>
+  <li>Open <code>documentation/DATABASE_SCHEMA.sql</code> from the package</li>
+  <li>Paste the entire contents and click <strong>"Run"</strong></li>
+</ol>
+
+<h3>Step 4: Verify</h3>
+<pre><code>SELECT COUNT(*) as table_count 
+FROM information_schema.tables 
+WHERE table_schema = 'public';
+-- Expected: 47+ tables</code></pre>
+
+<!-- 4. ENVIRONMENT -->
+<h2 id="environment-config">4. Environment Configuration</h2>
+
+<p>Create a <code>.env</code> file in the project root with these values:</p>
+
+<pre><code># ==========================================
+# SUPABASE CONFIGURATION (Required)
+# ==========================================
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-public-key
+
+# ==========================================
+# DEMO ACCESS (Optional)
+# ==========================================
+VITE_DEMO_PASSWORD=your-demo-password
+
+# ==========================================
+# EMAIL (Optional - for contact form)
+# ==========================================
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+
+# ==========================================
+# APP CONFIGURATION (Optional)
+# ==========================================
+VITE_APP_NAME=Insight Health Pro
+VITE_APP_URL=http://localhost:5173</code></pre>
+
+<table>
+  <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
+  <tr><td><code>VITE_SUPABASE_URL</code></td><td><span class="badge badge-required">Required</span></td><td>Supabase project URL</td></tr>
+  <tr><td><code>VITE_SUPABASE_ANON_KEY</code></td><td><span class="badge badge-required">Required</span></td><td>Supabase public anon key</td></tr>
+  <tr><td><code>VITE_DEMO_PASSWORD</code></td><td><span class="badge badge-optional">Optional</span></td><td>Password for demo accounts</td></tr>
+  <tr><td><code>RESEND_API_KEY</code></td><td><span class="badge badge-optional">Optional</span></td><td>For email notifications</td></tr>
+  <tr><td><code>VITE_APP_NAME</code></td><td><span class="badge badge-optional">Optional</span></td><td>Custom app name</td></tr>
+</table>
+
+<!-- 5. EDGE FUNCTIONS -->
+<h2 id="edge-functions">5. Edge Functions Deployment</h2>
+
+<pre><code># Install Supabase CLI
+npm install -g supabase
+
+# Login and link project
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+
+# Deploy all edge functions
+supabase functions deploy
+
+# Set secrets
+supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxxx</code></pre>
+
+<table>
+  <tr><th>Function</th><th>Purpose</th></tr>
+  <tr><td><code>send-contact-email</code></td><td>Contact form email delivery</td></tr>
+  <tr><td><code>departments</code></td><td>Department CRUD operations</td></tr>
+  <tr><td><code>send-appointment-reminders</code></td><td>Automated appointment reminders</td></tr>
+  <tr><td><code>send-lab-results-notification</code></td><td>Lab results email alerts</td></tr>
+  <tr><td><code>cleanup-cancelled-appointments</code></td><td>Scheduled cleanup task</td></tr>
+  <tr><td><code>ai-diagnosis</code></td><td>AI-powered diagnosis suggestions</td></tr>
+  <tr><td><code>clinical-copilot</code></td><td>AI clinical assistant</td></tr>
+  <tr><td><code>chatbot</code></td><td>AI-powered help chatbot</td></tr>
+  <tr><td><code>smart-scheduling</code></td><td>Intelligent appointment scheduling</td></tr>
+  <tr><td><code>patient-symptom-checker</code></td><td>Patient self-service symptom check</td></tr>
+</table>
+
+<!-- 6. ADMIN CREDENTIALS -->
+<h2 id="admin-credentials">6. Admin Login Credentials</h2>
+
+<div class="alert alert-warning">
+  <strong>⚠️ Important: Creating Your Admin Account</strong>
+  <p>For security, there are no default admin accounts. Follow these steps to create one.</p>
+</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <h4>Register a New Account</h4>
+    <p>Navigate to <code>/login</code> → Click <strong>"Sign Up"</strong> → Register with your email and password.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <h4>Promote to Admin</h4>
+    <p>Run this SQL in the Supabase SQL Editor:</p>
+    <pre><code>UPDATE public.user_roles 
+SET role = 'admin' 
+WHERE user_id = (
+  SELECT id FROM auth.users 
+  WHERE email = 'your-admin@email.com'
+);</code></pre>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <h4>Verify Access</h4>
+    <p>Log out and log back in. You should now see the full Admin Dashboard.</p>
+  </div>
+</div>
+
+<!-- 7. DEMO ACCOUNTS -->
+<h2 id="demo-accounts">7. Demo Accounts</h2>
+
+<p>For testing, create these accounts via Supabase Auth and assign roles via SQL:</p>
+
+<table>
+  <tr><th>Role</th><th>Email</th><th>Password</th></tr>
+  <tr><td>👑 Admin</td><td><code>admin@hospital.com</code></td><td>Set via <code>VITE_DEMO_PASSWORD</code></td></tr>
+  <tr><td>👨‍⚕️ Doctor</td><td><code>doctor@hospital.com</code></td><td>Set via <code>VITE_DEMO_PASSWORD</code></td></tr>
+  <tr><td>👩‍⚕️ Nurse</td><td><code>nurse@hospital.com</code></td><td>Set via <code>VITE_DEMO_PASSWORD</code></td></tr>
+  <tr><td>💊 Pharmacist</td><td><code>pharmacist@hospital.com</code></td><td>Set via <code>VITE_DEMO_PASSWORD</code></td></tr>
+  <tr><td>🏥 Receptionist</td><td><code>receptionist@hospital.com</code></td><td>Set via <code>VITE_DEMO_PASSWORD</code></td></tr>
+  <tr><td>🔬 Lab Technician</td><td><code>lab@hospital.com</code></td><td>Set via <code>VITE_DEMO_PASSWORD</code></td></tr>
+</table>
+
+<div class="alert alert-info">
+  <strong>ℹ️ Demo Password</strong>
+  <p>Set the <code>VITE_DEMO_PASSWORD</code> environment variable to enable Quick Demo Access buttons on the login page. This is fully configurable and can be disabled in production.</p>
+</div>
+
+<!-- 8. FEATURES -->
+<h2 id="features">8. Complete Features List</h2>
+
+<h3>Core Modules (20+)</h3>
+<div class="features-grid">
+  <div class="feature-item"><strong>👥 Patient Management</strong><span>Registration, records, ID cards, QR verification</span></div>
+  <div class="feature-item"><strong>📅 Appointment Scheduling</strong><span>Calendar, waitlist, smart scheduling AI</span></div>
+  <div class="feature-item"><strong>🎫 Real-Time Queue System</strong><span>Token-based, live status, patient check-in</span></div>
+  <div class="feature-item"><strong>📋 Electronic Medical Records</strong><span>Visit history, ICD-10 codes, FHIR export</span></div>
+  <div class="feature-item"><strong>💊 Prescription Management</strong><span>Drug interactions, templates, refill workflow</span></div>
+  <div class="feature-item"><strong>🔬 Lab Test Management</strong><span>Report generation, QR verification, trending</span></div>
+  <div class="feature-item"><strong>🩸 Blood Bank</strong><span>Inventory, donors, transfusion, compatibility</span></div>
+  <div class="feature-item"><strong>🏥 Operation Theatre</strong><span>Surgery scheduling, teams, consent, post-op</span></div>
+  <div class="feature-item"><strong>🛏️ IPD Management</strong><span>Admissions, ward rounds, discharge summaries</span></div>
+  <div class="feature-item"><strong>💊 Pharmacy &amp; Inventory</strong><span>Stock, purchase orders, supplier management</span></div>
+  <div class="feature-item"><strong>💳 Billing &amp; Insurance</strong><span>Payments, claims, ICD/CPT coding</span></div>
+  <div class="feature-item"><strong>💬 Doctor-Patient Messaging</strong><span>Secure two-way communication</span></div>
+  <div class="feature-item"><strong>👨‍💼 Staff Management</strong><span>Schedules, departments, shift handovers</span></div>
+  <div class="feature-item"><strong>📊 Reports &amp; Analytics</strong><span>Revenue, patient flow, staff performance</span></div>
+  <div class="feature-item"><strong>🔔 Notification System</strong><span>Real-time alerts, email notifications</span></div>
+  <div class="feature-item"><strong>🤖 AI Clinical Copilot</strong><span>AI-powered diagnosis suggestions</span></div>
+  <div class="feature-item"><strong>🏠 Patient Portal</strong><span>Self-service appointments, records, symptoms</span></div>
+  <div class="feature-item"><strong>📝 Referral Management</strong><span>Inter-department referral tracking</span></div>
+  <div class="feature-item"><strong>🏢 Department Management</strong><span>Full department CRUD with head assignment</span></div>
+  <div class="feature-item"><strong>📱 Vitals Monitoring</strong><span>Patient vital signs recording &amp; tracking</span></div>
+</div>
+
+<h3>6 Role-Based Dashboards</h3>
+<table>
+  <tr><th>Role</th><th>Access Level</th></tr>
+  <tr><td><strong>Admin</strong></td><td>Full system access — staff, reports, settings, billing, departments</td></tr>
+  <tr><td><strong>Doctor</strong></td><td>Patients, appointments, prescriptions, medical records, AI copilot, messaging</td></tr>
+  <tr><td><strong>Nurse</strong></td><td>Vitals, shift handovers, patient care, ward rounds</td></tr>
+  <tr><td><strong>Pharmacist</strong></td><td>Pharmacy, prescriptions, inventory management</td></tr>
+  <tr><td><strong>Receptionist</strong></td><td>Patient registration, appointments, billing, queue control</td></tr>
+  <tr><td><strong>Lab Technician</strong></td><td>Lab tests, report generation, result entry, verification</td></tr>
+</table>
+
+<h3>Additional Features</h3>
+<ul>
+  <li>🌍 <strong>Multi-language Support</strong> — English, Spanish, French, Arabic, Hindi, Urdu</li>
+  <li>🌙 <strong>Dark / Light Mode</strong> — Full theme support with system preference detection</li>
+  <li>📱 <strong>PWA Ready</strong> — Installable on mobile devices, works offline</li>
+  <li>🔒 <strong>HIPAA Compliant</strong> — Audit logging, RLS policies, PHI tracking</li>
+  <li>📄 <strong>PDF Report Generation</strong> — Lab reports, prescriptions, ID cards</li>
+  <li>📊 <strong>QR Code Verification</strong> — Patients, prescriptions, lab reports</li>
+  <li>🔄 <strong>Real-time Updates</strong> — Live queue, notifications, data sync</li>
+  <li>♿ <strong>Accessibility</strong> — WCAG 2.1 compliant, keyboard navigation, screen reader support</li>
+</ul>
+
+<!-- 9. TECH STACK -->
+<h2 id="tech-stack">9. Technology Stack</h2>
+
+<table>
+  <tr><th>Technology</th><th>Version</th><th>Purpose</th></tr>
+  <tr><td>React</td><td>18.3</td><td>Frontend UI framework</td></tr>
+  <tr><td>TypeScript</td><td>5.x</td><td>Type-safe development</td></tr>
+  <tr><td>Vite</td><td>5.x</td><td>Build tool &amp; dev server</td></tr>
+  <tr><td>Tailwind CSS</td><td>3.x</td><td>Utility-first styling</td></tr>
+  <tr><td>Shadcn/UI</td><td>Latest</td><td>Accessible component library</td></tr>
+  <tr><td>Supabase</td><td>2.x</td><td>Backend (Auth, DB, Functions, Storage)</td></tr>
+  <tr><td>Framer Motion</td><td>12.x</td><td>Animations &amp; transitions</td></tr>
+  <tr><td>Recharts</td><td>3.x</td><td>Charts &amp; data visualization</td></tr>
+  <tr><td>TanStack Query</td><td>5.x</td><td>Data fetching &amp; caching</td></tr>
+  <tr><td>React Hook Form + Zod</td><td>7.x / 3.x</td><td>Form validation</td></tr>
+  <tr><td>i18next</td><td>25.x</td><td>Internationalization (6 languages)</td></tr>
+  <tr><td>jsPDF</td><td>4.x</td><td>PDF generation</td></tr>
+</table>
+
+<!-- 10. DEPLOYMENT -->
+<h2 id="deployment">10. Production Deployment</h2>
+
+<h3>Build for Production</h3>
+<pre><code>npm run build</code></pre>
+<p>This generates optimized static files in the <code>dist/</code> folder.</p>
+
+<h3>Option A: Vercel (Recommended)</h3>
+<ol>
+  <li>Import your repository on <a href="https://vercel.com">vercel.com</a></li>
+  <li>Set Framework Preset to <strong>Vite</strong></li>
+  <li>Add environment variables in Project Settings</li>
+  <li>Deploy — automatic CI/CD on every push</li>
+</ol>
+
+<h3>Option B: Netlify</h3>
+<ol>
+  <li>Connect repository on <a href="https://netlify.com">netlify.com</a></li>
+  <li>Build command: <code>npm run build</code> | Publish directory: <code>dist</code></li>
+  <li>Add environment variables and deploy</li>
+</ol>
+
+<h3>Option C: Static Server (Nginx / Apache)</h3>
+<pre><code># Build the application
+npm run build
+
+# Copy dist/ contents to your web server root
+cp -r dist/* /var/www/html/
+
+# Nginx: Add SPA routing rule
+# location / { try_files $uri /index.html; }</code></pre>
+
+<!-- 11. TROUBLESHOOTING -->
+<h2 id="troubleshooting">11. Troubleshooting</h2>
+
+<table>
+  <tr><th>Issue</th><th>Solution</th></tr>
+  <tr><td>RLS policy error / permission denied</td><td>Verify user role in <code>user_roles</code> table. Re-run schema.sql if policies are missing.</td></tr>
+  <tr><td>Authentication error / Invalid JWT</td><td>Check <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> are correct.</td></tr>
+  <tr><td>Edge function 500 error</td><td>Run <code>supabase secrets list</code> to verify secrets. Check logs with <code>supabase functions logs</code>.</td></tr>
+  <tr><td>Database connection timeout</td><td>Check if Supabase project is paused (free tier). Click "Restore" in dashboard.</td></tr>
+  <tr><td>Module not found errors</td><td>Delete <code>node_modules</code> and run <code>npm install</code> again.</td></tr>
+  <tr><td>Blank page after build</td><td>Ensure your server has SPA routing (all paths → <code>index.html</code>).</td></tr>
+</table>
+
+<!-- 12. SECURITY -->
+<h2 id="security">12. Security &amp; Compliance</h2>
+
+<ul>
+  <li><span class="badge badge-yes">✓</span> <strong>Row Level Security (RLS)</strong> — Enforced on all 55+ database tables</li>
+  <li><span class="badge badge-yes">✓</span> <strong>Role-Based Access Control</strong> — 6 distinct roles with granular permissions</li>
+  <li><span class="badge badge-yes">✓</span> <strong>PHI Audit Logging</strong> — All sensitive data access is logged for HIPAA compliance</li>
+  <li><span class="badge badge-yes">✓</span> <strong>No Hardcoded Credentials</strong> — All secrets via environment variables</li>
+  <li><span class="badge badge-yes">✓</span> <strong>SQL Injection Protection</strong> — Parameterized queries via Supabase SDK</li>
+  <li><span class="badge badge-yes">✓</span> <strong>XSS Protection</strong> — React DOM escaping, no dangerouslySetInnerHTML</li>
+  <li><span class="badge badge-yes">✓</span> <strong>JWT Authentication</strong> — Secure token-based sessions</li>
+  <li><span class="badge badge-yes">✓</span> <strong>Data Encryption</strong> — Encrypted at rest (Supabase PostgreSQL)</li>
+  <li><span class="badge badge-yes">✓</span> <strong>QR Code Verification</strong> — Tamper-proof verification for prescriptions, lab reports, patient IDs</li>
+</ul>
+
+<!-- 13. SUPPORT -->
+<h2 id="support">13. Contact &amp; Support</h2>
+
+<div class="alert alert-success">
+  <strong>📧 Support Included — 6 Months</strong>
+  <p>We provide dedicated support for installation, configuration, and bug fixes.</p>
+</div>
+
+<table>
+  <tr><th>Channel</th><th>Details</th></tr>
+  <tr><td><strong>Email</strong></td><td><a href="mailto:support@fastamsolutions.com">support@fastamsolutions.com</a></td></tr>
+  <tr><td><strong>Response Time</strong></td><td>24–48 hours (business days)</td></tr>
+  <tr><td><strong>Support Includes</strong></td><td>Bug fixes, installation help, configuration assistance, documentation updates</td></tr>
+</table>
+
+<h3>When Contacting Support, Please Include:</h3>
+<ul>
+  <li>Your purchase code from CodeCanyon</li>
+  <li>Detailed description of the issue</li>
+  <li>Steps to reproduce the problem</li>
+  <li>Browser and OS information</li>
+  <li>Relevant console error logs or screenshots</li>
+</ul>
+
+<h3>What's NOT Included in Support:</h3>
+<ul>
+  <li>Custom feature development or modifications</li>
+  <li>Third-party plugin integration</li>
+  <li>Server or hosting setup beyond documentation</li>
+</ul>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p><strong>Insight Health Pro — Hospital Management System</strong></p>
+  <p>Version 4.0.0 | © 2026 Fastam Solutions | All Rights Reserved</p>
+  <p>
+    <a href="mailto:support@fastamsolutions.com">support@fastamsolutions.com</a>
+  </p>
+</div>
+
+</div>
+</body>
+</html>
