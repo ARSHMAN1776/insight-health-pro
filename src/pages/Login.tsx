@@ -5,7 +5,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Heart, Eye, EyeOff, Stethoscope, Shield, ArrowRight, Calendar, Phone, User, ArrowLeft, Lock, CheckCircle, Sparkles, Activity, Users, Clock } from 'lucide-react';
+import { Heart, Eye, EyeOff, Stethoscope, Shield, ArrowRight, Calendar, Phone, User, ArrowLeft, Lock, CheckCircle, Sparkles, Activity, Users, Clock, Zap, FlaskConical, UserCog, Pill, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -29,6 +29,7 @@ const Login: React.FC = () => {
   
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
   
   const { login, signupPatient, isLoading, user } = useAuth();
   const navigate = useNavigate();
@@ -161,6 +162,37 @@ const Login: React.FC = () => {
         description: err.message || 'Could not create account',
         variant: 'destructive'
       });
+    }
+  };
+
+  const demoAccounts = [
+    { role: 'Admin', email: 'arshman@fastamsolutions.com', icon: UserCog, color: 'bg-red-500/10 text-red-600 border-red-200 dark:border-red-800' },
+    { role: 'Doctor', email: 'doctor@hospital.com', icon: Stethoscope, color: 'bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-800' },
+    { role: 'Nurse', email: 'nurse@hospital.com', icon: Heart, color: 'bg-pink-500/10 text-pink-600 border-pink-200 dark:border-pink-800' },
+    { role: 'Receptionist', email: 'receptionist@hospital.com', icon: ClipboardList, color: 'bg-green-500/10 text-green-600 border-green-200 dark:border-green-800' },
+    { role: 'Pharmacist', email: 'pharmacist@hospital.com', icon: Pill, color: 'bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-800' },
+    { role: 'Lab Tech', email: 'lab@hospital.com', icon: FlaskConical, color: 'bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-800' },
+  ];
+
+  const handleDemoLogin = async (email: string, role: string) => {
+    setDemoLoading(role);
+    setError('');
+    try {
+      await login(email, 'shani1776');
+      toast({
+        title: `Demo: ${role} Login`,
+        description: `Logged in as ${role}. Explore the system!`,
+      });
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Demo login failed');
+      toast({
+        title: 'Demo Login Failed',
+        description: err.message || 'Could not login with demo credentials',
+        variant: 'destructive',
+      });
+    } finally {
+      setDemoLoading(null);
     }
   };
 
@@ -661,6 +693,40 @@ const Login: React.FC = () => {
                   </div>
                 </TabsContent>
               </Tabs>
+
+              {/* Quick Demo Access */}
+              <div className="mt-6 pt-6 border-t border-border/50">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-semibold text-foreground">Quick Demo Access</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {demoAccounts.map((account) => {
+                    const Icon = account.icon;
+                    return (
+                      <Button
+                        key={account.role}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className={`h-auto py-2.5 px-2 flex flex-col items-center gap-1.5 text-xs font-medium border transition-all hover:scale-[1.02] ${account.color}`}
+                        disabled={demoLoading !== null || isLoading}
+                        onClick={() => handleDemoLogin(account.email, account.role)}
+                      >
+                        {demoLoading === account.role ? (
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Icon className="w-4 h-4" />
+                        )}
+                        <span>{account.role}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center mt-2">
+                  Click any role to instantly explore the system
+                </p>
+              </div>
               
               {/* Security Notice */}
               <div className="mt-8 pt-6 border-t border-border/50">
