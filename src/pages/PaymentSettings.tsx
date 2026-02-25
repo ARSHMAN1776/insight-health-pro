@@ -27,7 +27,7 @@ import {
   ArrowRightLeft,
   Info
 } from 'lucide-react';
-import MainLayout from '@/components/layout/MainLayout';
+
 
 interface PaymentConfig {
   stripeEnabled: boolean;
@@ -149,39 +149,34 @@ const PaymentSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </MainLayout>
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   if (user?.role !== 'admin') {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-96">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <Shield className="h-5 w-5" />
-                Access Denied
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Only administrators can access payment settings.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
+      <div className="flex items-center justify-center h-96">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <Shield className="h-5 w-5" />
+              Access Denied
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Only administrators can access payment settings.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -600,9 +595,8 @@ const PaymentSettings: React.FC = () => {
               'Save Settings'
             )}
           </Button>
-        </div>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 
