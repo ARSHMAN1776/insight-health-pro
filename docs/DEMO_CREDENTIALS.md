@@ -13,6 +13,7 @@ Use these pre-configured accounts to test all system features.
 | **Nurse** | nurse@hospital.com | Vitals, shift handovers, patient care, queue management |
 | **Pharmacist** | pharmacist@hospital.com | Pharmacy, prescriptions, inventory management |
 | **Receptionist** | receptionist@hospital.com | Patient registration, appointments, billing, queue control |
+| **Lab Technician** | lab@hospital.com | Lab test management, report generation, result entry |
 
 ## Quick Test Workflow
 
