@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import testimonial1 from '@/assets/testimonials/testimonial-1.jpg';
+import testimonial2 from '@/assets/testimonials/testimonial-2.jpg';
+import testimonial3 from '@/assets/testimonials/testimonial-3.jpg';
+import testimonial4 from '@/assets/testimonials/testimonial-4.jpg';
 
 const testimonials = [
   {
@@ -9,7 +13,7 @@ const testimonials = [
     name: 'Jennifer Adams',
     role: 'Patient since 2021',
     location: 'Brooklyn, NY',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&q=80',
+    image: testimonial1,
     rating: 5,
     text: "After my surgery last year, the follow-up care was exceptional. Dr. Thompson personally called to check on my recovery. The patient portal made it easy to track my appointments and medications. Couldn't ask for better care.",
     date: 'March 2024',
@@ -19,7 +23,7 @@ const testimonials = [
     name: 'Robert Chen',
     role: 'Hospital Administrator',
     location: 'Queens Medical Center',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&q=80',
+    image: testimonial2,
     rating: 5,
     text: "We implemented this HMS system 18 months ago. Staff scheduling went from 4 hours weekly to 30 minutes. The reporting dashboard gives us insights we never had before. Our patient satisfaction scores are up 23%.",
     date: 'February 2024',
@@ -29,7 +33,7 @@ const testimonials = [
     name: 'Lisa Martinez',
     role: 'Mother of 3',
     location: 'Manhattan, NY',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&q=80',
+    image: testimonial3,
     rating: 5,
     text: "With three kids, I need a healthcare system that works. Booking pediatric appointments online at 10pm when I finally have time? Game changer. Dr. Santos is amazing with my children - they actually look forward to checkups.",
     date: 'January 2024',
@@ -39,7 +43,7 @@ const testimonials = [
     name: 'Thomas Wright',
     role: 'Retired Teacher',
     location: 'Staten Island, NY',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&q=80',
+    image: testimonial4,
     rating: 5,
     text: "At 72, I was skeptical about digital healthcare. The staff walked me through everything. Now I video call my cardiologist from home. My wife and I both use the prescription refill feature - it's straightforward and reliable.",
     date: 'December 2023',

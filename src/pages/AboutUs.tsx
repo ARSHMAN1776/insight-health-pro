@@ -7,6 +7,11 @@ import Footer from "@/components/landing/Footer";
 import AnimatedBackground from "@/components/landing/AnimatedBackground";
 import ScrollAnimationWrapper from "@/components/landing/ScrollAnimationWrapper";
 import AnimatedCounter from "@/components/landing/AnimatedCounter";
+import doctor1 from '@/assets/team/doctor-1.jpg';
+import doctor2 from '@/assets/team/doctor-2.jpg';
+import doctor3 from '@/assets/team/doctor-3.jpg';
+import doctor4 from '@/assets/team/doctor-4.jpg';
+import hospitalBuilding from '@/assets/hospital-building.jpg';
 
 const AboutUs = () => {
   const navigate = useNavigate();
@@ -16,25 +21,25 @@ const AboutUs = () => {
       name: "Dr. Sarah Johnson",
       role: "Chief Medical Officer",
       description: "25+ years of experience in healthcare management and patient care excellence.",
-      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&q=80"
+      image: doctor1
     },
     {
       name: "Dr. Michael Chen",
       role: "Head of Surgery",
       description: "Renowned surgeon specializing in minimally invasive procedures and patient outcomes.",
-      image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&q=80"
+      image: doctor2
     },
     {
       name: "Emily Rodriguez",
       role: "Director of Nursing",
       description: "Leading our nursing team with compassion and dedication to quality care.",
-      image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&q=80"
+      image: doctor3
     },
     {
       name: "Dr. James Wilson",
       role: "Head of Emergency Medicine",
       description: "Expert in emergency care with focus on rapid response and critical care.",
-      image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop&q=80"
+      image: doctor4
     },
   ];
 
@@ -121,7 +126,7 @@ const AboutUs = () => {
               <div className="grid md:grid-cols-2 gap-0">
                 <div className="relative h-64 md:h-auto">
                   <img 
-                    src="https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&h=600&fit=crop&q=80" 
+                    src={hospitalBuilding} 
                     alt="Hospital Building"
                     className="absolute inset-0 w-full h-full object-cover"
                   />

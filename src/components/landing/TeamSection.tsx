@@ -1,6 +1,10 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Linkedin, Twitter } from 'lucide-react';
+import doctor1 from '@/assets/team/doctor-1.jpg';
+import doctor2 from '@/assets/team/doctor-2.jpg';
+import doctor3 from '@/assets/team/doctor-3.jpg';
+import doctor4 from '@/assets/team/doctor-4.jpg';
 
 const teamMembers = [
   {
@@ -8,7 +12,7 @@ const teamMembers = [
     name: 'Dr. Sarah Mitchell',
     role: 'Chief Medical Officer',
     specialty: 'Internal Medicine',
-    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&q=80',
+    image: doctor1,
     education: 'Harvard Medical School',
     bio: 'Leading our medical team with 20 years of clinical excellence.',
   },
@@ -17,7 +21,7 @@ const teamMembers = [
     name: 'Dr. David Park',
     role: 'Head of Cardiology',
     specialty: 'Cardiovascular Surgery',
-    image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&q=80',
+    image: doctor2,
     education: 'Johns Hopkins University',
     bio: 'Pioneer in minimally invasive heart procedures.',
   },
@@ -26,7 +30,7 @@ const teamMembers = [
     name: 'Dr. Maria Santos',
     role: 'Head of Pediatrics',
     specialty: 'Child Healthcare',
-    image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&q=80',
+    image: doctor3,
     education: 'Stanford University',
     bio: 'Dedicated to making healthcare comfortable for children.',
   },
@@ -35,7 +39,7 @@ const teamMembers = [
     name: 'Dr. Michael Thompson',
     role: 'Chief of Surgery',
     specialty: 'General & Trauma Surgery',
-    image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop&q=80',
+    image: doctor4,
     education: 'Yale School of Medicine',
     bio: 'Expert surgeon with strength in complex procedures.',
   },

@@ -10,6 +10,12 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ScrollReveal, TiltCard, MouseGlow } from '@/components/animations';
+import featureScheduling from '@/assets/features/feature-scheduling.jpg';
+import featureRecords from '@/assets/features/feature-records.jpg';
+import featureSecurity from '@/assets/features/feature-security.jpg';
+import featureLab from '@/assets/features/feature-lab.jpg';
+import featurePharmacy from '@/assets/features/feature-pharmacy.jpg';
+import featureTelemedicine from '@/assets/features/feature-telemedicine.jpg';
 
 const features = [
   {
@@ -17,42 +23,42 @@ const features = [
     title: 'Smart Scheduling',
     description: 'AI-powered appointment scheduling with real-time availability and automated reminders.',
     color: 'bg-medical-blue',
-    image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&h=300&fit=crop&q=80',
+    image: featureScheduling,
   },
   {
     icon: FileText,
     title: 'Electronic Health Records',
     description: 'Secure, centralized medical records accessible anytime with complete privacy.',
     color: 'bg-medical-green',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=300&fit=crop&q=80',
+    image: featureRecords,
   },
   {
     icon: Shield,
     title: 'HIPAA Compliant',
     description: 'Bank-level security ensuring your medical data meets industry standards.',
     color: 'bg-medical-purple',
-    image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop&q=80',
+    image: featureSecurity,
   },
   {
     icon: Activity,
     title: 'Lab & Diagnostics',
     description: 'Integrated lab test management with instant results and reports.',
     color: 'bg-medical-orange',
-    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=400&h=300&fit=crop&q=80',
+    image: featureLab,
   },
   {
     icon: Pill,
     title: 'Pharmacy Integration',
     description: 'Seamless prescription management with refill tracking and alerts.',
     color: 'bg-medical-red',
-    image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=300&fit=crop&q=80',
+    image: featurePharmacy,
   },
   {
     icon: Video,
     title: 'Telemedicine Ready',
     description: 'Virtual consultations with HD video and secure messaging.',
     color: 'bg-medical-blue',
-    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=300&fit=crop&q=80',
+    image: featureTelemedicine,
   },
 ];
 

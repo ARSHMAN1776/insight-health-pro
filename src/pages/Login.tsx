@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import loginHero from '@/assets/login-hero.jpg';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -178,7 +179,8 @@ const Login: React.FC = () => {
     setDemoLoading(role);
     setError('');
     try {
-      await login(email, 'shani1776');
+      const demoPassword = import.meta.env.VITE_DEMO_PASSWORD || 'demo123456';
+      await login(email, demoPassword);
       toast({
         title: `Demo: ${role} Login`,
         description: `Logged in as ${role}. Explore the system!`,
@@ -216,7 +218,7 @@ const Login: React.FC = () => {
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
           <img 
-            src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1200&h=1600&fit=crop&q=80" 
+            src={loginHero} 
             alt="Healthcare professionals"
             className="w-full h-full object-cover"
           />
