@@ -273,9 +273,11 @@ const App = () => (
               } />
               <Route path="/staff-management" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                    <StaffManagement />
-                  </Suspense>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <StaffManagement />
+                    </Suspense>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
               <Route path="/blood-bank" element={
@@ -371,9 +373,11 @@ const App = () => (
               } />
               <Route path="/payment-settings" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                    <PaymentSettings />
-                  </Suspense>
+                  <MainLayout>
+                    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                      <PaymentSettings />
+                    </Suspense>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
               <Route path="/ipd" element={
