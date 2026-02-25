@@ -179,7 +179,12 @@ const Login: React.FC = () => {
     setDemoLoading(role);
     setError('');
     try {
-      const demoPassword = import.meta.env.VITE_DEMO_PASSWORD || 'demo123456';
+      const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
+      if (!demoPassword) {
+        toast({ title: 'Demo Unavailable', description: 'Demo password not configured. Set VITE_DEMO_PASSWORD in .env', variant: 'destructive' });
+        setDemoLoading(null);
+        return;
+      }
       await login(email, demoPassword);
       toast({
         title: `Demo: ${role} Login`,
