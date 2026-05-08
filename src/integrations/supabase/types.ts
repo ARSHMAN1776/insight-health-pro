@@ -1125,6 +1125,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ipd_admissions_attending_nurse_id_fkey"
+            columns: ["attending_nurse_id"]
+            isOneToOne: false
+            referencedRelation: "nurses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ipd_admissions_department_id_fkey"
             columns: ["department_id"]
             isOneToOne: false
@@ -2480,7 +2487,15 @@ export type Database = {
           table_name?: string
           user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "phi_audit_log_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_operation: {
         Row: {
@@ -3553,7 +3568,7 @@ export type Database = {
           id: string
           incoming_nurse_id: string | null
           medication_notes: string | null
-          outgoing_nurse_id: string
+          outgoing_nurse_id: string | null
           pending_tasks: Json | null
           shift_date: string
           shift_type: string
@@ -3570,7 +3585,7 @@ export type Database = {
           id?: string
           incoming_nurse_id?: string | null
           medication_notes?: string | null
-          outgoing_nurse_id: string
+          outgoing_nurse_id?: string | null
           pending_tasks?: Json | null
           shift_date?: string
           shift_type: string
@@ -3587,14 +3602,29 @@ export type Database = {
           id?: string
           incoming_nurse_id?: string | null
           medication_notes?: string | null
-          outgoing_nurse_id?: string
+          outgoing_nurse_id?: string | null
           pending_tasks?: Json | null
           shift_date?: string
           shift_type?: string
           status?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shift_handovers_incoming_nurse_id_fkey"
+            columns: ["incoming_nurse_id"]
+            isOneToOne: false
+            referencedRelation: "nurses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_handovers_outgoing_nurse_id_fkey"
+            columns: ["outgoing_nurse_id"]
+            isOneToOne: false
+            referencedRelation: "nurses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff_schedules: {
         Row: {
@@ -4073,6 +4103,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ward_rounds_nurse_id_fkey"
+            columns: ["nurse_id"]
+            isOneToOne: false
+            referencedRelation: "nurses"
             referencedColumns: ["id"]
           },
         ]
