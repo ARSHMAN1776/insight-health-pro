@@ -1817,6 +1817,7 @@ export type Database = {
           npi_number: string | null
           password_policy: Json | null
           phone: string | null
+          plan: Database["public"]["Enums"]["app_plan"]
           postal_code: string | null
           primary_color: string | null
           require_2fa: boolean | null
@@ -1861,6 +1862,7 @@ export type Database = {
           npi_number?: string | null
           password_policy?: Json | null
           phone?: string | null
+          plan?: Database["public"]["Enums"]["app_plan"]
           postal_code?: string | null
           primary_color?: string | null
           require_2fa?: boolean | null
@@ -1905,6 +1907,7 @@ export type Database = {
           npi_number?: string | null
           password_policy?: Json | null
           phone?: string | null
+          plan?: Database["public"]["Enums"]["app_plan"]
           postal_code?: string | null
           primary_color?: string | null
           require_2fa?: boolean | null
@@ -2496,6 +2499,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_modules: {
+        Row: {
+          created_at: string
+          id: string
+          module_key: string
+          plan: Database["public"]["Enums"]["app_plan"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_key: string
+          plan: Database["public"]["Enums"]["app_plan"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_key?: string
+          plan?: Database["public"]["Enums"]["app_plan"]
+        }
+        Relationships: []
       }
       post_operation: {
         Row: {
@@ -4249,6 +4273,10 @@ export type Database = {
       get_patient_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_user_org_role: { Args: never; Returns: string }
       get_user_organization_id: { Args: never; Returns: string }
+      get_user_plan: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_plan"]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -4267,6 +4295,7 @@ export type Database = {
       is_module_enabled: { Args: { module_key: string }; Returns: boolean }
     }
     Enums: {
+      app_plan: "basic" | "pro" | "premium"
       app_role:
         | "admin"
         | "doctor"
@@ -4402,6 +4431,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_plan: ["basic", "pro", "premium"],
       app_role: [
         "admin",
         "doctor",
