@@ -124,7 +124,7 @@ function createLogEntry(
  */
 export const logger = {
   debug(message: string, context?: Record<string, unknown>) {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       const entry = createLogEntry('debug', message, context);
       console.debug(formatLogEntry(entry), entry.context || '');
     }

@@ -307,7 +307,7 @@ export const usePurchaseOrders = () => {
 
       const { error } = await supabase
         .from('purchase_orders')
-        .update(updates)
+        .update(updates as never)
         .eq('id', id);
 
       if (error) throw error;

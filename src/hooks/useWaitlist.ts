@@ -136,7 +136,7 @@ export const useWaitlist = () => {
     try {
       const { error } = await supabase
         .from('appointment_waitlist')
-        .update(updates)
+        .update(updates as never)
         .eq('id', id);
 
       if (error) throw error;

@@ -143,7 +143,7 @@ export function useInsuranceClaims() {
           status,
           ...additionalData,
           updated_at: new Date().toISOString(),
-        })
+        } as never)
         .eq('id', claimId);
 
       if (error) throw error;
