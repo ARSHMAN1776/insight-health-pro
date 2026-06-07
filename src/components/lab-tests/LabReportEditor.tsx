@@ -245,7 +245,7 @@ const LabReportEditor: React.FC<LabReportEditorProps> = ({
 
       const { error } = await supabase
         .from('lab_tests')
-        .update(updateData)
+        .update(updateData as never)
         .eq('id', labTest.id);
 
       if (error) throw error;

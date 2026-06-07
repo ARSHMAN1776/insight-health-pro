@@ -118,7 +118,7 @@ export const useReferrals = () => {
     try {
       const { data, error } = await supabase
         .from('referrals')
-        .update(updates)
+        .update(updates as never)
         .eq('id', id)
         .select()
         .single();

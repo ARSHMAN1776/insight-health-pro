@@ -592,7 +592,7 @@ const AdminDashboard: React.FC = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="patients"
-                  label={({ department, patients }) => `${department}: ${patients}`}
+                  label={(props: any) => `${props.department}: ${props.patients}`}
                 >
                   {departmentData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
