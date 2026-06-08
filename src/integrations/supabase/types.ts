@@ -4822,6 +4822,15 @@ export type Database = {
         Returns: boolean
       }
       is_module_enabled: { Args: { module_key: string }; Returns: boolean }
+      run_tenant_leak_test: {
+        Args: { _user_id: string }
+        Returns: {
+          expected_max: number
+          passed: boolean
+          test_name: string
+          visible_count: number
+        }[]
+      }
     }
     Enums: {
       app_plan: "basic" | "pro" | "premium"
