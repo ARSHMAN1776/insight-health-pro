@@ -43,8 +43,8 @@ export interface QueueEntry {
   called_at: string | null;
   consultation_started_at: string | null;
   completed_at: string | null;
-  transferred_from: string | null;
-  transferred_to: string | null;
+  transferred_from?: string | null;
+  transferred_to?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
