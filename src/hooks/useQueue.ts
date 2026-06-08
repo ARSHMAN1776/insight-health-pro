@@ -43,8 +43,8 @@ export interface QueueEntry {
   called_at: string | null;
   consultation_started_at: string | null;
   completed_at: string | null;
-  transferred_from: string | null;
-  transferred_to: string | null;
+  transferred_from?: string | null;
+  transferred_to?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -52,9 +52,9 @@ export interface QueueEntry {
     id: string;
     first_name: string;
     last_name: string;
-    phone: string | null;
-    date_of_birth: string;
-    gender: string;
+    phone?: string | null;
+    date_of_birth?: string;
+    gender?: string;
   };
   queue?: DailyQueue;
 }
