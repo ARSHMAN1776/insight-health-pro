@@ -52,9 +52,9 @@ export interface QueueEntry {
     id: string;
     first_name: string;
     last_name: string;
-    phone: string | null;
-    date_of_birth: string;
-    gender: string;
+    phone?: string | null;
+    date_of_birth?: string;
+    gender?: string;
   };
   queue?: DailyQueue;
 }
