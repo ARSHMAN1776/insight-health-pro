@@ -32,6 +32,12 @@ import LabDiagnostics from './pages/features/LabDiagnostics';
 import BedManagementFeature from './pages/features/BedManagement';
 import NotificationsFeature from './pages/features/Notifications';
 import ReportsAnalytics from './pages/features/ReportsAnalytics';
+import Departments from './pages/Departments';
+import Careers from './pages/Careers';
+import HelpCenter from './pages/HelpCenter';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
 
 // Lazy load components
 const AppointmentScheduler = React.lazy(() => import('./components/appointments/AppointmentScheduler'));
@@ -119,6 +125,12 @@ const App = () => (
               <Route path="/about" element={<AboutUs />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/departments" element={<Departments />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
               
               {/* Feature pages */}
               <Route path="/features/patient-management" element={<PatientManagementFeature />} />
