@@ -59,16 +59,16 @@ const Footer = () => {
                 </button>
               </li>
               <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
+                <button onClick={() => navigate('/departments')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
                   <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                   Departments
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
+                <button onClick={() => navigate('/careers')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
                   <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                   Careers
-                </a>
+                </button>
               </li>
             </ul>
           </div>
@@ -78,28 +78,28 @@ const Footer = () => {
             <h3 className="font-semibold text-lg mb-6">Support</h3>
             <ul className="space-y-4">
               <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
+                <button onClick={() => navigate('/help')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
                   <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                   Help Center
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
+                <button onClick={() => navigate('/privacy')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
                   <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                   Privacy Policy
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
+                <button onClick={() => navigate('/terms')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
                   <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                   Terms of Service
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
+                <button onClick={() => navigate('/contact')} className="text-background/70 hover:text-primary transition-colors flex items-center gap-2 group">
                   <ArrowRight className="w-3 h-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                   Contact Us
-                </a>
+                </button>
               </li>
             </ul>
           </div>
@@ -146,9 +146,9 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-background/60">
             <p>&copy; {new Date().getFullYear()} HealthCare HMS. All rights reserved.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="#" className="hover:text-primary transition-colors">Terms</a>
-              <a href="#" className="hover:text-primary transition-colors">Cookies</a>
+              <button onClick={() => navigate('/privacy')} className="hover:text-primary transition-colors">Privacy</button>
+              <button onClick={() => navigate('/terms')} className="hover:text-primary transition-colors">Terms</button>
+              <button onClick={() => navigate('/cookies')} className="hover:text-primary transition-colors">Cookies</button>
             </div>
           </div>
         </div>
